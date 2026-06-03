@@ -1,0 +1,101 @@
+{
+  "app": {
+    "name": "FitMe",
+    "tagline": "Personal Workout Tracker"
+  },
+  "nav": {
+    "program": "Program",
+    "log": "Log",
+    "progress": "Progress",
+    "profile": "Profile"
+  },
+  "auth": {
+    "title": "Login",
+    "passphrase": "Passphrase",
+    "passphrasePlaceholder": "Enter your passphrase",
+    "login": "Login",
+    "error": "Incorrect passphrase"
+  },
+  "onboarding": {
+    "title": "Welcome",
+    "subtitle": "Set up your profile to get started",
+    "name": "Name",
+    "namePlaceholder": "Mohammad",
+    "weight": "Weight (kg)",
+    "height": "Height (cm)",
+    "uploadProgram": "Upload Workout Program",
+    "uploadHint": "Select your YAML program file",
+    "submit": "Get Started",
+    "errors": {
+      "name": "Name is required",
+      "weight": "Invalid weight",
+      "height": "Invalid height",
+      "file": "Invalid YAML file"
+    }
+  },
+  "program": {
+    "title": "Workout Program",
+    "noProgram": "No program found",
+    "day": "Day",
+    "sets": "sets",
+    "reps": "reps",
+    "superset": "Superset",
+    "supersetWith": "Superset with"
+  },
+  "exercise": {
+    "guide": "Guide",
+    "video": "Video",
+    "logWeight": "Log Weight",
+    "description": "Exercise Description",
+    "tips": "Key Tips",
+    "mistakes": "Common Mistakes",
+    "watchVideo": "Watch on MuscleWiki",
+    "back": "← Back",
+    "set": "Set",
+    "weight": "Weight (kg)",
+    "actualReps": "Actual Reps",
+    "plannedReps": "Planned",
+    "save": "💾 Save",
+    "saved": "✓ Saved",
+    "previousSessions": "Previous Sessions",
+    "noHistory": "No weights logged yet"
+  },
+  "log": {
+    "title": "Weight Log",
+    "empty": "No weights logged yet",
+    "emptyHint": "Open any exercise and use the 'Log Weight' tab"
+  },
+  "progress": {
+    "title": "Progress",
+    "bodyWeight": "Body Weight",
+    "logWeight": "Log Today's Weight",
+    "weightKg": "Weight (kg)",
+    "date": "Date",
+    "save": "Save",
+    "noData": "No data to display",
+    "selectExercise": "Select an exercise",
+    "bestSet": "Best Set (kg)"
+  },
+  "profile": {
+    "title": "Profile",
+    "name": "Name",
+    "weight": "Weight",
+    "height": "Height",
+    "activeProgram": "Active Program",
+    "uploadNew": "Upload New Program",
+    "logout": "Logout",
+    "edit": "Edit",
+    "save": "Save",
+    "since": "Since"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "kg": "kg",
+    "cm": "cm",
+    "today": "Today"
+  }
+}

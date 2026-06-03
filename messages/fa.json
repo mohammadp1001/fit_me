@@ -1,0 +1,101 @@
+{
+  "app": {
+    "name": "فیت‌می",
+    "tagline": "ردیاب تمرین شخصی"
+  },
+  "nav": {
+    "program": "برنامه",
+    "log": "لاگ وزنه",
+    "progress": "پیشرفت",
+    "profile": "پروفایل"
+  },
+  "auth": {
+    "title": "ورود",
+    "passphrase": "رمز عبور",
+    "passphrasePlaceholder": "رمز عبور را وارد کنید",
+    "login": "ورود",
+    "error": "رمز عبور اشتباه است"
+  },
+  "onboarding": {
+    "title": "خوش آمدید",
+    "subtitle": "ابتدا پروفایل خود را تنظیم کنید",
+    "name": "نام",
+    "namePlaceholder": "محمد",
+    "weight": "وزن (کیلوگرم)",
+    "height": "قد (سانتی‌متر)",
+    "uploadProgram": "آپلود برنامه تمرینی",
+    "uploadHint": "فایل YAML برنامه خود را انتخاب کنید",
+    "submit": "شروع کنید",
+    "errors": {
+      "name": "نام الزامی است",
+      "weight": "وزن معتبر نیست",
+      "height": "قد معتبر نیست",
+      "file": "فایل YAML معتبر نیست"
+    }
+  },
+  "program": {
+    "title": "برنامه تمرینی",
+    "noProgram": "هیچ برنامه‌ای یافت نشد",
+    "day": "روز",
+    "sets": "ست",
+    "reps": "تکرار",
+    "superset": "سوپرست",
+    "supersetWith": "سوپرست با"
+  },
+  "exercise": {
+    "guide": "راهنما",
+    "video": "فیلم",
+    "logWeight": "ثبت وزنه",
+    "description": "توضیح حرکت",
+    "tips": "نکات مهم",
+    "mistakes": "اشتباهات رایج",
+    "watchVideo": "مشاهده فیلم در MuscleWiki",
+    "back": "← برگشت",
+    "set": "ست",
+    "weight": "وزن (kg)",
+    "actualReps": "تکرار واقعی",
+    "plannedReps": "برنامه",
+    "save": "💾 ذخیره",
+    "saved": "✓ ذخیره شد",
+    "previousSessions": "جلسات قبلی",
+    "noHistory": "هنوز وزنه‌ای ثبت نشده"
+  },
+  "log": {
+    "title": "لاگ وزنه",
+    "empty": "هنوز هیچ وزنه‌ای ثبت نشده",
+    "emptyHint": "وارد هر حرکت شو و از تب «ثبت وزنه» استفاده کن"
+  },
+  "progress": {
+    "title": "پیشرفت",
+    "bodyWeight": "وزن بدن",
+    "logWeight": "ثبت وزن امروز",
+    "weightKg": "وزن (kg)",
+    "date": "تاریخ",
+    "save": "ثبت",
+    "noData": "داده‌ای برای نمایش وجود ندارد",
+    "selectExercise": "یک حرکت انتخاب کنید",
+    "bestSet": "بهترین ست (kg)"
+  },
+  "profile": {
+    "title": "پروفایل",
+    "name": "نام",
+    "weight": "وزن",
+    "height": "قد",
+    "activeProgram": "برنامه فعال",
+    "uploadNew": "آپلود برنامه جدید",
+    "logout": "خروج",
+    "edit": "ویرایش",
+    "save": "ذخیره",
+    "since": "از"
+  },
+  "common": {
+    "loading": "در حال بارگذاری...",
+    "error": "خطایی رخ داد",
+    "retry": "تلاش مجدد",
+    "cancel": "انصراف",
+    "confirm": "تأیید",
+    "kg": "کیلوگرم",
+    "cm": "سانتی‌متر",
+    "today": "امروز"
+  }
+}

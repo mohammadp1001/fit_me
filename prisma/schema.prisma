@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          Int          @id @default(1)
+  name        String
+  weightKg    Float
+  heightCm    Float
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  programs    Program[]
+  bodyWeights BodyWeight[]
+  workoutLogs WorkoutLog[]
+}
+
+model BodyWeight {
+  id       Int      @id @default(autoincrement())
+  userId   Int
+  weightKg Float
+  date     DateTime @db.Date
+  user     User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, date])
+}
+
+model Exercise {
+  id               Int               @id @default(autoincrement())
+  nameFa           String            @unique
+  nameEn           String
+  muscles          String[]
+  descriptionFa    String            @default("")
+  descriptionEn    String            @default("")
+  tipsFa           String[]
+  tipsEn           String[]
+  mistakesFa       String[]
+  mistakesEn       String[]
+  wikiUrl          String            @default("")
+  videoUrl         String            @default("")
+  programExercises ProgramExercise[]
+}
+
+model Program {
+  id          Int          @id @default(autoincrement())
+  userId      Int
+  nameFa      String
+  nameEn      String
+  startDate   DateTime     @db.Date @default(now())
+  isActive    Boolean      @default(true)
+  yamlContent String
+  user        User         @relation(fields: [userId], references: [id])
+  days        ProgramDay[]
+}
+
+model ProgramDay {
+  id        Int               @id @default(autoincrement())
+  programId Int
+  dayNumber Int
+  nameFa    String
+  nameEn    String
+  program   Program           @relation(fields: [programId], references: [id], onDelete: Cascade)
+  exercises ProgramExercise[]
+}
+
+model ProgramExercise {
+  id            Int          @id @default(autoincrement())
+  dayId         Int
+  exerciseId    Int
+  setsCount     Int
+  reps          Int[]
+  displayOrder  Int
+  supersetGroup String?
+  day           ProgramDay   @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  exercise      Exercise     @relation(fields: [exerciseId], references: [id])
+  workoutLogs   WorkoutLog[]
+}
+
+model WorkoutLog {
+  id                Int             @id @default(autoincrement())
+  userId            Int
+  programExerciseId Int
+  date              DateTime        @db.Date
+  sets              Json
+  user              User            @relation(fields: [userId], references: [id])
+  programExercise   ProgramExercise @relation(fields: [programExerciseId], references: [id])
+
+  @@unique([userId, programExerciseId, date])
+}
