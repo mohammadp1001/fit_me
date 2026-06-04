@@ -136,16 +136,16 @@ function ExerciseList({
             <div
               className="text-xs font-bold py-1 px-3 mb-1 mt-2 rounded-r-lg"
               style={{
-                background: "#0d1f0d",
-                borderRight: "3px solid var(--green)",
-                color: "var(--green)",
+                background: "#1f1700",
+                borderRight: "3px solid #f59e0b",
+                color: "#f59e0b",
               }}
             >
               ⚡ {t("program.superset")}
             </div>
           )}
           {group.items.map((ex) => {
-            const borderColor = group.group ? "var(--green)" : dayColor;
+            const borderColor = group.group ? "#f59e0b" : dayColor;
             const repsLabel = ex.reps.join("، ");
             const name =
               locale === "fa" ? ex.exercise.nameFa : ex.exercise.nameEn;
