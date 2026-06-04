@@ -11,45 +11,29 @@ A bilingual (Persian / English) progressive web app for logging gym workouts, tr
 | | |
 |---|---|
 | 📋 **YAML programs** | Upload a `.yaml` file once — the app parses it into a full workout plan with days, exercises, sets, reps, and supersets |
-| 🌐 **Bilingual** | Full Persian (RTL) and English (LTR) UI; switch at any time from Profile |
+| 🌐 **Bilingual** | Full Persian (RTL) and English (LTR) UI; switch at any time from the Profile tab |
 | 📱 **PWA / offline** | Add to home screen on Android or iOS and use it like a native app |
 | 🔐 **Single passphrase auth** | No email, no sign-up — one shared passphrase protects the whole app |
 | 💪 **Per-set logging** | Log weight + actual reps for every set; planned reps pre-filled as placeholder |
-| 📈 **Progress charts** | Body weight over time + best-set weight per exercise (Recharts line charts) |
-| 🔁 **Multiple programs** | Upload as many YAML files as you like; switch between them from Profile without losing any logs |
-| ⚡ **Superset support** | Exercises linked with `superset_with` are visually grouped with an amber accent |
+| 📈 **Progress charts** | Body weight over time + best-set weight per exercise (line charts) |
+| 🔁 **Multiple programs** | Upload as many YAML files as you like; switch between them from the Profile tab without losing any logs |
+| ⚡ **Superset support** | Paired exercises are visually grouped with an amber accent bar |
 
 ---
 
 ## How the App Works
 
-### 1 — First launch: onboarding
+### 1 — Onboarding
 
-On first visit the app redirects to `/onboarding`. Enter:
-- **Your name, weight (kg) and height (cm)**
-- **Your workout YAML file** (see format below)
-
-The app parses the YAML, creates your profile, and builds the full program in the database. You're then taken straight to the main app.
+On first visit the app redirects to the onboarding screen. Enter your name, weight, height, and upload your workout YAML file. The app parses the file, creates your profile, and builds the full program in the database.
 
 ---
 
-### 2 — Program tab (برنامه)
+### 2 — Program Tab
 
-The main view. Day tabs run across the top, colour-coded:
+The main view. Day tabs run across the top, each with its own colour. Each exercise card shows the name, planned sets and reps, and target muscles. Superset pairs are marked with an amber banner so they stand out from the day colour.
 
-| Day | Colour |
-|-----|--------|
-| 1 | 🟠 Orange-red |
-| 2 | 🔵 Blue |
-| 3 | 🟢 Green |
-| 4 | 🟣 Purple |
-| 5 | 🩵 Cyan |
-| 6 | 🟡 Amber |
-| 7 | 🩷 Pink |
-
-Each exercise card shows the exercise name, planned sets × reps, and target muscles. **Superset pairs** are marked with an ⚡ amber banner and a matching left border so they're instantly recognisable.
-
-Tap any exercise card to open the **Exercise Detail** view.
+Tap any exercise card to open the Exercise Detail view.
 
 ---
 
@@ -57,84 +41,36 @@ Tap any exercise card to open the **Exercise Detail** view.
 
 Three tabs:
 
-- **اطلاعات / Info** — description, tips, common mistakes, muscle diagram, Wikipedia link
-- **ویدیو / Video** — embedded demonstration video
-- **لاگ / Log** — today's logging panel
+- **Info** — description, tips, common mistakes, Wikipedia link
+- **Video** — embedded demonstration video
+- **Log** — today's logging panel
 
-The **Log panel** shows one row per set. Each row has:
-- A weight input (kg) — persists across the session
-- A reps input — planned reps pre-filled as placeholder; overwrite with actual reps
-- A ✓ button to mark the set done
-
-Logs are saved instantly (no Save button needed). When you re-open an exercise on the same day, your previous entries are restored.
+The Log panel shows one row per set with a weight input and a reps input (planned reps pre-filled as placeholder). Logs are saved instantly. Re-opening the same exercise on the same day restores your previous entries.
 
 ---
 
-### 4 — Log tab (لاگ وزنه)
+### 4 — Log Tab
 
-A date-based history view. Browse past workout sessions by date and see which sets were logged, with weight and reps recorded.
+A date-based history view. Browse past workout sessions by date and review which exercises were logged with weight and reps recorded.
 
 ---
 
-### 5 — Progress tab (پیشرفت)
+### 5 — Progress Tab
 
 Two charts:
 
-- **وزن بدن / Body Weight** — enter today's weight and tap ثبت; a line chart plots your weight history over time
-- **پیشرفت حرکات / Exercise Progress** — choose any exercise from the dropdown; the chart shows your best-set weight per session over time
+- **Body Weight** — log today's weight with one tap; a line chart plots your history over time
+- **Exercise Progress** — choose any exercise from the dropdown to see your best-set weight per session over time
 
 ---
 
-### 6 — Profile tab (پروفایل)
+### 6 — Profile Tab
 
-- **Edit** name, weight, height
-- **Program switcher** — dropdown listing every YAML you've uploaded; tap a different one to switch the active program (all tabs update instantly, old logs are preserved)
-- **Upload new program** — add another YAML file to the list
-- **Language** — toggle between فارسی and English
-- **Logout**
-
----
-
-## YAML Program Format
-
-```yaml
-program:
-  name: "نام برنامه به فارسی"
-  name_en: "Program Name in English"
-  days:
-    - name: "روز اول — سینه و جلو بازو"
-      name_en: "Day 1 — Chest & Biceps"
-      exercises:
-        - name: "پرس سینه دستگاه"        # must match exercise library (Persian)
-          muscles: ["سینه بزرگ", "سه سر بازو"]
-          sets: 4
-          reps: [12, 10, 8, 6]           # array = different reps per set
-
-        - name: "پرس زیر سینه سیم‌کش"
-          muscles: ["سینه پایینی"]
-          sets: 3
-          reps: 12                        # single number = same reps every set
-          superset_with: "دیپ پارالل"   # links two exercises as a superset
-
-        - name: "دیپ پارالل"
-          muscles: ["سینه پایینی", "سه سر بازو"]
-          sets: 3
-          reps: 12
-          superset_with: "پرس زیر سینه سیم‌کش"
-```
-
-**Rules:**
-- `name` must be in Persian — it's matched against the exercise library
-- If a name doesn't exist in the library, the app auto-creates it (you can fill in details later)
-- `reps` can be an integer or an array; the array length doesn't have to equal `sets`
-- `superset_with` is optional; pair both exercises with each other's name
-- `name_en`, `muscles`, `superset_with` are all optional
-
-Two ready-made programs are in `examples/`:
-| File | Description |
-|------|-------------|
-| `examples/workout.yaml` | 3-day strength program (29 exercises) |
-| `examples/corrective.yaml` | 3-day corrective / mobility program |
+- Edit name, weight, and height
+- **Program switcher** — dropdown listing every YAML uploaded; selecting a different one switches the active program across all tabs instantly, with old logs preserved
+- Upload a new YAML program
+- Toggle language between Persian and English
+- Logout
 
 ---
 
@@ -185,7 +121,7 @@ npm run db:seed
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) — it will redirect to `/fa/onboarding`.
+Open [http://localhost:3000](http://localhost:3000) — it will redirect to the onboarding screen.
 
 ### Environment Variables
 
@@ -196,14 +132,14 @@ Open [http://localhost:3000](http://localhost:3000) — it will redirect to `/fa
 | `SESSION_SECRET` | Random string, **minimum 32 characters** |
 | `PASSPHRASE` | The login passphrase for the app |
 
-### Useful Scripts
+### Scripts
 
 ```bash
 npm run dev          # development server
 npm run build        # production build
-npm run db:push      # sync Prisma schema → database (no migration files)
-npm run db:seed      # seed 29 exercises into the library
-npm run db:studio    # open Prisma Studio (visual DB browser)
+npm run db:push      # sync Prisma schema to the database
+npm run db:seed      # seed the exercise library
+npm run db:studio    # open Prisma Studio (visual database browser)
 ```
 
 ---
@@ -217,22 +153,22 @@ npm run db:studio    # open Prisma Studio (visual DB browser)
    ```
    npx prisma db push && npx prisma db seed && next build
    ```
-5. Deploy — tables are created and exercises seeded automatically on every deploy
+5. Deploy — tables are created and the exercise library is seeded automatically
 
-> **Note:** Use the **pooled** Neon connection string for `DATABASE_URL` and the **direct** string for `DIRECT_URL`. The pooled URL goes through Neon's always-on proxy, which prevents connection errors when the compute is sleeping.
+> **Note:** Use the **pooled** Neon connection string for `DATABASE_URL` and the **direct** string for `DIRECT_URL`. The pooled URL goes through Neon's always-on proxy, preventing connection errors when the compute is sleeping.
 
 ---
 
 ## Database Schema
 
 ```
-User           — profile (name, weight, height)
-Program        — uploaded YAML programs (one active at a time)
-ProgramDay     — days within a program
-ProgramExercise — exercises within a day (sets, reps, superset group)
-Exercise       — library of exercises (bilingual, seeded + auto-created)
-WorkoutLog     — per-session set logs (weight + reps, keyed by date)
-BodyWeight     — daily body weight entries
+User             — profile (name, weight, height)
+Program          — uploaded YAML programs (one active at a time)
+ProgramDay       — days within a program
+ProgramExercise  — exercises within a day (sets, reps, superset group)
+Exercise         — bilingual exercise library (seeded + auto-created)
+WorkoutLog       — per-session set logs (weight + reps, keyed by date)
+BodyWeight       — daily body weight entries
 ```
 
 ---
