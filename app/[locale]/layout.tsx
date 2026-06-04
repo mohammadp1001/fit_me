@@ -27,6 +27,9 @@ export async function generateMetadata({
 export function generateViewport(): Viewport {
   return {
     themeColor: "#0a0a0a",
+    width: "device-width",
+    initialScale: 1,
+    viewportFit: "cover",
   };
 }
 

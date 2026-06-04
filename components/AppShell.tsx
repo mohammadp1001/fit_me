@@ -94,8 +94,11 @@ export default function AppShell({
       className="flex flex-col min-h-screen"
       style={{ background: "var(--bg)" }}
     >
-      {/* Content */}
-      <div className="flex-1 pb-20 overflow-y-auto">
+      {/* Content — pad enough for nav bar + phone home indicator */}
+      <div
+        className="flex-1 overflow-y-auto"
+        style={{ paddingBottom: "calc(5rem + env(safe-area-inset-bottom))" }}
+      >
         {activeTab === "program" && (
           <ProgramView locale={locale} program={program} />
         )}
