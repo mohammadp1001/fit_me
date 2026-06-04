@@ -3,16 +3,18 @@
 import { useState, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { UserData, ProgramData } from "./AppShell";
+import { UserData, ProgramData, ProgramSummary } from "./AppShell";
 
 export default function ProfileView({
   locale,
   user,
   program,
+  allPrograms,
 }: {
   locale: string;
   user: UserData;
   program: ProgramData;
+  allPrograms: ProgramSummary[];
 }) {
   const t = useTranslations();
   const router = useRouter();
@@ -23,6 +25,7 @@ export default function ProfileView({
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadMsg, setUploadMsg] = useState("");
+  const [switching, setSwitching] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function handleSaveProfile() {
@@ -69,6 +72,18 @@ export default function ProfileView({
     } finally {
       setUploading(false);
     }
+  }
+
+  async function handleSwitchProgram(programId: number) {
+    if (programId === program.id) return;
+    setSwitching(true);
+    await fetch("/api/programs/activate", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ programId }),
+    });
+    setSwitching(false);
+    router.refresh();
   }
 
   async function handleLogout() {
@@ -214,24 +229,50 @@ export default function ProfileView({
         )}
       </div>
 
-      {/* Active program */}
+      {/* Program switcher */}
       <div
         className="rounded-2xl p-4 mb-4"
         style={{ background: "var(--surface)" }}
       >
-        <h2
-          className="text-sm font-bold mb-3"
-          style={{ color: "var(--text)" }}
-        >
+        <h2 className="text-sm font-bold mb-3" style={{ color: "var(--text)" }}>
           {t("profile.activeProgram")}
         </h2>
-        <div className="text-base font-bold mb-1" style={{ color: "#4ade80" }}>
-          {programName}
-        </div>
+
+        {/* Dropdown — lists every uploaded program */}
+        <select
+          value={program.id}
+          onChange={(e) => handleSwitchProgram(Number(e.target.value))}
+          disabled={switching}
+          className="w-full rounded-xl px-4 py-3 text-sm font-bold mb-3 outline-none disabled:opacity-50"
+          style={{
+            background: "var(--surface2)",
+            color: "var(--text)",
+            border: "1px solid var(--border)",
+            fontFamily: "inherit",
+            cursor: "pointer",
+            appearance: "none",
+            WebkitAppearance: "none",
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
+            backgroundRepeat: "no-repeat",
+            backgroundPosition: locale === "fa" ? "left 1rem center" : "right 1rem center",
+            paddingLeft: locale === "fa" ? "2.5rem" : "1rem",
+            paddingRight: locale === "fa" ? "1rem" : "2.5rem",
+          }}
+        >
+          {allPrograms.map((p) => (
+            <option key={p.id} value={p.id} style={{ background: "#111" }}>
+              {locale === "fa" ? p.nameFa : p.nameEn}
+              {p.isActive ? (locale === "fa" ? " ✓" : " ✓") : ""}
+            </option>
+          ))}
+        </select>
+
+        {/* Active program start date */}
         <div className="text-xs mb-4" style={{ color: "var(--muted)" }}>
           {t("profile.since")} {startDate}
         </div>
 
+        {/* Upload a new program */}
         <button
           onClick={() => fileRef.current?.click()}
           disabled={uploading}

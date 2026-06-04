@@ -65,6 +65,14 @@ export type UserData = {
   createdAt: string;
 };
 
+export type ProgramSummary = {
+  id: number;
+  nameFa: string;
+  nameEn: string;
+  startDate: string;
+  isActive: boolean;
+};
+
 type Tab = "program" | "log" | "progress" | "profile";
 
 export { DAY_COLORS };
@@ -73,10 +81,12 @@ export default function AppShell({
   locale,
   user,
   program,
+  allPrograms,
 }: {
   locale: string;
   user: UserData;
   program: ProgramData;
+  allPrograms: ProgramSummary[];
 }) {
   const t = useTranslations();
   const [activeTab, setActiveTab] = useState<Tab>("program");
@@ -107,7 +117,7 @@ export default function AppShell({
           <ProgressView locale={locale} program={program} />
         )}
         {activeTab === "profile" && (
-          <ProfileView locale={locale} user={user} program={program} />
+          <ProfileView locale={locale} user={user} program={program} allPrograms={allPrograms} />
         )}
       </div>
 

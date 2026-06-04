@@ -20,26 +20,33 @@ export default async function HomePage({
     redirect(`/${locale}/onboarding`);
   }
 
-  const program = await prisma.program.findFirst({
-    where: { userId: 1, isActive: true },
-    include: {
-      days: {
-        orderBy: { dayNumber: "asc" },
-        include: {
-          exercises: {
-            orderBy: { displayOrder: "asc" },
-            include: { exercise: true },
+  const [program, allPrograms] = await Promise.all([
+    prisma.program.findFirst({
+      where: { userId: 1, isActive: true },
+      include: {
+        days: {
+          orderBy: { dayNumber: "asc" },
+          include: {
+            exercises: {
+              orderBy: { displayOrder: "asc" },
+              include: { exercise: true },
+            },
           },
         },
       },
-    },
-  });
+    }),
+    prisma.program.findMany({
+      where: { userId: 1 },
+      orderBy: { id: "desc" },
+      select: { id: true, nameFa: true, nameEn: true, startDate: true, isActive: true },
+    }),
+  ]);
 
   if (!program) {
     redirect(`/${locale}/onboarding`);
   }
 
-  // Serialize Dates for client component
+  // Serialize Dates for client components
   const serializedUser = {
     ...user,
     createdAt: user.createdAt.toISOString(),
@@ -58,5 +65,17 @@ export default async function HomePage({
     })),
   };
 
-  return <AppShell locale={locale} user={serializedUser} program={serializedProgram} />;
+  const serializedAllPrograms = allPrograms.map((p) => ({
+    ...p,
+    startDate: p.startDate.toISOString(),
+  }));
+
+  return (
+    <AppShell
+      locale={locale}
+      user={serializedUser}
+      program={serializedProgram}
+      allPrograms={serializedAllPrograms}
+    />
+  );
 }
