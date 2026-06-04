@@ -36,10 +36,10 @@ model Exercise {
   muscles          String[]
   descriptionFa    String            @default("")
   descriptionEn    String            @default("")
-  tipsFa           String[]
-  tipsEn           String[]
-  mistakesFa       String[]
-  mistakesEn       String[]
+  tipsFa           String[]          @default([])
+  tipsEn           String[]          @default([])
+  mistakesFa       String[]          @default([])
+  mistakesEn       String[]          @default([])
   wikiUrl          String            @default("")
   videoUrl         String            @default("")
   programExercises ProgramExercise[]

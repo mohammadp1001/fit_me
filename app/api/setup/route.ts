@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid YAML" }, { status: 400 });
   }
 
+  try {
   await prisma.$transaction(async (tx) => {
     // Create or update user (single user, id=1)
     const user = await tx.user.upsert({
@@ -87,6 +88,10 @@ export async function POST(request: NextRequest) {
               nameFa: ex.name,
               nameEn: ex.name,
               muscles: ex.muscles,
+              tipsFa: [],
+              tipsEn: [],
+              mistakesFa: [],
+              mistakesEn: [],
             },
           });
         }
@@ -117,6 +122,13 @@ export async function POST(request: NextRequest) {
       }
     }
   });
+  } catch (e) {
+    console.error("[setup] transaction failed:", e);
+    return NextResponse.json(
+      { error: "Database error", detail: String(e) },
+      { status: 500 }
+    );
+  }
 
   return NextResponse.json({ ok: true });
 }
