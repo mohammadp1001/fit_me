@@ -6,7 +6,7 @@ const intlMiddleware = createMiddleware(routing);
 
 const PUBLIC_PATHS = ["/api/auth/login", "/api/auth/logout"];
 
-export default async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow public API routes
