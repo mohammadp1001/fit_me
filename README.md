@@ -74,23 +74,6 @@ Two charts:
 
 ---
 
-## Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Framework | Next.js 16 (App Router, server components) |
-| Language | TypeScript |
-| Styling | Tailwind CSS v4 |
-| Database | PostgreSQL via [Neon](https://neon.tech) (free tier) |
-| ORM | Prisma v6 |
-| Auth | iron-session v8 (passphrase cookie) |
-| i18n | next-intl v4 (`[locale]` routing, RTL support) |
-| Charts | Recharts |
-| YAML parsing | js-yaml + Zod validation |
-| PWA | next-pwa v5 |
-| Hosting | [Vercel](https://vercel.com) (free tier) |
-
----
 
 ## Local Development
 
