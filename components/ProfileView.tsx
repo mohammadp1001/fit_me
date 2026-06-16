@@ -105,7 +105,6 @@ export default function ProfileView({
     router.push(`/${locale}/login`);
   }
 
-  const programName = locale === "fa" ? program.nameFa : program.nameEn;
   const startDate = new Date(program.startDate).toLocaleDateString(
     locale === "fa" ? "fa-IR" : "en-US"
   );

@@ -35,7 +35,6 @@ export default function ExerciseDetail({
     { key: "log", label: t("exercise.logWeight") },
   ];
 
-  const muscles = ex.muscles.join(" · ");
   const repsLabel = programExercise.reps.join("، ");
 
   return (
@@ -326,8 +325,6 @@ function LogPanel({
     if (res.ok) {
       setSaveMsg(t("exercise.saved"));
       setTimeout(() => setSaveMsg(""), 2000);
-      // Refresh history
-      const data = await res.json();
       setHistory((prev) => {
         const filtered = prev.filter((h) => h.date !== today);
         return [{ date: today, sets }, ...filtered];

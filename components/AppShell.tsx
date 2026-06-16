@@ -90,7 +90,6 @@ export default function AppShell({
 }) {
   const t = useTranslations();
   const [activeTab, setActiveTab] = useState<Tab>("program");
-  const isRtl = locale === "fa";
 
   const tabs: { key: Tab; label: string; icon: string }[] = [
     { key: "program", label: t("nav.program"), icon: "📋" },
