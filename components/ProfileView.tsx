@@ -26,6 +26,7 @@ export default function ProfileView({
   const [uploading, setUploading] = useState(false);
   const [uploadMsg, setUploadMsg] = useState("");
   const [switching, setSwitching] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function handleSaveProfile() {
@@ -71,6 +72,19 @@ export default function ProfileView({
       }
     } finally {
       setUploading(false);
+    }
+  }
+
+  async function handleDeleteProgram(programId: number) {
+    if (!confirm(locale === "fa" ? "این برنامه حذف شود؟" : "Delete this program and its logs?")) return;
+    setDeletingId(programId);
+    const res = await fetch(`/api/programs/${programId}`, { method: "DELETE" });
+    setDeletingId(null);
+    if (res.ok) {
+      router.refresh();
+    } else {
+      const data = await res.json();
+      alert(data.error ?? "Failed to delete program");
     }
   }
 
@@ -238,34 +252,60 @@ export default function ProfileView({
           {t("profile.activeProgram")}
         </h2>
 
-        {/* Dropdown — lists every uploaded program */}
-        <select
-          value={program.id}
-          onChange={(e) => handleSwitchProgram(Number(e.target.value))}
-          disabled={switching}
-          className="w-full rounded-xl px-4 py-3 text-sm font-bold mb-3 outline-none disabled:opacity-50"
-          style={{
-            background: "var(--surface2)",
-            color: "var(--text)",
-            border: "1px solid var(--border)",
-            fontFamily: "inherit",
-            cursor: "pointer",
-            appearance: "none",
-            WebkitAppearance: "none",
-            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: locale === "fa" ? "left 1rem center" : "right 1rem center",
-            paddingLeft: locale === "fa" ? "2.5rem" : "1rem",
-            paddingRight: locale === "fa" ? "1rem" : "2.5rem",
-          }}
-        >
-          {allPrograms.map((p) => (
-            <option key={p.id} value={p.id} style={{ background: "#111" }}>
-              {locale === "fa" ? p.nameFa : p.nameEn}
-              {p.isActive ? (locale === "fa" ? " ✓" : " ✓") : ""}
-            </option>
-          ))}
-        </select>
+        {/* Program list — each row is selectable; inactive ones can be deleted */}
+        <div className="flex flex-col gap-2 mb-3">
+          {allPrograms.map((p) => {
+            const isActive = p.id === program.id;
+            const isDeleting = deletingId === p.id;
+            const name = locale === "fa" ? p.nameFa : p.nameEn;
+            return (
+              <div
+                key={p.id}
+                className="flex items-center gap-2 rounded-xl px-3 py-2"
+                style={{
+                  background: "var(--surface2)",
+                  border: `1px solid ${isActive ? "#4ade80" : "var(--border)"}`,
+                }}
+              >
+                {/* Select button */}
+                <button
+                  onClick={() => handleSwitchProgram(p.id)}
+                  disabled={switching || isActive}
+                  className="flex-1 text-sm font-bold text-right disabled:cursor-default"
+                  style={{
+                    color: isActive ? "#4ade80" : "var(--text)",
+                    background: "none",
+                    border: "none",
+                    cursor: isActive ? "default" : "pointer",
+                    fontFamily: "inherit",
+                    textAlign: locale === "fa" ? "right" : "left",
+                  }}
+                >
+                  {isActive ? "✓ " : ""}{name}
+                </button>
+
+                {/* Delete button — only for inactive programs */}
+                {!isActive && (
+                  <button
+                    onClick={() => handleDeleteProgram(p.id)}
+                    disabled={isDeleting}
+                    title={locale === "fa" ? "حذف برنامه" : "Delete program"}
+                    className="text-sm px-2 py-1 rounded-lg flex-shrink-0 disabled:opacity-40"
+                    style={{
+                      background: "none",
+                      border: "1px solid var(--red)",
+                      color: "var(--red)",
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    {isDeleting ? "…" : "🗑"}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
 
         {/* Active program start date */}
         <div className="text-xs mb-4" style={{ color: "var(--muted)" }}>
