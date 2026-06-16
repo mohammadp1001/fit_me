@@ -4,8 +4,6 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 
-const DAY_COLORS = ["#e85d26", "#2563eb", "#16a34a"];
-
 export default function OnboardingForm({ locale }: { locale: string }) {
   const t = useTranslations();
   const router = useRouter();

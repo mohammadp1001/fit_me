@@ -58,12 +58,6 @@ export default async function LocaleLayout({
       dir={locale === "fa" ? "rtl" : "ltr"}
       className="h-full"
     >
-      <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700;900&display=swap"
-          rel="stylesheet"
-        />
-      </head>
       <body className="min-h-full">
         <NextIntlClientProvider messages={messages}>
           {children}
