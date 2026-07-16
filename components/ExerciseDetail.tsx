@@ -215,7 +215,17 @@ function VideoPanel({
       <p className="text-xs text-center mb-3" style={{ color: "#777" }}>
         {locale === "fa" ? "نحوه انجام حرکت" : "How to perform this exercise"}
       </p>
-      {exercise.wikiUrl ? (
+      {exercise.videoUrl ? (
+        <video
+          src={exercise.videoUrl}
+          controls
+          playsInline
+          loop
+          muted
+          className="w-full rounded-xl"
+          style={{ background: "#000" }}
+        />
+      ) : exercise.wikiUrl ? (
         <a
           href={exercise.wikiUrl}
           target="_blank"

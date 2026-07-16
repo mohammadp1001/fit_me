@@ -1,0 +1,68 @@
+# ============================================================================
+# FitMe program schema — annotated template
+# ----------------------------------------------------------------------------
+# Feed this file (or one shaped like it) to the app's Profile → "Upload new
+# program" button. Everything the parser understands is documented below.
+# Fields NOT listed here are ignored, so don't invent new ones.
+#
+# Quick rules:
+#   • The whole file is a single top-level `program:` object.
+#   • Persian (fa) text goes in `name`; English in `name_en`.
+#     `name_en` is optional everywhere — if omitted, `name` is reused.
+#   • `muscles` are shown verbatim as tags; keep them short. Any language.
+#   • `sets` is a positive integer.
+#   • `reps` is EITHER one integer (same target for every set)
+#            OR a list of integers, one per set (length should equal `sets`).
+#   • `superset_with` links two exercises; put the partner's exact `name`
+#     on BOTH exercises so the app pairs them.
+#   • `video` is a direct video URL (e.g. an .mp4). Shown inline on the
+#     Video tab. Optional.
+#
+# NOT supported via YAML (leave them out): descriptions, tips, common
+# mistakes. Those only exist for the app's pre-seeded exercise library.
+# ============================================================================
+
+program:
+  name: "برنامه نمونه"                    # required — Persian program name
+  name_en: "Sample Program"               # optional — English program name
+
+  days:                                   # required — one or more training days
+    # ────────────────────────────────────────────────────────────────
+    - name: "روز اول — سینه"              # required — Persian day name
+      name_en: "Day 1 — Chest"            # optional — English day name
+      exercises:                          # required — one or more exercises
+
+        # Minimal exercise: single rep target for all sets, no video.
+        - name: "Machine Chest Press"     # required — exercise name (unique key)
+          muscles: ["Chest", "Triceps"]   # optional — defaults to [] if omitted
+          sets: 4                         # required — positive integer
+          reps: 10                        # one number → 10 reps every set
+
+        # Per-set rep scheme + a video link.
+        - name: "Dumbbell Incline Press"
+          muscles: ["Upper Chest", "Front Delt"]
+          sets: 4
+          reps: [12, 10, 8, 8]            # one entry per set (pyramid)
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Dumbbells-dumbbell-incline-press-side.mp4"
+
+        # A superset pair — BOTH exercises reference each other by name.
+        - name: "Cable Pec Fly"
+          muscles: ["Chest"]
+          sets: 3
+          reps: [12, 12, 10]
+          superset_with: "Push Up"        # partner's exact name
+        - name: "Push Up"
+          muscles: ["Chest", "Core"]
+          sets: 3
+          reps: 15
+          superset_with: "Cable Pec Fly"  # points back to its partner
+
+    # ────────────────────────────────────────────────────────────────
+    - name: "روز دوم — پشت"
+      name_en: "Day 2 — Back"
+      exercises:
+        - name: "Lat Pulldown"
+          muscles: ["Lats", "Biceps"]
+          sets: 4
+          reps: [12, 10, 10, 8]
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Machine-machine-pulldown-side.mp4"
