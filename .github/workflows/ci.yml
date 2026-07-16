@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Cancel superseded runs on the same ref (e.g. rapid pushes to a PR)
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Lint, typecheck, test & build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # Use `npm install` rather than `npm ci`: the committed lockfile is
+      # generated on Windows and can't express the Linux-only optional native
+      # deps (e.g. Tailwind oxide / @emnapi) that `npm ci` demands on the
+      # Ubuntu runner. `install` resolves per-platform and still runs the
+      # `postinstall` -> `prisma generate` hook.
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Test
+        run: npm test
+
+      # Placeholder env vars: the app is fully dynamic (auth redirect), so no DB
+      # is hit at build time — these just satisfy client/config instantiation.
+      - name: Build
+        run: npm run build
+        env:
+          DATABASE_URL: postgresql://user:pass@localhost:5432/fitme?schema=public
+          DIRECT_URL: postgresql://user:pass@localhost:5432/fitme?schema=public
+          SESSION_SECRET: ci-placeholder-session-secret-32chars
+          APP_PASSPHRASE: ci-placeholder
