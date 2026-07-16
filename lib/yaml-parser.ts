@@ -10,6 +10,7 @@ const ExerciseSchema = z.object({
     z.number().int().positive().transform((n) => [n]),
   ]),
   superset_with: z.string().nullable().optional(),
+  video: z.string().optional(),
 });
 
 const DaySchema = z.object({

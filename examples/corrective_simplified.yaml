@@ -1,0 +1,112 @@
+program:
+  name: "برنامه اصلاحی — محمد پاکدامن"
+  name_en: "Corrective Program — Mohammad Pakdaman"
+  days:
+
+    # ──────────────────────────────────────────────────────────────
+    # روز اول — اصلاح شانه، قفسه سینه و گردن
+    # Day 1 — Shoulder, Chest & Neck Correction
+    # ──────────────────────────────────────────────────────────────
+    - name: "روز اول — شانه، قفسه سینه و گردن"
+      name_en: "Day 1 — Shoulder, Chest & Neck"
+      exercises:
+
+        # وال آنجل — موبیلیتی شانه و اصلاح کایفوز، جایگزین کشش دیواری + اسلاید دیوار
+        - name: "Wall Angels"
+          muscles: ["Lower Trapezius", "Serratus Anterior", "Posterior Deltoid", "Rhomboids"]
+          sets: 3
+          reps: 12
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-wall-angels-side.mp4"
+
+        # فیس پول با وزن بدن — تقویت پشت شانه، جایگزین فیس پول سیم‌کش + پرنده معکوس دمبل
+        - name: "Bodyweight Face Pull"
+          muscles: ["Posterior Deltoid", "Middle Trapezius", "Rhomboids", "Rotator Cuff"]
+          sets: 3
+          reps: 15
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-face-pull-side.mp4"
+
+        # کشش جانبی گردن — رفع گرفتگی ذوزنقه فوقانی
+        - name: "Lateral Neck Stretch"
+          muscles: ["Upper Trapezius", "Levator Scapulae", "Sternocleidomastoid"]
+          sets: 2
+          reps: 10
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-neck-lateral-flexion-stretch-side.mp4"
+
+        # چین تاک ایستاده — اصلاح سر به جلو، جایگزین سوپرست چرخش شانه
+        - name: "Chin Tuck Standing"
+          muscles: ["Deep Cervical Flexors", "Upper Trapezius"]
+          sets: 3
+          reps: 15
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-chin-tuck-side.mp4"
+
+    # ──────────────────────────────────────────────────────────────
+    # روز دوم — اصلاح لگن، کمر و پا
+    # Day 2 — Hip, Lower Back & Leg Correction
+    # ──────────────────────────────────────────────────────────────
+    - name: "روز دوم — لگن، کمر و پا"
+      name_en: "Day 2 — Hip, Lower Back & Legs"
+      exercises:
+
+        # پل باسن — فعال‌سازی سرینی، جایگزین پل باسن + پل باسن تک‌پا
+        - name: "Glute Bridge"
+          muscles: ["Gluteus Maximus", "Hamstrings", "Lower Back"]
+          sets: 3
+          reps: [15, 12, 12]
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-glute-bridge-side.mp4"
+
+        # کلمبل — فعال‌سازی سرینی میانی و اصلاح زانوی وارو
+        - name: "Clamshell"
+          muscles: ["Gluteus Medius", "Gluteus Minimus", "Piriformis"]
+          sets: 3
+          reps: 15
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-clamshell-side.mp4"
+
+        # کشش هیپ فلکسور — رفع کوتاهی خم‌کننده‌های لگن، جایگزین سوپرست هیپ فلکسور + چرخش لگن
+        - name: "Kneeling Hip Flexor Stretch"
+          muscles: ["Iliopsoas", "Rectus Femoris"]
+          sets: 3
+          reps: 10
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-kneeling-hip-flexor-stretch-side.mp4"
+
+        # اسکوات دیوار — الگوی درست زانو، جایگزین اسکوات دیوار + استپ آپ دمبل
+        - name: "Wall Sit"
+          muscles: ["Quadriceps", "Gluteus Maximus", "Hamstrings"]
+          sets: 3
+          reps: 30
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-wall-sit-side.mp4"
+
+    # ──────────────────────────────────────────────────────────────
+    # روز سوم — تثبیت مرکزی و ستون فقرات
+    # Day 3 — Core Stability & Spine
+    # ──────────────────────────────────────────────────────────────
+    - name: "روز سوم — مرکزی و ستون فقرات"
+      name_en: "Day 3 — Core Stability & Spine"
+      exercises:
+
+        # گربه‌گاو — موبیلیتی ستون فقرات
+        - name: "Cat Cow Stretch"
+          muscles: ["Spinal Erectors", "Multifidus", "Rectus Abdominis"]
+          sets: 3
+          reps: 12
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-cat-cow-side.mp4"
+
+        # بردداگ — تثبیت ستون فقرات، جایگزین سوپرست دد باگ + بردداگ
+        - name: "Bird Dog"
+          muscles: ["Multifidus", "Gluteus Maximus", "Deep Core"]
+          sets: 3
+          reps: 10
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-bird-dog-side.mp4"
+
+        # پلانک روی زانو — تثبیت عمومی مرکزی، جایگزین پلانک + پلانک کناری
+        - name: "Kneeling Plank"
+          muscles: ["Core", "Rectus Abdominis", "Anterior Deltoid", "Quadriceps"]
+          sets: 3
+          reps: 30
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-plank-side.mp4"
+
+        # کرانچ معکوس — اصلاح کج‌لگنی قدامی، جایگزین کرانچ معکوس + هایپراکستنشن
+        - name: "Reverse Crunch"
+          muscles: ["Lower Rectus Abdominis", "Iliopsoas", "Obliques"]
+          sets: 3
+          reps: [15, 12, 12]
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-reverse-crunch-side.mp4"

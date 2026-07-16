@@ -1,0 +1,188 @@
+program:
+  name: "برنامه بدنسازی بالاتنه — محمد پاکدامن"
+  name_en: "Upper Body Hypertrophy Program — Mohammad Pakdaman"
+  days:
+
+    # ──────────────────────────────────────────────────────────────
+    # روز اول — سینه و جلو بازو
+    # Day 1 — Chest & Biceps
+    # ──────────────────────────────────────────────────────────────
+    - name: "روز اول — سینه و جلو بازو"
+      name_en: "Day 1 — Chest & Biceps"
+      exercises:
+
+        # پرس سینه دستگاه — حرکت اصلی سینه
+        - name: "Machine Chest Press"
+          muscles: ["Pectoralis Major", "Triceps", "Anterior Deltoid"]
+          sets: 4
+          reps: [12, 10, 8, 8]
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Machine-machine-chest-press-side.mp4"
+
+        # پرس بالا سینه دمبل — تاکید روی سینه بالایی
+        - name: "Dumbbell Incline Bench Press"
+          muscles: ["Upper Pectoralis Major", "Anterior Deltoid", "Triceps"]
+          sets: 4
+          reps: [12, 10, 8, 8]
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Dumbbells-dumbbell-incline-press-side.mp4"
+
+        # باترفلای دستگاه — ایزوله کردن سینه با تمرکز روی انقباض
+        - name: "Machine Pec Deck (Butterfly)"
+          muscles: ["Pectoralis Major", "Inner Chest", "Anterior Deltoid"]
+          sets: 3
+          reps: 12
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Machine-machine-pec-deck-side.mp4"
+
+        # پرس زیر سینه سیم‌کش — تاکید روی سینه پایینی
+        - name: "Cable Pec Fly (Low to High)"
+          muscles: ["Lower Pectoralis Major", "Anterior Deltoid"]
+          sets: 3
+          reps: [12, 12, 10]
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Cables-cable-pec-fly-side.mp4"
+
+        # جلو بازو دستگاه (پریچر کرل) — حرکت اصلی دو سر بازو
+        - name: "Machine Preacher Curl"
+          muscles: ["Biceps Brachii", "Brachialis", "Brachioradialis"]
+          sets: 4
+          reps: [12, 10, 8, 8]
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Machine-machine-seated-plate-loaded-preacher-curl-side.mp4"
+
+        # جلو بازو سیم‌کش — کشش ثابت در کل دامنه حرکت
+        - name: "Cable Bar Curl"
+          muscles: ["Biceps Brachii", "Brachialis"]
+          sets: 3
+          reps: [12, 10, 10]
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Cables-cable-bar-curl-side.mp4"
+          superset_with: "Cable Reverse Curl"
+
+        # جلو بازو سیم‌کش مچ برعکس — تاکید روی ساعد
+        - name: "Cable Reverse Curl"
+          muscles: ["Brachioradialis", "Forearm", "Biceps Brachii"]
+          sets: 2
+          reps: 12
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Cables-cable-reverse-bicep-curl-side.mp4"
+          superset_with: "Cable Bar Curl"
+
+    # ──────────────────────────────────────────────────────────────
+    # روز دوم — پشت و پشت بازو
+    # Day 2 — Back & Triceps
+    # ──────────────────────────────────────────────────────────────
+    - name: "روز دوم — پشت و پشت بازو"
+      name_en: "Day 2 — Back & Triceps"
+      exercises:
+
+        # لت دستگاه دست باز — عرض پشت
+        - name: "Machine Lat Pulldown (Wide Grip)"
+          muscles: ["Latissimus Dorsi", "Lower Trapezius", "Biceps", "Rear Deltoid"]
+          sets: 4
+          reps: [12, 10, 10, 8]
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Machine-machine-pulldown-side.mp4"
+
+        # زیر بغل دستگاه نشسته — ضخامت پشت
+        - name: "Machine Seated Cable Row"
+          muscles: ["Latissimus Dorsi", "Middle Trapezius", "Rhomboids", "Biceps"]
+          sets: 4
+          reps: [12, 10, 10, 8]
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Machine-machine-seated-cable-row-side.mp4"
+
+        # لت سیم‌کش تک دست دست صاف — ایزوله کردن لت
+        - name: "Cable Single Arm Pulldown (Straight Arm)"
+          muscles: ["Latissimus Dorsi", "Serratus Anterior", "Rear Deltoid"]
+          sets: 3
+          reps: [12, 10, 10]
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Cables-cable-single-arm-pulldown-side.mp4"
+
+        # فلای معکوس دستگاه — تقویت شانه خلفی
+        - name: "Machine Reverse Fly"
+          muscles: ["Rear Deltoid", "Middle Trapezius", "Rhomboids"]
+          sets: 3
+          reps: 12
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Machine-machine-reverse-fly-side.mp4"
+
+        # پشت بازو سیم‌کش طنابی — حرکت اصلی پشت بازو
+        - name: "Cable Rope Pushdown"
+          muscles: ["Triceps Brachii", "Lateral Head", "Medial Head"]
+          sets: 4
+          reps: [15, 12, 12, 10]
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Cables-cable-rope-pushdown-side.mp4"
+
+        # پشت بازو دستگاه — ایزوله با آرنج ثابت
+        - name: "Machine Tricep Pushdown"
+          muscles: ["Triceps Brachii", "Long Head", "Lateral Head"]
+          sets: 3
+          reps: [12, 12, 10]
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Machine-machine-tricep-pushdown-side.mp4"
+          superset_with: "Dumbbell Skull Crusher"
+
+        # پشت بازو دمبل خوابیده — تاکید روی سر بلند
+        - name: "Dumbbell Skull Crusher"
+          muscles: ["Triceps Brachii", "Long Head", "Medial Head"]
+          sets: 3
+          reps: [12, 10, 10]
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Dumbbells-dumbbell-skull-crusher-side.mp4"
+          superset_with: "Machine Tricep Pushdown"
+
+    # ──────────────────────────────────────────────────────────────
+    # روز سوم — شانه و بازو
+    # Day 3 — Shoulders & Arms
+    # ──────────────────────────────────────────────────────────────
+    - name: "روز سوم — شانه و بازو"
+      name_en: "Day 3 — Shoulders & Arms"
+      exercises:
+
+        # پرس سرشانه دستگاه — حرکت اصلی شانه
+        - name: "Machine Shoulder Press"
+          muscles: ["Anterior Deltoid", "Lateral Deltoid", "Triceps"]
+          sets: 4
+          reps: [12, 11, 10, 8]
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Machine-machine-overhand-overhead-press-side.mp4"
+
+        # سرشانه نشر جانب دمبل — عرض شانه
+        - name: "Dumbbell Lateral Raise"
+          muscles: ["Lateral Deltoid", "Anterior Deltoid", "Upper Trapezius"]
+          sets: 4
+          reps: [15, 12, 12, 12]
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Dumbbells-dumbbell-lateral-raise-side.mp4"
+          superset_with: "Cable Low Single Arm Lateral Raise"
+
+        # سرشانه نشر جانب سیم‌کش تک دست — کشش ثابت در پایین حرکت
+        - name: "Cable Low Single Arm Lateral Raise"
+          muscles: ["Lateral Deltoid", "Supraspinatus"]
+          sets: 3
+          reps: [15, 12, 12]
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Cables-cable-low-single-arm-lateral-raise-side.mp4"
+          superset_with: "Dumbbell Lateral Raise"
+
+        # سرشانه نشر از جلو دمبل — تاکید روی دلتوئید جلو
+        - name: "Dumbbell Front Raise"
+          muscles: ["Anterior Deltoid", "Upper Pectoralis Major"]
+          sets: 3
+          reps: 12
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Dumbbells-dumbbell-front-raise-side.mp4"
+
+        # شراگز دمبل — تقویت ذوزنقه بالایی
+        - name: "Dumbbell Shrug"
+          muscles: ["Upper Trapezius", "Levator Scapulae"]
+          sets: 3
+          reps: 12
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Dumbbells-dumbbell-shrug-side.mp4"
+
+        # جلو بازو دمبل بالا سینه — کشش سر بلند دو سر بازو
+        - name: "Dumbbell Incline Bicep Curl"
+          muscles: ["Biceps Brachii", "Long Head", "Brachialis"]
+          sets: 3
+          reps: [12, 10, 10]
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Dumbbells-dumbbell-incline-bicep-curl-side.mp4"
+
+        # جلو بازو دستگاه — تاکید روی سر کوتاه
+        - name: "Machine Preacher Curl"
+          muscles: ["Biceps Brachii", "Short Head", "Brachialis"]
+          sets: 3
+          reps: [12, 10, 10]
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Machine-machine-seated-plate-loaded-preacher-curl-side.mp4"
+
+        # پشت بازو سیم‌کش طنابی — تمام کردن با پشت بازو
+        - name: "Cable Rope Pushdown"
+          muscles: ["Triceps Brachii", "Lateral Head", "Medial Head"]
+          sets: 3
+          reps: [15, 12, 12]
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Cables-cable-rope-pushdown-side.mp4"

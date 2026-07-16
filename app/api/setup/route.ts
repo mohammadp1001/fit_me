@@ -86,11 +86,18 @@ export async function POST(request: NextRequest) {
               nameFa: ex.name,
               nameEn: ex.name,
               muscles: ex.muscles,
+              videoUrl: ex.video ?? "",
               tipsFa: [],
               tipsEn: [],
               mistakesFa: [],
               mistakesEn: [],
             },
+          });
+        } else if (ex.video && !dbExercise.videoUrl) {
+          // Backfill the video link onto an existing library exercise
+          dbExercise = await prisma.exercise.update({
+            where: { id: dbExercise.id },
+            data: { videoUrl: ex.video },
           });
         }
 
