@@ -26,9 +26,13 @@ jobs:
           node-version: 20
           cache: npm
 
-      # `npm ci` runs `postinstall` -> `prisma generate`, so the client is ready.
+      # Use `npm install` rather than `npm ci`: the committed lockfile is
+      # generated on Windows and can't express the Linux-only optional native
+      # deps (e.g. Tailwind oxide / @emnapi) that `npm ci` demands on the
+      # Ubuntu runner. `install` resolves per-platform and still runs the
+      # `postinstall` -> `prisma generate` hook.
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: Lint
         run: npm run lint
