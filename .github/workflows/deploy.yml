@@ -38,18 +38,16 @@ jobs:
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
-      # Pulls the project's Production env vars (DATABASE_URL, SESSION_SECRET,
-      # etc.) configured in the Vercel dashboard — no need to duplicate them here.
-      - name: Pull Vercel environment
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Build
-        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-
+      # Deploy by uploading the source and letting Vercel build it on their
+      # infrastructure. This is deliberate: the build command runs `prisma db
+      # push`, which needs the real Production env vars (DATABASE_URL, etc.).
+      # Those are marked sensitive in Vercel and cannot be read back onto the
+      # runner via `vercel pull`, so a local `--prebuilt` build fails. Building
+      # remotely resolves them the same way the dashboard deploy does.
       - name: Deploy to production
         id: deploy
         run: |
-          url=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+          url=$(vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }})
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "Deployed ${GITHUB_REF_NAME} -> $url"
 
