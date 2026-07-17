@@ -1,3 +1,6 @@
+> **New here? Read [`summary.md`](summary.md) first** — architecture, program
+> YAML schema, the CI/CD + release process, and the gotchas already solved.
+
 <!-- BEGIN:nextjs-agent-rules -->
 # This is NOT the Next.js you know
 
