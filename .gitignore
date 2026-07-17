@@ -44,3 +44,8 @@ next-env.d.ts
 
 # test coverage
 /coverage
+
+# local agent/instruction docs (untracked)
+CLAUDE.md
+AGENTS.md
+summary.md
