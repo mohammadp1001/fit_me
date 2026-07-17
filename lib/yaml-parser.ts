@@ -11,6 +11,12 @@ const ExerciseSchema = z.object({
   ]),
   superset_with: z.string().nullable().optional(),
   video: z.string().optional(),
+  description: z.string().optional(),
+  description_en: z.string().optional(),
+  tips: z.array(z.string()).optional(),
+  tips_en: z.array(z.string()).optional(),
+  mistakes: z.array(z.string()).optional(),
+  mistakes_en: z.array(z.string()).optional(),
 });
 
 const DaySchema = z.object({

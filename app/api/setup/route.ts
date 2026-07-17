@@ -87,18 +87,34 @@ export async function POST(request: NextRequest) {
               nameEn: ex.name,
               muscles: ex.muscles,
               videoUrl: ex.video ?? "",
-              tipsFa: [],
-              tipsEn: [],
-              mistakesFa: [],
-              mistakesEn: [],
+              descriptionFa: ex.description ?? "",
+              descriptionEn: ex.description_en ?? ex.description ?? "",
+              tipsFa: ex.tips ?? [],
+              tipsEn: ex.tips_en ?? ex.tips ?? [],
+              mistakesFa: ex.mistakes ?? [],
+              mistakesEn: ex.mistakes_en ?? ex.mistakes ?? [],
             },
           });
-        } else if (ex.video && !dbExercise.videoUrl) {
-          // Backfill the video link onto an existing library exercise
-          dbExercise = await prisma.exercise.update({
-            where: { id: dbExercise.id },
-            data: { videoUrl: ex.video },
-          });
+        } else {
+          // Backfill guide/video content onto an existing library exercise,
+          // filling only the fields that are still empty.
+          const patch: Record<string, unknown> = {};
+          const descEn = ex.description_en ?? ex.description;
+          const tipsEn = ex.tips_en ?? ex.tips;
+          const mistakesEn = ex.mistakes_en ?? ex.mistakes;
+          if (ex.video && !dbExercise.videoUrl) patch.videoUrl = ex.video;
+          if (ex.description && !dbExercise.descriptionFa) patch.descriptionFa = ex.description;
+          if (descEn && !dbExercise.descriptionEn) patch.descriptionEn = descEn;
+          if (ex.tips?.length && dbExercise.tipsFa.length === 0) patch.tipsFa = ex.tips;
+          if (tipsEn?.length && dbExercise.tipsEn.length === 0) patch.tipsEn = tipsEn;
+          if (ex.mistakes?.length && dbExercise.mistakesFa.length === 0) patch.mistakesFa = ex.mistakes;
+          if (mistakesEn?.length && dbExercise.mistakesEn.length === 0) patch.mistakesEn = mistakesEn;
+          if (Object.keys(patch).length > 0) {
+            dbExercise = await prisma.exercise.update({
+              where: { id: dbExercise.id },
+              data: patch,
+            });
+          }
         }
 
         // Resolve superset group label
