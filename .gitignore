@@ -48,4 +48,4 @@ next-env.d.ts
 # local agent/instruction docs (untracked)
 CLAUDE.md
 AGENTS.md
-summary.md
+HANDOFF.md
