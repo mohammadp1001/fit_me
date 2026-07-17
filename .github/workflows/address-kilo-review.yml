@@ -1,0 +1,24 @@
+name: Address Kilo Review
+
+# Kilo Code posts an automated review with inline comments on each PR. This
+# reacts to that review by triaging it with Claude Code via the reusable
+# workflow in mohammadp1001/address-kilo-review - see that repo's README
+# for how the triage skill decides what to fix vs. rebut.
+on:
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  address-review:
+    name: Triage Kilo review comments
+    # Only react to Kilo's own review, never to a human reviewer.
+    if: contains(github.event.review.user.login, 'kilo')
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: mohammadp1001/address-kilo-review/.github/workflows/address-kilo-review.yml@main
+    secrets: inherit
+    with:
+      pr_number: ${{ github.event.pull_request.number }}
+      review_id: ${{ github.event.review.id }}
+      setup_command: "npm install --no-audit --no-fund"
