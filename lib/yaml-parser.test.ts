@@ -83,6 +83,48 @@ program:
     expect(() => parseWorkoutYaml(yaml)).toThrow();
   });
 
+  it('parses optional video and guide fields', () => {
+    const yaml = `
+program:
+  name: "Test"
+  days:
+    - name: "Day 1"
+      exercises:
+        - name: "Ex"
+          sets: 3
+          reps: 10
+          video: "https://example.com/ex.mp4"
+          description: "شرح"
+          description_en: "Description"
+          tips: ["نکته"]
+          tips_en: ["Tip one", "Tip two"]
+          mistakes: ["اشتباه"]
+          mistakes_en: ["A mistake"]
+    `;
+    const ex = parseWorkoutYaml(yaml).days[0].exercises[0];
+    expect(ex.video).toBe('https://example.com/ex.mp4');
+    expect(ex.description_en).toBe('Description');
+    expect(ex.tips_en).toEqual(['Tip one', 'Tip two']);
+    expect(ex.mistakes).toEqual(['اشتباه']);
+  });
+
+  it('leaves guide fields undefined when omitted', () => {
+    const yaml = `
+program:
+  name: "Test"
+  days:
+    - name: "Day 1"
+      exercises:
+        - name: "Ex"
+          sets: 3
+          reps: 10
+    `;
+    const ex = parseWorkoutYaml(yaml).days[0].exercises[0];
+    expect(ex.video).toBeUndefined();
+    expect(ex.tips).toBeUndefined();
+    expect(ex.mistakes_en).toBeUndefined();
+  });
+
   it('defaults name_en when missing', () => {
     const yaml = `
 program:

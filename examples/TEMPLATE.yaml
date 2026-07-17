@@ -7,19 +7,24 @@
 #
 # Quick rules:
 #   • The whole file is a single top-level `program:` object.
-#   • Persian (fa) text goes in `name`; English in `name_en`.
-#     `name_en` is optional everywhere — if omitted, `name` is reused.
+#   • Bilingual convention: the base field holds the primary text (Persian);
+#     an optional `*_en` variant holds English. If `*_en` is omitted, the base
+#     text is reused for both languages. This applies to `name`/`name_en`,
+#     `description`/`description_en`, `tips`/`tips_en`, `mistakes`/`mistakes_en`.
 #   • `muscles` are shown verbatim as tags; keep them short. Any language.
 #   • `sets` is a positive integer.
 #   • `reps` is EITHER one integer (same target for every set)
 #            OR a list of integers, one per set (length should equal `sets`).
 #   • `superset_with` links two exercises; put the partner's exact `name`
 #     on BOTH exercises so the app pairs them.
-#   • `video` is a direct video URL (e.g. an .mp4). Shown inline on the
+#   • `video` is a direct video URL (e.g. an .mp4). Plays inline on the
 #     Video tab. Optional.
+#   • `description`, `tips`, `mistakes` (and their `*_en` variants) populate
+#     the exercise's Guide tab. All optional.
 #
-# NOT supported via YAML (leave them out): descriptions, tips, common
-# mistakes. Those only exist for the app's pre-seeded exercise library.
+# Note on the exercise library: exercises are keyed by `name`. Guide/video
+# content is written to a shared library the first time a name is seen, and
+# backfilled onto an existing entry only where that entry is still empty.
 # ============================================================================
 
 program:
@@ -32,24 +37,38 @@ program:
       name_en: "Day 1 — Chest"            # optional — English day name
       exercises:                          # required — one or more exercises
 
-        # Minimal exercise: single rep target for all sets, no video.
+        # Minimal exercise: single rep target for all sets, just a video.
         - name: "Machine Chest Press"     # required — exercise name (unique key)
           muscles: ["Chest", "Triceps"]   # optional — defaults to [] if omitted
           sets: 4                         # required — positive integer
           reps: 10                        # one number → 10 reps every set
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Machine-machine-chest-press-side.mp4"
 
-        # Per-set rep scheme + a video link.
+        # Fully-featured exercise: per-set reps, video, and a bilingual Guide.
         - name: "Dumbbell Incline Press"
           muscles: ["Upper Chest", "Front Delt"]
           sets: 4
           reps: [12, 10, 8, 8]            # one entry per set (pyramid)
           video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Dumbbells-dumbbell-incline-press-side.mp4"
+          description: "تمرکز روی سینه بالایی با زاویه ۳۰ درجه."
+          description_en: "Targets the upper chest with the bench set to ~30°."
+          tips:                           # Persian tips (Guide tab, ✓ list)
+            - "کف پا را روی زمین ثابت نگه دار."
+            - "دمبل‌ها را در مسیر قوسی پایین بیاور."
+          tips_en:                        # English tips (falls back to `tips` if omitted)
+            - "Keep your feet planted and core braced."
+            - "Lower the dumbbells along a slight arc."
+          mistakes:                       # Persian common mistakes (✕ list)
+            - "قوس بیش از حد کمر."
+          mistakes_en:
+            - "Over-arching the lower back."
 
         # A superset pair — BOTH exercises reference each other by name.
         - name: "Cable Pec Fly"
           muscles: ["Chest"]
           sets: 3
           reps: [12, 12, 10]
+          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Cables-cable-pec-fly-side.mp4"
           superset_with: "Push Up"        # partner's exact name
         - name: "Push Up"
           muscles: ["Chest", "Core"]
@@ -66,3 +85,7 @@ program:
           sets: 4
           reps: [12, 10, 10, 8]
           video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Machine-machine-pulldown-side.mp4"
+          # English-only Guide is fine — it fills both languages via fallback.
+          description_en: "Pull the bar to your upper chest, driving elbows down."
+          tips_en:
+            - "Lead with the elbows, not the hands."
