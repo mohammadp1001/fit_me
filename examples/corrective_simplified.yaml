@@ -11,19 +11,43 @@ program:
       name_en: "Day 1 — Shoulder, Chest & Neck"
       exercises:
 
-        # وال آنجل — موبیلیتی شانه و اصلاح کایفوز، جایگزین کشش دیواری + اسلاید دیوار
+        # وال آنجل — موبیلیتی شانه و اصلاح کایفوز
         - name: "Wall Angels"
           muscles: ["Lower Trapezius", "Serratus Anterior", "Posterior Deltoid", "Rhomboids"]
           sets: 3
           reps: 12
           video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-wall-angels-side.mp4"
+          description: "پشت به دیوار، بازوها را آرام بالا و پایین ببر تا تحرک شانه و اصلاح گوژپشتی بهبود یابد."
+          description_en: "With your back to the wall, glide the arms up and down to improve shoulder mobility and counter a rounded upper back."
+          tips:
+            - "کمر و پشت سر را به دیوار بچسبان."
+            - "آرنج و مچ را در تماس با دیوار نگه دار."
+          tips_en:
+            - "Keep your lower back and head against the wall."
+            - "Try to keep elbows and wrists touching the wall the whole range."
+          mistakes:
+            - "قوس دادن به کمر برای رساندن دست‌ها به بالا."
+          mistakes_en:
+            - "Arching the lower back to force the arms higher."
 
-        # فیس پول با وزن بدن — تقویت پشت شانه، جایگزین فیس پول سیم‌کش + پرنده معکوس دمبل
+        # فیس پول با وزن بدن — تقویت پشت شانه
         - name: "Bodyweight Face Pull"
           muscles: ["Posterior Deltoid", "Middle Trapezius", "Rhomboids", "Rotator Cuff"]
           sets: 3
           reps: 15
           video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-face-pull-side.mp4"
+          description: "کشیدن دست‌ها به سمت صورت با تمرکز روی جمع‌کردن کتف‌ها، برای تقویت شانه خلفی."
+          description_en: "Pull toward your face while squeezing the shoulder blades to strengthen the rear shoulder and upper back."
+          tips:
+            - "کتف‌ها را به هم نزدیک کن، نه فقط دست‌ها را."
+            - "در انتهای حرکت یک مکث کوتاه بگیر."
+          tips_en:
+            - "Retract the shoulder blades — don't just move the arms."
+            - "Pause briefly at the end of each rep."
+          mistakes:
+            - "بالا انداختن شانه‌ها به سمت گوش."
+          mistakes_en:
+            - "Shrugging the shoulders up toward the ears."
 
         # کشش جانبی گردن — رفع گرفتگی ذوزنقه فوقانی
         - name: "Lateral Neck Stretch"
@@ -31,13 +55,37 @@ program:
           sets: 2
           reps: 10
           video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-neck-lateral-flexion-stretch-side.mp4"
+          description: "کشش آرام گردن به طرفین برای کاهش گرفتگی ذوزنقه فوقانی و بالابرنده کتف."
+          description_en: "A gentle side bend of the neck to release tension in the upper trapezius and levator scapulae."
+          tips:
+            - "شانه مخالف را پایین نگه دار تا کشش عمیق‌تر شود."
+            - "حرکت را آرام و بدون فشار انجام بده."
+          tips_en:
+            - "Keep the opposite shoulder pressed down for a deeper stretch."
+            - "Move slowly and never force the range."
+          mistakes:
+            - "چرخاندن گردن به جای خم‌کردن جانبی."
+          mistakes_en:
+            - "Rotating the neck instead of a pure side bend."
 
-        # چین تاک ایستاده — اصلاح سر به جلو، جایگزین سوپرست چرخش شانه
+        # چین تاک ایستاده — اصلاح سر به جلو
         - name: "Chin Tuck Standing"
           muscles: ["Deep Cervical Flexors", "Upper Trapezius"]
           sets: 3
           reps: 15
           video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-chin-tuck-side.mp4"
+          description: "عقب‌کشیدن چانه برای فعال‌کردن خم‌کننده‌های عمقی گردن و اصلاح وضعیت سر به جلو."
+          description_en: "Draw the chin straight back to activate the deep neck flexors and correct forward-head posture."
+          tips:
+            - "چانه را به عقب بکش، نه به پایین."
+            - "در وضعیت انتها ۲ ثانیه نگه دار."
+          tips_en:
+            - "Glide the chin backward, not downward."
+            - "Hold the end position for about 2 seconds."
+          mistakes:
+            - "پایین‌آوردن سر به جای عقب‌کشیدن چانه."
+          mistakes_en:
+            - "Tilting the head down instead of retracting the chin."
 
     # ──────────────────────────────────────────────────────────────
     # روز دوم — اصلاح لگن، کمر و پا
@@ -47,33 +95,81 @@ program:
       name_en: "Day 2 — Hip, Lower Back & Legs"
       exercises:
 
-        # پل باسن — فعال‌سازی سرینی، جایگزین پل باسن + پل باسن تک‌پا
+        # پل باسن — فعال‌سازی سرینی
         - name: "Glute Bridge"
           muscles: ["Gluteus Maximus", "Hamstrings", "Lower Back"]
           sets: 3
           reps: [15, 12, 12]
           video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-glute-bridge-side.mp4"
+          description: "بالا آوردن لگن با فشار پاشنه برای فعال‌کردن عضلات سرینی و کاهش فشار از کمر."
+          description_en: "Lift the hips by driving through the heels to activate the glutes and offload the lower back."
+          tips:
+            - "پیش از بالا آمدن، شکم را کمی منقبض کن."
+            - "در بالای حرکت باسن را کاملاً منقبض کن."
+          tips_en:
+            - "Brace the abs lightly before lifting."
+            - "Squeeze the glutes hard at the top."
+          mistakes:
+            - "قوس‌دادن بیش از حد کمر در بالای حرکت."
+          mistakes_en:
+            - "Over-arching the lower back at the top."
 
-        # کلمبل — فعال‌سازی سرینی میانی و اصلاح زانوی وارو
+        # کلمبل — فعال‌سازی سرینی میانی
         - name: "Clamshell"
           muscles: ["Gluteus Medius", "Gluteus Minimus", "Piriformis"]
           sets: 3
           reps: 15
           video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-clamshell-side.mp4"
+          description: "باز کردن زانوی بالایی به‌صورت صدف برای تقویت سرینی میانی و پایداری لگن."
+          description_en: "Open the top knee like a clam to strengthen the gluteus medius and stabilize the pelvis."
+          tips:
+            - "پاشنه‌ها را به هم چسبیده نگه دار."
+            - "لگن را ثابت نگه دار و نچرخان."
+          tips_en:
+            - "Keep the heels together throughout."
+            - "Keep the pelvis still — don't let it roll back."
+          mistakes:
+            - "چرخاندن کل بدن به جای باز کردن زانو."
+          mistakes_en:
+            - "Rotating the whole torso instead of just the knee."
 
-        # کشش هیپ فلکسور — رفع کوتاهی خم‌کننده‌های لگن، جایگزین سوپرست هیپ فلکسور + چرخش لگن
+        # کشش هیپ فلکسور — رفع کوتاهی خم‌کننده‌های لگن
         - name: "Kneeling Hip Flexor Stretch"
           muscles: ["Iliopsoas", "Rectus Femoris"]
           sets: 3
           reps: 10
           video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-kneeling-hip-flexor-stretch-side.mp4"
+          description: "کشش خم‌کننده‌های لگن در حالت زانوزده برای اصلاح چرخش قدامی لگن."
+          description_en: "Stretch the hip flexors from a half-kneeling position to correct anterior pelvic tilt."
+          tips:
+            - "با جمع‌کردن باسن، لگن را کمی به جلو بده."
+            - "بالاتنه را صاف نگه دار."
+          tips_en:
+            - "Tuck the pelvis by squeezing the glute, then shift forward."
+            - "Keep the torso upright."
+          mistakes:
+            - "قوس‌دادن کمر به جای حرکت لگن."
+          mistakes_en:
+            - "Arching the lower back instead of moving the pelvis."
 
-        # اسکوات دیوار — الگوی درست زانو، جایگزین اسکوات دیوار + استپ آپ دمبل
+        # اسکوات دیوار — الگوی درست زانو
         - name: "Wall Sit"
           muscles: ["Quadriceps", "Gluteus Maximus", "Hamstrings"]
           sets: 3
           reps: 30
           video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-wall-sit-side.mp4"
+          description: "نشستن ایزومتریک روی دیوار برای تقویت چهارسر و تثبیت زانو (اعداد بر حسب ثانیه)."
+          description_en: "An isometric hold against the wall to build quad endurance and knee stability (reps are seconds)."
+          tips:
+            - "زانوها را روی مچ پا، با زاویه حدود ۹۰ درجه نگه دار."
+            - "کف پا را کامل روی زمین فشار بده."
+          tips_en:
+            - "Keep knees over the ankles at roughly 90°."
+            - "Press through the whole foot."
+          mistakes:
+            - "افتادن زانوها به داخل."
+          mistakes_en:
+            - "Letting the knees cave inward."
 
     # ──────────────────────────────────────────────────────────────
     # روز سوم — تثبیت مرکزی و ستون فقرات
@@ -89,24 +185,72 @@ program:
           sets: 3
           reps: 12
           video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-cat-cow-side.mp4"
+          description: "قوس و گرد کردن متناوب ستون فقرات برای بهبود تحرک و کاهش خشکی کمر."
+          description_en: "Alternate arching and rounding the spine to improve mobility and reduce stiffness."
+          tips:
+            - "حرکت را با نفس هماهنگ کن؛ دم در قوس، بازدم در گرد کردن."
+            - "هر مهره را یکی‌یکی حرکت بده."
+          tips_en:
+            - "Sync with your breath — inhale to arch, exhale to round."
+            - "Move the spine segment by segment."
+          mistakes:
+            - "انجام سریع و پرشی حرکت."
+          mistakes_en:
+            - "Rushing through the range with jerky motion."
 
-        # بردداگ — تثبیت ستون فقرات، جایگزین سوپرست دد باگ + بردداگ
+        # بردداگ — تثبیت ستون فقرات
         - name: "Bird Dog"
           muscles: ["Multifidus", "Gluteus Maximus", "Deep Core"]
           sets: 3
           reps: 10
           video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-bird-dog-side.mp4"
+          description: "کشیدن هم‌زمان دست و پای مخالف برای آموزش تثبیت ستون فقرات در برابر چرخش."
+          description_en: "Extend opposite arm and leg to train the spine to resist rotation and stay stable."
+          tips:
+            - "لگن را موازی زمین نگه دار."
+            - "دست و پا را تا راستای بدن بالا بیاور، نه بالاتر."
+          tips_en:
+            - "Keep the hips square to the floor."
+            - "Raise the limbs only to body height, not higher."
+          mistakes:
+            - "چرخش لگن هنگام بالا آوردن پا."
+          mistakes_en:
+            - "Letting the hip rotate as the leg lifts."
 
-        # پلانک روی زانو — تثبیت عمومی مرکزی، جایگزین پلانک + پلانک کناری
+        # پلانک روی زانو — تثبیت عمومی مرکزی
         - name: "Kneeling Plank"
           muscles: ["Core", "Rectus Abdominis", "Anterior Deltoid", "Quadriceps"]
           sets: 3
           reps: 30
           video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-plank-side.mp4"
+          description: "نگه‌داری ایزومتریک روی ساعد و زانو برای تقویت پایداری مرکزی (اعداد بر حسب ثانیه)."
+          description_en: "An isometric forearm-and-knee hold to build core stability (reps are seconds)."
+          tips:
+            - "از سر تا زانو یک خط راست بساز."
+            - "شکم و باسن را هم‌زمان منقبض کن."
+          tips_en:
+            - "Form a straight line from head to knees."
+            - "Brace the abs and glutes together."
+          mistakes:
+            - "افتادن لگن به پایین."
+          mistakes_en:
+            - "Letting the hips sag toward the floor."
 
-        # کرانچ معکوس — اصلاح کج‌لگنی قدامی، جایگزین کرانچ معکوس + هایپراکستنشن
+        # کرانچ معکوس — اصلاح کج‌لگنی قدامی
         - name: "Reverse Crunch"
           muscles: ["Lower Rectus Abdominis", "Iliopsoas", "Obliques"]
           sets: 3
           reps: [15, 12, 12]
           video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-reverse-crunch-side.mp4"
+          description: "بالا آوردن زانوها به سمت سینه با کنترل، برای تقویت شکم تحتانی و اصلاح چرخش لگن."
+          description_en: "Curl the knees toward the chest under control to strengthen the lower abs and correct pelvic tilt."
+          tips:
+            - "با شکم لگن را بلند کن، نه با تاب دادن پا."
+            - "کمر را در تماس با زمین نگه دار."
+          tips_en:
+            - "Lift the pelvis with the abs, not by swinging the legs."
+            - "Keep the lower back in contact with the floor."
+          mistakes:
+            - "استفاده از حرکت پرشی برای بالا آوردن پاها."
+          mistakes_en:
+            - "Using momentum to swing the legs up."
