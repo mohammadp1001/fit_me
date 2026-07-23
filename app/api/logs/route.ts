@@ -77,9 +77,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ logs });
   }
 
-  // Get all logs grouped by exercise
+  // Get all logs grouped by exercise, scoped to the active program only
   const logs = await prisma.workoutLog.findMany({
-    where: { userId: 1 },
+    where: {
+      userId: 1,
+      programExercise: { day: { program: { isActive: true } } },
+    },
     orderBy: { date: "desc" },
     include: {
       programExercise: {
