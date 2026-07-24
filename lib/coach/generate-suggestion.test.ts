@@ -140,10 +140,19 @@ describe("generateSuggestion", () => {
   });
 
   it("does not require any network call or API key to run", async () => {
-    expect(process.env.ANTHROPIC_API_KEY).toBeUndefined();
+    // Uses the in-memory MockCoachProvider, whose `complete` never touches
+    // the network - asserting it's the one invoked confirms this test (and
+    // generateSuggestion in this configuration) makes no real API calls,
+    // without depending on the ambient environment having no API key set.
     const provider = new MockCoachProvider();
+    const completeSpy = jest.spyOn(provider, "complete");
+
     await expect(
       generateSuggestion(baseInput(), provider),
     ).resolves.toBeDefined();
+
+    expect(completeSpy).toHaveBeenCalledTimes(1);
+
+    completeSpy.mockRestore();
   });
 });

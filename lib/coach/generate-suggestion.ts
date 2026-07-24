@@ -28,9 +28,10 @@ export async function generateSuggestion(
   let parsedJson: unknown;
   try {
     parsedJson = JSON.parse(rawResponse);
-  } catch {
+  } catch (cause) {
+    const reason = cause instanceof Error ? cause.message : String(cause);
     throw new Error(
-      "Coach provider returned malformed JSON that could not be parsed.",
+      `Coach provider returned malformed JSON that could not be parsed: ${reason}`,
     );
   }
 
