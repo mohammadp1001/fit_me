@@ -44,6 +44,8 @@ model Exercise {
   wikiUrl          String            @default("")
   videoUrl         String            @default("")
   programExercises ProgramExercise[]
+  suggestions      Suggestion[]
+  memory           ExerciseMemory?
 }
 
 model Program {
@@ -79,6 +81,7 @@ model ProgramExercise {
   day           ProgramDay   @relation(fields: [dayId], references: [id], onDelete: Cascade)
   exercise      Exercise     @relation(fields: [exerciseId], references: [id])
   workoutLogs   WorkoutLog[]
+  suggestions   Suggestion[]
 }
 
 model WorkoutLog {
@@ -91,4 +94,29 @@ model WorkoutLog {
   programExercise   ProgramExercise @relation(fields: [programExerciseId], references: [id])
 
   @@unique([userId, programExerciseId, date])
+}
+
+model Suggestion {
+  id                Int             @id @default(autoincrement())
+  exerciseId        Int
+  programExerciseId Int
+  date              DateTime        @db.Date
+  sets              Json
+  rationale         String
+  exercise          Exercise        @relation(fields: [exerciseId], references: [id])
+  programExercise   ProgramExercise @relation(fields: [programExerciseId], references: [id])
+
+  @@unique([exerciseId, date])
+}
+
+model ExerciseMemory {
+  id         Int      @id @default(autoincrement())
+  exerciseId Int      @unique
+  notes      String
+  exercise   Exercise @relation(fields: [exerciseId], references: [id])
+}
+
+model GlobalMemory {
+  id    Int    @id @default(1)
+  notes String
 }

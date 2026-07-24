@@ -16,6 +16,25 @@ jobs:
     name: Lint, typecheck, test & build
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: johndoe
+          POSTGRES_PASSWORD: randompassword
+          POSTGRES_DB: fitme
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://johndoe:randompassword@localhost:5432/fitme?schema=public
+      DIRECT_URL: postgresql://johndoe:randompassword@localhost:5432/fitme?schema=public
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -40,15 +59,20 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit
 
+      # The Postgres service container is empty - apply migrations so DB
+      # round-trip tests (e.g. prisma/suggestion-memory.test.ts) have a schema
+      # to write to.
+      - name: Apply migrations
+        run: npx prisma migrate deploy
+
       - name: Test
         run: npm test
 
-      # Placeholder env vars: the app is fully dynamic (auth redirect), so no DB
-      # is hit at build time — these just satisfy client/config instantiation.
+      # The app is fully dynamic (auth redirect), so no DB is hit at build
+      # time - DATABASE_URL/DIRECT_URL from the job env just satisfy
+      # client/config instantiation.
       - name: Build
         run: npm run build
         env:
-          DATABASE_URL: postgresql://user:pass@localhost:5432/fitme?schema=public
-          DIRECT_URL: postgresql://user:pass@localhost:5432/fitme?schema=public
           SESSION_SECRET: ci-placeholder-session-secret-32chars
           APP_PASSPHRASE: ci-placeholder
