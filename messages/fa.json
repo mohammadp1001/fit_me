@@ -58,7 +58,8 @@
     "save": "💾 ذخیره",
     "saved": "✓ ذخیره شد",
     "previousSessions": "جلسات قبلی",
-    "noHistory": "هنوز وزنه‌ای ثبت نشده"
+    "noHistory": "هنوز وزنه‌ای ثبت نشده",
+    "suggestion": "پیشنهاد مربی"
   },
   "log": {
     "title": "لاگ وزنه",

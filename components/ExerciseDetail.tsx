@@ -3,10 +3,9 @@
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { ProgramExerciseData } from "./AppShell";
+import { computeInitialSets, SetLog, SuggestionSet } from "@/lib/log-prefill";
 
 type Tab = "info" | "video" | "log";
-
-type SetLog = { weight: string; reps: string };
 
 function getToday() {
   const d = new Date();
@@ -266,49 +265,88 @@ function LogPanel({
 }) {
   const t = useTranslations();
   const today = getToday();
-  const [sets, setSets] = useState<SetLog[]>(
-    Array.from({ length: programExercise.setsCount }, (_, i) => ({
-      weight: "",
-      reps: String(programExercise.reps[i] || programExercise.reps[programExercise.reps.length - 1] || ""),
-    }))
+  const [sets, setSets] = useState<SetLog[]>(() =>
+    computeInitialSets({
+      setsCount: programExercise.setsCount,
+      programReps: programExercise.reps,
+      suggestionSets: null,
+      todaysLogSets: null,
+    })
   );
   const [saveMsg, setSaveMsg] = useState("");
   const [history, setHistory] = useState<Array<{ date: string; sets: SetLog[] }>>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
+  const [rationale, setRationale] = useState<string | null>(null);
 
   useEffect(() => {
-    async function loadHistory() {
+    let cancelled = false;
+
+    async function loadTodayLog(): Promise<SetLog[] | null> {
       try {
         const res = await fetch(
           `/api/logs?programExerciseId=${programExercise.id}`
         );
-        if (res.ok) {
-          const data = await res.json();
-          setHistory(
-            data.logs.map((l: { date: string; sets: SetLog[] }) => ({
-              date: l.date.split("T")[0],
-              sets: l.sets,
-            }))
-          );
-          // Pre-fill today's sets if exists
-          const todayLog = data.logs.find(
-            (l: { date: string }) => l.date.split("T")[0] === today
-          );
-          if (todayLog) {
-            setSets(
-              todayLog.sets.map((s: SetLog) => ({
-                weight: String(s.weight ?? ""),
-                reps: String(s.reps ?? ""),
-              }))
-            );
-          }
-        }
-      } finally {
-        setLoadingHistory(false);
+        if (!res.ok) return null;
+        const data = await res.json();
+        if (cancelled) return null;
+        setHistory(
+          data.logs.map((l: { date: string; sets: SetLog[] }) => ({
+            date: l.date.split("T")[0],
+            sets: l.sets,
+          }))
+        );
+        const todayLog = data.logs.find(
+          (l: { date: string }) => l.date.split("T")[0] === today
+        );
+        if (!todayLog) return null;
+        return todayLog.sets.map((s: SetLog) => ({
+          weight: String(s.weight ?? ""),
+          reps: String(s.reps ?? ""),
+        }));
+      } catch {
+        return null;
       }
     }
-    loadHistory();
-  }, [programExercise.id, today]);
+
+    async function loadSuggestion(): Promise<{
+      sets: SuggestionSet[];
+      rationale: string;
+    } | null> {
+      try {
+        const res = await fetch(
+          `/api/suggestions?programExerciseId=${programExercise.id}&date=${today}`
+        );
+        if (!res.ok) return null;
+        const data = await res.json();
+        return data.suggestion ?? null;
+      } catch {
+        return null;
+      }
+    }
+
+    async function load() {
+      const [todaysLogSets, suggestion] = await Promise.all([
+        loadTodayLog(),
+        loadSuggestion(),
+      ]);
+      if (cancelled) return;
+      setRationale(!todaysLogSets && suggestion ? suggestion.rationale : null);
+      setSets(
+        computeInitialSets({
+          setsCount: programExercise.setsCount,
+          programReps: programExercise.reps,
+          suggestionSets: suggestion?.sets ?? null,
+          todaysLogSets,
+        })
+      );
+      setLoadingHistory(false);
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [programExercise.id, programExercise.setsCount, programExercise.reps, today]);
 
   function updateSet(idx: number, field: "weight" | "reps", val: string) {
     setSets((prev) => {
@@ -350,6 +388,22 @@ function LogPanel({
       <div className="text-sm mb-4" style={{ color: "#888", direction: "ltr", textAlign: locale === "fa" ? "right" : "left" }}>
         {today}
       </div>
+
+      {rationale && (
+        <div
+          className="rounded-xl px-3 py-2 mb-4 text-xs leading-relaxed"
+          style={{
+            background: `${dayColor}14`,
+            border: `1px solid ${dayColor}33`,
+            color: "var(--text)",
+          }}
+        >
+          <span className="font-bold" style={{ color: dayColor }}>
+            🧠 {t("exercise.suggestion")}:{" "}
+          </span>
+          {rationale}
+        </div>
+      )}
 
       {/* Set headers */}
       <div className="flex gap-2 mb-2 text-xs font-bold" style={{ color: "var(--muted)" }}>
