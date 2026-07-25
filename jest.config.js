@@ -7,6 +7,10 @@ const createJestConfig = nextJest({
 const config = {
   coverageProvider: 'v8',
   testEnvironment: 'jsdom',
+  // DB-touching suites (prisma/, app/api/cron/) share a singleton `User` row
+  // (id=1) against a real Postgres instance and race on create/cleanup if
+  // run concurrently across worker processes - force serial execution.
+  maxWorkers: 1,
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
