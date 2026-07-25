@@ -4,5 +4,11 @@
   },
   "git": {
     "deploymentEnabled": false
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/suggestions",
+      "schedule": "0 3 * * *"
+    }
+  ]
 }
