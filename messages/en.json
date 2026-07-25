@@ -58,7 +58,8 @@
     "save": "💾 Save",
     "saved": "✓ Saved",
     "previousSessions": "Previous Sessions",
-    "noHistory": "No weights logged yet"
+    "noHistory": "No weights logged yet",
+    "suggestion": "Coach Suggestion"
   },
   "log": {
     "title": "Weight Log",
