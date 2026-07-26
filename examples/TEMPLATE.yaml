@@ -12,9 +12,9 @@
 #     text is reused for both languages. This applies to `name`/`name_en`,
 #     `description`/`description_en`, `tips`/`tips_en`, `mistakes`/`mistakes_en`.
 #   • `muscles` is an OBJECT with `primary` (required, at least one) and
-#     `secondary` (optional). Values must come from the canonical list below —
-#     free text is rejected at upload. Display names are localised by the app,
-#     so you never write Persian or English muscle names here.
+#     `secondary` (optional). Values must come from the canonical list in
+#     MUSCLES.md — free text is rejected at upload. Display names are localised
+#     by the app, so you never write Persian or English muscle names here.
 #   • `sets` is a positive integer.
 #   • `reps` is EITHER one integer (same target for every set)
 #            OR a list of integers, one per set (length should equal `sets`).
@@ -26,22 +26,16 @@
 #     the exercise's Guide tab. All optional.
 #
 # ----------------------------------------------------------------------------
-# Canonical muscle values, grouped by the muscle group they roll up to.
-# The group (not the individual muscle) is what weekly volume is counted
-# against on the Progress tab.
+# → The full list of allowed muscle values, with their Persian/English display
+#   names, is in MUSCLES.md next to this file. That file is generated from the
+#   code, so it is always the authoritative list; this template deliberately
+#   does not repeat it.
 #
-#   chest:      pec_major_clavicular, pec_major_sternal
-#   back:       lats, traps_upper, traps_middle, traps_lower, rhomboids,
-#               teres_major, erector_spinae
-#   shoulders:  front_delt, side_delt, rear_delt, serratus_anterior
-#   arms:       biceps_brachii, brachialis, triceps_brachii
-#   forearms:   brachioradialis, forearm_flexors, forearm_extensors
-#   quads:      quadriceps
-#   hamstrings: hamstrings
-#   glutes:     glute_max, glute_med
-#   adductors:  adductors
-#   calves:     gastrocnemius, soleus, tibialis_anterior
-#   core:       rectus_abdominis, obliques, hip_flexors
+# Muscles roll up into these groups, and it is the GROUP (not the individual
+# muscle) that weekly volume is counted against on the Progress tab:
+#
+#   chest · back · shoulders · arms · forearms
+#   quads · hamstrings · glutes · adductors · calves · core
 #
 # Primary vs secondary: a logged set counts fully toward every `primary`
 # muscle's group and half toward every `secondary` one. Tag the movers the
