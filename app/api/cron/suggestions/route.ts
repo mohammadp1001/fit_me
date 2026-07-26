@@ -6,7 +6,7 @@ import {
   type CoachProvider,
 } from "@/lib/coach";
 import { computeGroupVolume } from "@/lib/volume-server";
-import { groupsForExercise } from "@/lib/volume";
+import { groupsForExercise, toLoggedSets } from "@/lib/volume";
 import { verdictForVolume } from "@/lib/muscles";
 
 /**
@@ -140,10 +140,7 @@ export async function runSuggestionsCron(
             id: log.id,
             programExerciseId: log.programExerciseId,
             date: log.date,
-            sets: log.sets as Array<{
-              weight: number | null;
-              reps: number | null;
-            }>,
+            sets: toLoggedSets(log.sets),
           })),
           exerciseMemory: exerciseMemoryRow?.notes ?? null,
           globalMemory,

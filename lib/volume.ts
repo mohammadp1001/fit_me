@@ -32,7 +32,30 @@ export interface VolumeEntry {
  * null `reps` and must not inflate the count.
  */
 export function countHardSets(sets: LoggedSet[]): number {
-  return sets.filter((s) => s.reps !== null && s.reps > 0).length;
+  if (!Array.isArray(sets)) return 0;
+  return sets.filter((s) => s && s.reps !== null && s.reps > 0).length;
+}
+
+/**
+ * Coerces a `WorkoutLog.sets` JSON column into `LoggedSet[]`.
+ *
+ * The column is `Json`, so Prisma types it as `JsonValue` and nothing
+ * guarantees its shape at read time - rows predating the current write path,
+ * or written by hand, may hold anything. Casting straight to `LoggedSet[]`
+ * would push that risk to the first `.filter` call at runtime.
+ */
+export function toLoggedSets(value: unknown): LoggedSet[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((raw) => {
+    if (!raw || typeof raw !== "object") return [];
+    const { weight, reps } = raw as Record<string, unknown>;
+    return [
+      {
+        weight: typeof weight === "number" ? weight : null,
+        reps: typeof reps === "number" ? reps : null,
+      },
+    ];
+  });
 }
 
 function utcDayIndex(value: Date | string): number {

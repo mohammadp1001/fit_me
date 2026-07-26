@@ -2,8 +2,8 @@ import { prisma } from "./prisma";
 import { MuscleGroup } from "./muscles";
 import {
   VOLUME_WINDOW_DAYS,
+  toLoggedSets,
   volumeByGroup,
-  type LoggedSet,
   type VolumeEntry,
 } from "./volume";
 
@@ -42,7 +42,7 @@ export async function computeGroupVolume(
 
   const entries: VolumeEntry[] = logs.map((log) => ({
     date: log.date,
-    sets: log.sets as unknown as LoggedSet[],
+    sets: toLoggedSets(log.sets),
     musclesPrimary: log.programExercise.exercise.musclesPrimary,
     musclesSecondary: log.programExercise.exercise.musclesSecondary,
   }));

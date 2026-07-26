@@ -16,7 +16,9 @@ describe("taxonomy completeness", () => {
   const enumMembers = Object.values(Muscle) as Muscle[];
 
   it("covers every Prisma enum member with a group", () => {
-    expect(ALL_MUSCLES.sort()).toEqual([...enumMembers].sort());
+    // Copy before sorting: ALL_MUSCLES is exported and shared, and `.sort()`
+    // would reorder it in place for every other consumer in the process.
+    expect([...ALL_MUSCLES].sort()).toEqual([...enumMembers].sort());
   });
 
   it("covers every Prisma enum member with bilingual labels", () => {

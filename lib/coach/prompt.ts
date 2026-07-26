@@ -100,6 +100,9 @@ export function buildCoachPrompt(input: GenerateSuggestionInput): string {
     `- "rationale": a short string explaining the suggestion`,
     `- "updatedExerciseMemory": the revised exercise-specific memory string`,
     `- "updatedGlobalMemory": the revised global memory string`,
+    groupVolume && groupVolume.length > 0
+      ? "Weigh the weekly volume above when deciding how hard to push: back off when a group is already above its ceiling, and prefer adding work when it is below the floor. Say which way it pushed you in the rationale."
+      : "",
     "Produce the suggestion and the revised memory together in this single response.",
   ];
 

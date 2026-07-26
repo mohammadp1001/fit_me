@@ -22,10 +22,10 @@ const updateSchema = z.object({
   wikiUrl: z.string().optional(),
   videoUrl: z.string().optional(),
 }).refine(
-  (data) =>
-    !data.musclesPrimary ||
-    !data.musclesSecondary ||
-    !data.musclesSecondary.some((m) => data.musclesPrimary!.includes(m)),
+  ({ musclesPrimary, musclesSecondary }) =>
+    !musclesPrimary ||
+    !musclesSecondary ||
+    !musclesSecondary.some((m) => musclesPrimary.includes(m)),
   { message: "A muscle cannot be both primary and secondary." }
 );
 

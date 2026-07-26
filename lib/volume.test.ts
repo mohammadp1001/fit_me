@@ -1,5 +1,6 @@
 import {
   countHardSets,
+  toLoggedSets,
   isWithinWindow,
   volumeByGroup,
   groupsForExercise,
@@ -44,6 +45,30 @@ describe("countHardSets", () => {
         { weight: 60, reps: 0 },
       ])
     ).toBe(1);
+  });
+});
+
+describe("toLoggedSets", () => {
+  it("passes through well-formed sets", () => {
+    expect(toLoggedSets([{ weight: 60, reps: 10 }])).toEqual([
+      { weight: 60, reps: 10 },
+    ]);
+  });
+
+  it("returns an empty list for a non-array JSON value", () => {
+    expect(toLoggedSets(null)).toEqual([]);
+    expect(toLoggedSets(undefined)).toEqual([]);
+    expect(toLoggedSets({ weight: 60 })).toEqual([]);
+  });
+
+  it("drops non-object entries and normalises bad field types to null", () => {
+    expect(toLoggedSets([null, "x", { weight: "60", reps: 10 }])).toEqual([
+      { weight: null, reps: 10 },
+    ]);
+  });
+
+  it("feeds countHardSets safely from malformed JSON", () => {
+    expect(countHardSets(toLoggedSets("not an array"))).toBe(0);
   });
 });
 
