@@ -101,8 +101,10 @@ export default function AppShell({
   ];
 
   return (
+    // The top inset lives on the root, not the scroller, so ProgramView's
+    // `sticky top-0` header parks below the status bar instead of under it.
     <div
-      className="flex flex-col min-h-screen"
+      className="flex flex-col min-h-screen safe-top"
       style={{ background: "var(--bg)" }}
     >
       {/* Content — pad enough for nav bar + phone home indicator */}

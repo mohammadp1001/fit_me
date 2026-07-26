@@ -29,6 +29,12 @@ body {
   box-sizing: border-box;
 }
 
+/* The viewport is `viewport-fit: cover`, so full-screen roots must keep their
+   first row of content clear of the status bar / notch. */
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
 input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(1);
 }

@@ -67,7 +67,7 @@ export default function OnboardingForm({ locale }: { locale: string }) {
 
   return (
     <div
-      className="min-h-screen p-6"
+      className="min-h-screen p-6 safe-top"
       style={{ background: "var(--bg)" }}
     >
       <div className="max-w-sm mx-auto">
