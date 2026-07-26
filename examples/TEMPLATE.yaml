@@ -11,7 +11,10 @@
 #     an optional `*_en` variant holds English. If `*_en` is omitted, the base
 #     text is reused for both languages. This applies to `name`/`name_en`,
 #     `description`/`description_en`, `tips`/`tips_en`, `mistakes`/`mistakes_en`.
-#   • `muscles` are shown verbatim as tags; keep them short. Any language.
+#   • `muscles` is an OBJECT with `primary` (required, at least one) and
+#     `secondary` (optional). Values must come from the canonical list below —
+#     free text is rejected at upload. Display names are localised by the app,
+#     so you never write Persian or English muscle names here.
 #   • `sets` is a positive integer.
 #   • `reps` is EITHER one integer (same target for every set)
 #            OR a list of integers, one per set (length should equal `sets`).
@@ -22,9 +25,34 @@
 #   • `description`, `tips`, `mistakes` (and their `*_en` variants) populate
 #     the exercise's Guide tab. All optional.
 #
+# ----------------------------------------------------------------------------
+# Canonical muscle values, grouped by the muscle group they roll up to.
+# The group (not the individual muscle) is what weekly volume is counted
+# against on the Progress tab.
+#
+#   chest:      pec_major_clavicular, pec_major_sternal
+#   back:       lats, traps_upper, traps_middle, traps_lower, rhomboids,
+#               teres_major, erector_spinae
+#   shoulders:  front_delt, side_delt, rear_delt, serratus_anterior
+#   arms:       biceps_brachii, brachialis, triceps_brachii
+#   forearms:   brachioradialis, forearm_flexors, forearm_extensors
+#   quads:      quadriceps
+#   hamstrings: hamstrings
+#   glutes:     glute_max, glute_med
+#   adductors:  adductors
+#   calves:     gastrocnemius, soleus, tibialis_anterior
+#   core:       rectus_abdominis, obliques, hip_flexors
+#
+# Primary vs secondary: a logged set counts fully toward every `primary`
+# muscle's group and half toward every `secondary` one. Tag the movers the
+# exercise actually trains — over-tagging inflates your volume numbers.
+# A muscle may not appear in both lists.
+#
 # Note on the exercise library: exercises are keyed by `name`. Guide/video
 # content is written to a shared library the first time a name is seen, and
 # backfilled onto an existing entry only where that entry is still empty.
+# Muscles are the exception — they are overwritten on every upload, so
+# re-uploading a corrected file is how you fix a mis-tagged exercise.
 # ============================================================================
 
 program:
@@ -39,14 +67,18 @@ program:
 
         # Minimal exercise: single rep target for all sets, just a video.
         - name: "Machine Chest Press"     # required — exercise name (unique key)
-          muscles: ["Chest", "Triceps"]   # optional — defaults to [] if omitted
+          muscles:
+            primary: [pec_major_sternal]  # required — at least one
+            secondary: [triceps_brachii, front_delt]
           sets: 4                         # required — positive integer
           reps: 10                        # one number → 10 reps every set
           video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Machine-machine-chest-press-side.mp4"
 
         # Fully-featured exercise: per-set reps, video, and a bilingual Guide.
         - name: "Dumbbell Incline Press"
-          muscles: ["Upper Chest", "Front Delt"]
+          muscles:
+            primary: [pec_major_clavicular]
+            secondary: [front_delt, triceps_brachii]
           sets: 4
           reps: [12, 10, 8, 8]            # one entry per set (pyramid)
           video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Dumbbells-dumbbell-incline-press-side.mp4"
@@ -65,13 +97,16 @@ program:
 
         # A superset pair — BOTH exercises reference each other by name.
         - name: "Cable Pec Fly"
-          muscles: ["Chest"]
+          muscles:
+            primary: [pec_major_sternal]  # `secondary` may be omitted entirely
           sets: 3
           reps: [12, 12, 10]
           video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Cables-cable-pec-fly-side.mp4"
           superset_with: "Push Up"        # partner's exact name
         - name: "Push Up"
-          muscles: ["Chest", "Core"]
+          muscles:
+            primary: [pec_major_sternal]
+            secondary: [triceps_brachii, front_delt, rectus_abdominis]
           sets: 3
           reps: 15
           superset_with: "Cable Pec Fly"  # points back to its partner
@@ -81,7 +116,9 @@ program:
       name_en: "Day 2 — Back"
       exercises:
         - name: "Lat Pulldown"
-          muscles: ["Lats", "Biceps"]
+          muscles:
+            primary: [lats]
+            secondary: [traps_lower, biceps_brachii, rear_delt]
           sets: 4
           reps: [12, 10, 10, 8]
           video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Machine-machine-pulldown-side.mp4"

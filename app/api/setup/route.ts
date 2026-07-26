@@ -27,8 +27,13 @@ export async function POST(request: NextRequest) {
   let program;
   try {
     program = parseWorkoutYaml(yamlContent);
-  } catch {
-    return NextResponse.json({ error: "Invalid YAML" }, { status: 400 });
+  } catch (e) {
+    // Surface the parser's message: it names the day, exercise and offending
+    // value, which is the only way a user can fix a rejected muscle tag.
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : "Invalid YAML" },
+      { status: 400 }
+    );
   }
 
   try {
@@ -85,7 +90,8 @@ export async function POST(request: NextRequest) {
             data: {
               nameFa: ex.name,
               nameEn: ex.name,
-              muscles: ex.muscles,
+              musclesPrimary: ex.musclesPrimary,
+              musclesSecondary: ex.musclesSecondary,
               videoUrl: ex.video ?? "",
               descriptionFa: ex.description ?? "",
               descriptionEn: ex.description_en ?? ex.description ?? "",
@@ -98,7 +104,17 @@ export async function POST(request: NextRequest) {
         } else {
           // Backfill guide/video content onto an existing library exercise,
           // filling only the fields that are still empty.
-          const patch: Record<string, unknown> = {};
+          //
+          // Muscles are the deliberate exception: they are overwritten on every
+          // upload. The backfill rule exists to protect hand-written prose from
+          // being blanked by a terser YAML, but muscles are drawn from a closed
+          // enum where every value is valid and non-empty, so there is nothing
+          // to protect - and overwriting is the only way a user can ever correct
+          // a mis-tagged exercise.
+          const patch: Record<string, unknown> = {
+            musclesPrimary: ex.musclesPrimary,
+            musclesSecondary: ex.musclesSecondary,
+          };
           const descEn = ex.description_en ?? ex.description;
           const tipsEn = ex.tips_en ?? ex.tips;
           const mistakesEn = ex.mistakes_en ?? ex.mistakes;

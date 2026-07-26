@@ -15,7 +15,8 @@ const exercise: CoachExercise = {
   id: 1,
   nameFa: "پرس سینه",
   nameEn: "Bench Press",
-  muscles: ["Chest", "Triceps"],
+  musclesPrimary: ["pec_major_sternal"],
+  musclesSecondary: ["triceps_brachii"],
   descriptionEn: "Flat barbell bench press.",
 };
 

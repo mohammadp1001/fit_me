@@ -2,10 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { isAuthenticated } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { Muscle } from "@prisma/client";
+
+// Second write path into the shared exercise library. It validates against the
+// same canonical vocabulary as the YAML parser so muscles cannot enter the
+// library through this door untyped.
+const MuscleSchema = z.nativeEnum(Muscle);
 
 const updateSchema = z.object({
   nameEn: z.string().optional(),
-  muscles: z.array(z.string()).optional(),
+  musclesPrimary: z.array(MuscleSchema).min(1).optional(),
+  musclesSecondary: z.array(MuscleSchema).optional(),
   descriptionFa: z.string().optional(),
   descriptionEn: z.string().optional(),
   tipsFa: z.array(z.string()).optional(),
@@ -14,7 +21,13 @@ const updateSchema = z.object({
   mistakesEn: z.array(z.string()).optional(),
   wikiUrl: z.string().optional(),
   videoUrl: z.string().optional(),
-});
+}).refine(
+  ({ musclesPrimary, musclesSecondary }) =>
+    !musclesPrimary ||
+    !musclesSecondary ||
+    !musclesSecondary.some((m) => musclesPrimary.includes(m)),
+  { message: "A muscle cannot be both primary and secondary." }
+);
 
 export async function PATCH(
   request: NextRequest,

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { DAY_COLORS, ProgramData, ProgramExerciseData } from "./AppShell";
+import { MUSCLE_LABEL } from "@/lib/muscles";
 import ExerciseDetail from "./ExerciseDetail";
 
 export default function ProgramView({
@@ -134,10 +135,10 @@ function ExerciseList({
         <div key={gi}>
           {group.group && (
             <div
-              className="text-xs font-bold py-1 px-3 mb-1 mt-2 rounded-r-lg"
+              className="text-xs font-bold py-1 px-3 mb-1 mt-2 rounded-s-lg"
               style={{
                 background: "#1f1700",
-                borderRight: "3px solid #f59e0b",
+                borderInlineStart: "3px solid #f59e0b",
                 color: "#f59e0b",
               }}
             >
@@ -146,24 +147,28 @@ function ExerciseList({
           )}
           {group.items.map((ex) => {
             const borderColor = group.group ? "#f59e0b" : dayColor;
-            const repsLabel = ex.reps.join("، ");
+            const repsLabel = ex.reps.join(locale === "fa" ? "، " : ", ");
             const name =
               locale === "fa" ? ex.exercise.nameFa : ex.exercise.nameEn;
-            const muscles = ex.exercise.muscles.join(" · ");
+            // Primaries only: this row already carries three lines of small
+            // muted text, and appending secondaries buries the signal.
+            const muscles = ex.exercise.musclesPrimary
+              .map((m) => MUSCLE_LABEL[m][locale === "fa" ? "fa" : "en"])
+              .join(" · ");
             return (
               <button
                 key={ex.id}
                 onClick={() => onSelect(ex)}
-                className="w-full rounded-xl p-4 mb-2 flex justify-between items-center text-right transition-colors"
+                className="w-full rounded-xl p-4 mb-2 flex justify-between items-center text-start transition-colors"
                 style={{
                   background: "var(--surface)",
                   border: "1px solid var(--border)",
-                  borderRight: `3px solid ${borderColor}`,
+                  borderInlineStart: `3px solid ${borderColor}`,
                   cursor: "pointer",
                   fontFamily: "inherit",
                 }}
               >
-                <div className="flex-1 text-right">
+                <div className="flex-1 text-start">
                   <div
                     className="text-sm font-bold mb-1"
                     style={{ color: "var(--text)" }}
@@ -184,10 +189,10 @@ function ExerciseList({
                   )}
                 </div>
                 <span
-                  className="text-lg mr-2"
+                  className="text-lg ms-2"
                   style={{ color: "var(--muted2)" }}
                 >
-                  ‹
+                  {locale === "fa" ? "‹" : "›"}
                 </span>
               </button>
             );

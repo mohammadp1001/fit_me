@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Muscle } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -6,7 +6,8 @@ const exercises = [
   {
     nameFa: "پرس سینه دستگاه",
     nameEn: "Machine Chest Press",
-    muscles: ["سینه بزرگ", "سه سر بازو", "دلتوئید جلو"],
+    musclesPrimary: ["pec_major_sternal"] as Muscle[],
+    musclesSecondary: ["triceps_brachii", "front_delt"] as Muscle[],
     descriptionFa:
       "روی صندلی دستگاه بنشین. پشتت کاملاً به پشتی بچسبه. دسته‌ها رو در سطح سینه میانی بگیر. هل بده جلو تا آرنج نزدیک به صاف بشه — ولی قفل نکن. کنترل‌شده برگرد.",
     descriptionEn:
@@ -29,7 +30,8 @@ const exercises = [
   {
     nameFa: "پرس بالا سینه دمبل",
     nameEn: "Dumbbell Incline Press",
-    muscles: ["سینه بالایی", "دلتوئید جلو", "سه سر بازو"],
+    musclesPrimary: ["pec_major_clavicular"] as Muscle[],
+    musclesSecondary: ["front_delt", "triceps_brachii"] as Muscle[],
     descriptionFa:
       "نیمکت رو ۳۰-۴۵ درجه تنظیم کن. دمبل‌ها رو کنار سینه بالایی بگیر. هل بده بالا و در بالا دمبل‌ها رو کمی به هم نزدیک کن.",
     descriptionEn:
@@ -52,7 +54,8 @@ const exercises = [
   {
     nameFa: "باترفلای دستگاه",
     nameEn: "Machine Pec Deck",
-    muscles: ["سینه بزرگ", "سینه داخلی"],
+    musclesPrimary: ["pec_major_sternal"] as Muscle[],
+    musclesSecondary: [] as Muscle[],
     descriptionFa:
       "روی صندلی بشین. پشتت کاملاً به تکیه‌گاه بچسبه. دسته‌ها رو به هم نزدیک کن انگار می‌خوای چیزی رو بغل کنی. در بسته شدن یه ثانیه مکث کن.",
     descriptionEn:
@@ -67,7 +70,8 @@ const exercises = [
   {
     nameFa: "پرس زیر سینه سیم‌کش ایستاده",
     nameEn: "Cable Lower Chest Press",
-    muscles: ["سینه پایینی", "سه سر بازو"],
+    musclesPrimary: ["pec_major_sternal"] as Muscle[],
+    musclesSecondary: ["triceps_brachii"] as Muscle[],
     descriptionFa:
       "دستگیره‌ها رو از بالا بگیر. کمی به جلو خم بشو. دست‌ها رو از بالا به پایین هل بده. در پایین دست‌ها زیر سینه به هم می‌رسن.",
     descriptionEn:
@@ -82,7 +86,8 @@ const exercises = [
   {
     nameFa: "دیپ پارالل",
     nameEn: "Parallel Bar Dips",
-    muscles: ["سینه پایینی", "سه سر بازو", "دلتوئید جلو"],
+    musclesPrimary: ["pec_major_sternal", "triceps_brachii"] as Muscle[],
+    musclesSecondary: ["front_delt"] as Muscle[],
     descriptionFa:
       "بین دو میله موازی تکیه بده. کمی به جلو خم بشو. پایین بیا تا آرنج ۹۰ درجه بشه. برگرد بالا بدون قفل کردن آرنج.",
     descriptionEn:
@@ -97,7 +102,8 @@ const exercises = [
   {
     nameFa: "جلو بازو دمبل تناوبی روی میز بالا سینه",
     nameEn: "Incline Alternating Dumbbell Curl",
-    muscles: ["دو سر بازو", "براکیالیس"],
+    musclesPrimary: ["biceps_brachii"] as Muscle[],
+    musclesSecondary: ["brachialis"] as Muscle[],
     descriptionFa:
       "نیمکت رو ۶۰-۷۰ درجه تنظیم کن. یک دست رو بالا بیار در حالی که دیگری پایینه. مچ رو در بالا بپیچون (سوپینیشن).",
     descriptionEn:
@@ -112,7 +118,8 @@ const exercises = [
   {
     nameFa: "جلو بازو دستگاه (پریچر کرل)",
     nameEn: "Machine Preacher Curl",
-    muscles: ["دو سر بازو", "براکیالیس", "براکیورادیالیس"],
+    musclesPrimary: ["biceps_brachii"] as Muscle[],
+    musclesSecondary: ["brachialis", "brachioradialis"] as Muscle[],
     descriptionFa:
       "روی دستگاه بنشین. آرنج‌ها روی پد دستگاه ثابت. دستگیره رو بگیر و بالا بیار تا دو سر بازو کاملاً جمع بشه. آروم پایین بیار تا کشش رو حس کنی.",
     descriptionEn:
@@ -135,7 +142,8 @@ const exercises = [
   {
     nameFa: "جلو بازو سیم‌کش ایستاده دست جمع",
     nameEn: "Close-Grip Cable Bicep Curl",
-    muscles: ["دو سر بازو", "قله دو سر"],
+    musclesPrimary: ["biceps_brachii"] as Muscle[],
+    musclesSecondary: ["brachialis"] as Muscle[],
     descriptionFa:
       "دستگیره کوچک رو به سیم‌کش پایین وصل کن. هر دو دست رو با فاصله کم بگیر. بالا بیار تا بازوها کاملاً جمع بشن.",
     descriptionEn:
@@ -150,7 +158,8 @@ const exercises = [
   {
     nameFa: "جلو بازو سیم‌کش مچ برعکس",
     nameEn: "Cable Reverse Bicep Curl",
-    muscles: ["براکیورادیالیس", "ساعد"],
+    musclesPrimary: ["brachioradialis"] as Muscle[],
+    musclesSecondary: ["forearm_extensors", "biceps_brachii"] as Muscle[],
     descriptionFa:
       "مثل جلو بازو سیم‌کش ولی کف دست رو به پایین بگیر (پرونیشن). بیشتر روی ساعد کار می‌کنه.",
     descriptionEn:
@@ -165,7 +174,8 @@ const exercises = [
   {
     nameFa: "پرس پا دستگاه خوابیده پا باز",
     nameEn: "Wide-Stance Leg Press",
-    muscles: ["چهار سر ران", "سرینی", "همسترینگ"],
+    musclesPrimary: ["quadriceps", "glute_max"] as Muscle[],
+    musclesSecondary: ["hamstrings", "adductors"] as Muscle[],
     descriptionFa:
       "روی دستگاه بخواب. پاها رو با فاصله بیشتر از عرض شانه بالا قرار بده. پنجه‌ها کمی به بیرون. زانوها رو خم کن تا ۹۰ درجه. هل بده ولی زانو قفل نکن.",
     descriptionEn:
@@ -180,7 +190,8 @@ const exercises = [
   {
     nameFa: "فول هاگ پا دستگاه پا باز",
     nameEn: "Wide-Stance Hack Squat",
-    muscles: ["چهار سر ران", "سرینی بزرگ", "همسترینگ"],
+    musclesPrimary: ["quadriceps", "glute_max"] as Muscle[],
+    musclesSecondary: ["hamstrings", "adductors"] as Muscle[],
     descriptionFa:
       "زیر دستگاه هاگ قرار بگیر. پاها عریض‌تر از شانه. پایین بشین تا ران‌ها موازی زمین بشن یا پایین‌تر.",
     descriptionEn:
@@ -195,7 +206,8 @@ const exercises = [
   {
     nameFa: "جلو پا دستگاه نشسته",
     nameEn: "Machine Leg Extension",
-    muscles: ["چهار سر ران"],
+    musclesPrimary: ["quadriceps"] as Muscle[],
+    musclesSecondary: [] as Muscle[],
     descriptionFa:
       "روی دستگاه بشین. پاها رو بالا بیار تا کاملاً صاف بشن. در بالا یه ثانیه مکث کن. آروم پایین بیار.",
     descriptionEn:
@@ -210,7 +222,8 @@ const exercises = [
   {
     nameFa: "پشت پا دستگاه خوابیده",
     nameEn: "Lying Leg Curl Machine",
-    muscles: ["همسترینگ", "ساق پا"],
+    musclesPrimary: ["hamstrings"] as Muscle[],
+    musclesSecondary: ["gastrocnemius"] as Muscle[],
     descriptionFa:
       "روی دستگاه دمر بخواب. بالشتک پشت مچ پا. پاها رو بالا بیار تا ۹۰ درجه. آروم پایین بیار.",
     descriptionEn:
@@ -225,7 +238,8 @@ const exercises = [
   {
     nameFa: "ددلیفت رومانیایی سیم‌کش پایین",
     nameEn: "Cable Pull-Through (Romanian Deadlift)",
-    muscles: ["همسترینگ", "سرینی بزرگ", "کمر پایین"],
+    musclesPrimary: ["hamstrings", "glute_max"] as Muscle[],
+    musclesSecondary: ["erector_spinae"] as Muscle[],
     descriptionFa:
       "رو به دستگاه سیم‌کش پایین بایست. طناب رو با دو دست بگیر. کمر رو صاف نگه دار. با لگن به عقب برو تا کشش همسترینگ رو حس کنی. برگرد بالا.",
     descriptionEn:
@@ -240,7 +254,8 @@ const exercises = [
   {
     nameFa: "ساق پا دستگاه نشسته",
     nameEn: "Seated Calf Raise Machine",
-    muscles: ["ساق پا داخلی (سولئوس)"],
+    musclesPrimary: ["soleus"] as Muscle[],
+    musclesSecondary: [] as Muscle[],
     descriptionFa:
       "روی دستگاه بشین. بالشتک روی زانوها. پنجه رو بالا بیار تا ساق کاملاً کشیده بشه. آروم پایین بیار.",
     descriptionEn:
@@ -255,7 +270,8 @@ const exercises = [
   {
     nameFa: "پشت بازو سیم‌کش ایستاده",
     nameEn: "Cable Tricep Pushdown",
-    muscles: ["سه سر بازو"],
+    musclesPrimary: ["triceps_brachii"] as Muscle[],
+    musclesSecondary: [] as Muscle[],
     descriptionFa:
       "رو به دستگاه بایست. آرنج‌ها کنار تنه ثابت. ساعد رو پایین بیار تا کاملاً صاف بشه.",
     descriptionEn:
@@ -270,7 +286,8 @@ const exercises = [
   {
     nameFa: "پشت بازو دستگاه",
     nameEn: "Machine Tricep Pushdown",
-    muscles: ["سه سر بازو (سر بلند)"],
+    musclesPrimary: ["triceps_brachii"] as Muscle[],
+    musclesSecondary: [] as Muscle[],
     descriptionFa:
       "روی دستگاه پشت بازو بنشین. پشت به پشتی چسبیده باشه. دسته‌ها رو بگیر و ساعد رو پایین هل بده تا کاملاً صاف بشه. کنترل‌شده برگرد.",
     descriptionEn:
@@ -285,7 +302,8 @@ const exercises = [
   {
     nameFa: "پشت بازو دمبل خوابیده تک بغل گوش",
     nameEn: "Dumbbell Skull Crusher",
-    muscles: ["سه سر بازو (سر بلند)"],
+    musclesPrimary: ["triceps_brachii"] as Muscle[],
+    musclesSecondary: [] as Muscle[],
     descriptionFa:
       "دراز بکش. آرنج رو کنار گوش ثابت نگه دار. دمبل رو پایین بیار و برگرد بالا. هر دست جداگانه.",
     descriptionEn:
@@ -300,7 +318,8 @@ const exercises = [
   {
     nameFa: "پشت بازو سیم‌کش طنابی ایستاده",
     nameEn: "Cable Rope Pushdown",
-    muscles: ["سه سر بازو", "سر خارجی"],
+    musclesPrimary: ["triceps_brachii"] as Muscle[],
+    musclesSecondary: [] as Muscle[],
     descriptionFa:
       "دستگیره طنابی به سیم‌کش بالا وصل کن. ساعدها رو پایین بیار و در پایین طناب رو از هم باز کن (V شکل).",
     descriptionEn:
@@ -315,7 +334,8 @@ const exercises = [
   {
     nameFa: "پرس سرشانه دستگاه نشسته",
     nameEn: "Machine Overhead Press",
-    muscles: ["دلتوئید جلو", "دلتوئید میانی", "سه سر بازو"],
+    musclesPrimary: ["front_delt", "side_delt"] as Muscle[],
+    musclesSecondary: ["triceps_brachii"] as Muscle[],
     descriptionFa:
       "روی دستگاه پرس سرشانه بنشین. پشتت کاملاً به پشتی چسبیده باشه. دسته‌ها در سطح شانه. هل بده بالا تا آرنج نزدیک به صاف بشه — ولی قفل نکن.",
     descriptionEn:
@@ -330,7 +350,8 @@ const exercises = [
   {
     nameFa: "سرشانه نشر جانب دمبل ایستاده",
     nameEn: "Dumbbell Lateral Raise",
-    muscles: ["دلتوئید میانی"],
+    musclesPrimary: ["side_delt"] as Muscle[],
+    musclesSecondary: [] as Muscle[],
     descriptionFa:
       "بایست. دمبل‌های سبک کنار بدن. آرنج کمی خم. دمبل‌ها رو به طرفین بالا بیار تا موازی زمین بشن.",
     descriptionEn:
@@ -345,7 +366,8 @@ const exercises = [
   {
     nameFa: "سرشانه نشر از جلو دمبل چکشی متناوب نشسته",
     nameEn: "Seated Alternating Hammer Front Raise",
-    muscles: ["دلتوئید جلو"],
+    musclesPrimary: ["front_delt"] as Muscle[],
+    musclesSecondary: [] as Muscle[],
     descriptionFa: "بنشین. دمبل‌ها رو با گریپ چکشی بگیر. یکی یکی به جلو بالا بیار تا موازی زمین.",
     descriptionEn: "Sit down. Hold dumbbells with a hammer grip. Raise one at a time to shoulder height.",
     tipsFa: ["نشستن = کمتر تاب خوردن بدن"],
@@ -358,7 +380,8 @@ const exercises = [
   {
     nameFa: "شراگز دمبل از بغل",
     nameEn: "Dumbbell Shrug",
-    muscles: ["ذوزنقه بالایی"],
+    musclesPrimary: ["traps_upper"] as Muscle[],
+    musclesSecondary: [] as Muscle[],
     descriptionFa: "بایست. دمبل‌ها کنار بدن. شانه‌ها رو بالا بیار. یه ثانیه نگه دار. پایین بیار.",
     descriptionEn: "Stand upright. Dumbbells at your sides. Shrug shoulders up. Hold for one second. Lower down.",
     tipsFa: ["گردن رو به جلو نیار", "فقط بالا-پایین، نه دایره‌ای"],
@@ -371,7 +394,8 @@ const exercises = [
   {
     nameFa: "فلای معکوس دستگاه",
     nameEn: "Machine Reverse Fly",
-    muscles: ["دلتوئید خلفی", "ذوزنقه میانی", "لوزی"],
+    musclesPrimary: ["rear_delt"] as Muscle[],
+    musclesSecondary: ["traps_middle", "rhomboids"] as Muscle[],
     descriptionFa: "روی دستگاه بنشین. دست‌ها رو به عقب باز کن تا در یه سطح با شانه باشن. آروم برگرد.",
     descriptionEn: "Sit on the machine. Open arms backward until level with shoulders. Return slowly.",
     tipsFa: ["آرنج کمی خم باشه", "سینه رو به پشتی فشار بده"],
@@ -384,7 +408,8 @@ const exercises = [
   {
     nameFa: "زیر بغل قایقی تک دست چرخشی",
     nameEn: "Single-Arm Rotating Cable Row",
-    muscles: ["پشتی بزرگ", "ذوزنقه", "بایسپس"],
+    musclesPrimary: ["lats"] as Muscle[],
+    musclesSecondary: ["traps_middle", "biceps_brachii"] as Muscle[],
     descriptionFa: "روی دستگاه قایقی بنشین. یه دستگیره تک بگیر. بکش به طرف شکم در حالی که تنه رو کمی می‌چرخونی.",
     descriptionEn: "Sit on the cable row machine. Use a single handle. Pull toward your abdomen while slightly rotating the torso.",
     tipsFa: ["کشش رو با پشت حس کن نه دست"],
@@ -397,7 +422,8 @@ const exercises = [
   {
     nameFa: "زیر بغل قایقی دست باز",
     nameEn: "Wide-Grip Cable Row",
-    muscles: ["پشتی بزرگ", "ذوزنقه میانی"],
+    musclesPrimary: ["lats"] as Muscle[],
+    musclesSecondary: ["traps_middle"] as Muscle[],
     descriptionFa: "دستگیره عریض بگیر. بکش به سمت شکم. در انتها تیغه کتف‌ها رو به هم فشار بده.",
     descriptionEn: "Use a wide-grip handle. Pull toward your abdomen. At the end, squeeze shoulder blades together.",
     tipsFa: ["سینه رو بالا نگه دار"],
@@ -410,7 +436,8 @@ const exercises = [
   {
     nameFa: "لت از جلو دست باز",
     nameEn: "Wide-Grip Lat Pulldown",
-    muscles: ["پشتی بزرگ", "ذوزنقه پایین"],
+    musclesPrimary: ["lats"] as Muscle[],
+    musclesSecondary: ["traps_lower", "biceps_brachii"] as Muscle[],
     descriptionFa: "میله رو با دست‌های باز بگیر. بکش پایین تا به زیر چانه برسه. با آرنج‌هات پایین بکش، نه مچ.",
     descriptionEn: "Grip the bar wide. Pull down until it reaches below your chin. Pull using your elbows, not your wrists.",
     tipsFa: ["سینه رو به جلو بده و کمی به عقب تکیه کن"],
@@ -423,7 +450,8 @@ const exercises = [
   {
     nameFa: "زیر بغل سیم‌کش هلالی تک دست",
     nameEn: "Single-Arm Cable Pulldown (Arc)",
-    muscles: ["پشتی بزرگ", "دندانه‌ای جلو"],
+    musclesPrimary: ["lats"] as Muscle[],
+    musclesSecondary: ["serratus_anterior"] as Muscle[],
     descriptionFa: "دستگیره تک رو از بالا بگیر. بکش به سمت لگن در یه قوس هلالی.",
     descriptionEn: "Grab a single handle from high cable. Pull toward your hip in an arc motion.",
     tipsFa: ["مسیر هلالی شکل داشته باشه"],
@@ -436,7 +464,8 @@ const exercises = [
   {
     nameFa: "زیر بغل دستگاه H",
     nameEn: "Machine Chest-Supported Row (H-Row)",
-    muscles: ["پشتی بزرگ", "ذوزنقه میانی", "لوزی"],
+    musclesPrimary: ["lats"] as Muscle[],
+    musclesSecondary: ["traps_middle", "rhomboids"] as Muscle[],
     descriptionFa: "سینه به تکیه‌گاه. بکش به عقب در حالی که آرنج‌ها کنار تنه حرکت می‌کنن. تیغه کتف‌ها رو به هم بکش.",
     descriptionEn: "Chest against support pad. Pull back with elbows moving along the torso. Squeeze shoulder blades together.",
     tipsFa: ["سینه به تکیه‌گاه چسبیده بمونه"],
@@ -456,7 +485,8 @@ async function main() {
       where: { nameFa: ex.nameFa },
       update: {
         nameEn: ex.nameEn,
-        muscles: ex.muscles,
+        musclesPrimary: ex.musclesPrimary,
+        musclesSecondary: ex.musclesSecondary,
         descriptionFa: ex.descriptionFa,
         descriptionEn: ex.descriptionEn,
         tipsFa: ex.tipsFa,

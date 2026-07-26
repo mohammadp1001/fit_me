@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import type { Muscle } from "@prisma/client";
 import ProgramView from "./ProgramView";
 import LogView from "./LogView";
 import ProgressView from "./ProgressView";
@@ -46,7 +47,8 @@ export type ExerciseData = {
   id: number;
   nameFa: string;
   nameEn: string;
-  muscles: string[];
+  musclesPrimary: Muscle[];
+  musclesSecondary: Muscle[];
   descriptionFa: string;
   descriptionEn: string;
   tipsFa: string[];

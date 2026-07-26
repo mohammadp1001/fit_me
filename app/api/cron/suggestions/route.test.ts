@@ -70,12 +70,12 @@ describe("/api/cron/suggestions", () => {
     }
 
     const exerciseA = await prisma.exercise.create({
-      data: { nameFa: `Cron Ex A ${suffix}`, nameEn: `Cron Ex A ${suffix}`, muscles: ["Chest"] },
+      data: { nameFa: `Cron Ex A ${suffix}`, nameEn: `Cron Ex A ${suffix}`, musclesPrimary: ["pec_major_sternal"] },
     });
     exerciseAId = exerciseA.id;
 
     const exerciseB = await prisma.exercise.create({
-      data: { nameFa: `Cron Ex B ${suffix}`, nameEn: `Cron Ex B ${suffix}`, muscles: ["Back"] },
+      data: { nameFa: `Cron Ex B ${suffix}`, nameEn: `Cron Ex B ${suffix}`, musclesPrimary: ["lats"] },
     });
     exerciseBId = exerciseB.id;
 

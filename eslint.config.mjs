@@ -10,6 +10,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "coverage/**",
+    // Agent worktrees are full checkouts of this repo; linting them reports
+    // thousands of findings from their own (and their bundles') copies.
+    ".claude/**",
     "next-env.d.ts",
     "jest.config.js",
     "public/sw.js",
