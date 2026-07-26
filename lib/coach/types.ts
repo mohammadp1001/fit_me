@@ -1,4 +1,6 @@
 import { z } from "zod";
+import type { Muscle } from "@prisma/client";
+import type { MuscleGroup, VolumeVerdict } from "../muscles";
 
 /**
  * Local types for the coaching "generation core".
@@ -16,9 +18,24 @@ export interface CoachExercise {
   id: number;
   nameFa: string;
   nameEn: string;
-  muscles: string[];
+  musclesPrimary: Muscle[];
+  musclesSecondary: Muscle[];
   descriptionFa?: string;
   descriptionEn?: string;
+}
+
+/**
+ * Trailing-window hard-set volume for the muscle groups this exercise touches.
+ *
+ * Scoped to the touched groups on purpose: quad volume cannot inform weight
+ * selection for a Lat Pulldown, so shipping the full group table would be mostly
+ * irrelevant tokens on every generation. Cross-muscle observations belong in
+ * global memory, not in the per-exercise path.
+ */
+export interface CoachGroupVolume {
+  group: MuscleGroup;
+  sets: number;
+  verdict: VolumeVerdict;
 }
 
 /** Subset of the Prisma `ProgramExercise` model relevant to generating a suggestion. */
@@ -61,4 +78,6 @@ export interface GenerateSuggestionInput {
   history: CoachWorkoutLog[];
   exerciseMemory: string | null;
   globalMemory: string | null;
+  /** Volume for the groups this exercise touches. Omit when unavailable. */
+  groupVolume?: CoachGroupVolume[];
 }

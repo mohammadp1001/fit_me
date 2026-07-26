@@ -34,7 +34,7 @@ describe("Suggestion & coach-memory models", () => {
     }
 
     const exercise = await prisma.exercise.create({
-      data: { nameFa: `Test Exercise FA ${Date.now()}`, nameEn: "Test Exercise", muscles: ["Chest"] },
+      data: { nameFa: `Test Exercise FA ${Date.now()}`, nameEn: "Test Exercise", musclesPrimary: ["pec_major_sternal"] },
     });
     exerciseId = exercise.id;
 

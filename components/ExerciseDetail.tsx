@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { ProgramExerciseData } from "./AppShell";
 import { computeInitialSets, SetLog, SuggestionSet } from "@/lib/log-prefill";
+import { MUSCLE_LABEL } from "@/lib/muscles";
 
 type Tab = "info" | "video" | "log";
 
@@ -34,7 +35,7 @@ export default function ExerciseDetail({
     { key: "log", label: t("exercise.logWeight") },
   ];
 
-  const repsLabel = programExercise.reps.join("، ");
+  const repsLabel = programExercise.reps.join(locale === "fa" ? "، " : ", ");
 
   return (
     <div className="px-4 pb-6">
@@ -61,13 +62,27 @@ export default function ExerciseDetail({
           {programExercise.setsCount} {t("program.sets")} | {repsLabel} {t("program.reps")}
         </div>
         <div className="flex flex-wrap gap-2">
-          {ex.muscles.map((m) => (
+          {ex.musclesPrimary.map((m) => (
             <span
               key={m}
               className="px-3 py-1 rounded-full text-xs font-semibold"
               style={{ background: `${dayColor}22`, color: dayColor }}
             >
-              {m}
+              {MUSCLE_LABEL[m][locale === "fa" ? "fa" : "en"]}
+            </span>
+          ))}
+          {/* Secondary movers carry visibly less weight: outlined, not filled. */}
+          {ex.musclesSecondary.map((m) => (
+            <span
+              key={m}
+              className="px-3 py-1 rounded-full text-xs font-semibold"
+              style={{
+                background: "transparent",
+                border: `1px solid ${dayColor}66`,
+                color: "var(--muted)",
+              }}
+            >
+              {MUSCLE_LABEL[m][locale === "fa" ? "fa" : "en"]}
             </span>
           ))}
         </div>

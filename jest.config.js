@@ -19,6 +19,10 @@ const config = {
     '**/__tests__/**/*.[jt]s?(x)',
     '**/?(*.)+(spec|test).[jt]s?(x)',
   ],
+  // `.claude/worktrees/` holds full checkouts of the repo made by agent
+  // worktrees. Without this, their (possibly stale) copies of every suite get
+  // collected alongside the real ones and fail against the current schema.
+  testPathIgnorePatterns: ['/node_modules/', '/.claude/', '/.next/'],
   collectCoverageFrom: [
     'lib/**/*.{ts,tsx}',
     'app/api/**/*.{ts,tsx}',

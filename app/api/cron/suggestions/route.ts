@@ -5,6 +5,9 @@ import {
   MockCoachProvider,
   type CoachProvider,
 } from "@/lib/coach";
+import { computeGroupVolume } from "@/lib/volume-server";
+import { groupsForExercise } from "@/lib/volume";
+import { verdictForVolume } from "@/lib/muscles";
 
 /**
  * Result for a single exercise processed by the cron run.
@@ -90,6 +93,10 @@ export async function runSuggestionsCron(
   const globalMemoryRow = await prisma.globalMemory.findUnique({ where: { id: 1 } });
   const globalMemory = globalMemoryRow?.notes ?? null;
 
+  // Computed once for the whole run: the window is the same for every exercise,
+  // and each prompt slices out only the groups its own exercise trains.
+  const volume = await computeGroupVolume();
+
   const results: ExerciseResult[] = [];
 
   for (const programExercise of dueProgramDay.exercises) {
@@ -140,6 +147,14 @@ export async function runSuggestionsCron(
           })),
           exerciseMemory: exerciseMemoryRow?.notes ?? null,
           globalMemory,
+          groupVolume: groupsForExercise(
+            exercise.musclesPrimary,
+            exercise.musclesSecondary
+          ).map((group) => ({
+            group,
+            sets: volume[group],
+            verdict: verdictForVolume(volume[group]),
+          })),
         },
         provider,
       );

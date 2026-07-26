@@ -1,4 +1,17 @@
 import type { GenerateSuggestionInput } from "./types";
+import {
+  MUSCLE_LABEL,
+  MUSCLE_GROUP_LABEL,
+  WEEKLY_SET_FLOOR,
+  WEEKLY_SET_CEILING,
+} from "../muscles";
+import { VOLUME_WINDOW_DAYS } from "../volume";
+
+const VERDICT_PHRASE = {
+  low: `below the ${WEEKLY_SET_FLOOR}-set floor`,
+  adequate: `within the ${WEEKLY_SET_FLOOR}-${WEEKLY_SET_CEILING} set range`,
+  high: `above the ${WEEKLY_SET_CEILING}-set ceiling`,
+} as const;
 
 /**
  * Assembles a single text prompt from the exercise, program-exercise
@@ -9,8 +22,14 @@ import type { GenerateSuggestionInput } from "./types";
  * consume it unchanged.
  */
 export function buildCoachPrompt(input: GenerateSuggestionInput): string {
-  const { exercise, programExercise, history, exerciseMemory, globalMemory } =
-    input;
+  const {
+    exercise,
+    programExercise,
+    history,
+    exerciseMemory,
+    globalMemory,
+    groupVolume,
+  } = input;
 
   const sortedHistory = [...history].sort((a, b) => {
     const dateA = new Date(a.date).getTime();
@@ -34,12 +53,32 @@ export function buildCoachPrompt(input: GenerateSuggestionInput): string {
           })
           .join("\n");
 
+  const labelsEn = (muscles: typeof exercise.musclesPrimary) =>
+    muscles.map((m) => MUSCLE_LABEL[m].en).join(", ");
+
+  const volumeSection =
+    groupVolume && groupVolume.length > 0
+      ? [
+          `## Weekly volume (trailing ${VOLUME_WINDOW_DAYS} days, muscle groups this exercise trains)`,
+          ...groupVolume.map(
+            ({ group, sets, verdict }) =>
+              `${MUSCLE_GROUP_LABEL[group].en}: ${sets} hard sets - ${VERDICT_PHRASE[verdict]}`
+          ),
+          "A secondary mover counts as half a set toward its group.",
+          "",
+        ]
+      : [];
+
   const lines = [
     "You are a strength-training coach generating the next workout suggestion for a single exercise.",
     "",
+    ...volumeSection,
     "## Exercise",
     `Name: ${exercise.nameEn} (${exercise.nameFa})`,
-    `Muscles: ${exercise.muscles.join(", ") || "unspecified"}`,
+    `Primary muscles: ${labelsEn(exercise.musclesPrimary) || "unspecified"}`,
+    exercise.musclesSecondary.length > 0
+      ? `Secondary muscles: ${labelsEn(exercise.musclesSecondary)}`
+      : "",
     exercise.descriptionEn ? `Description: ${exercise.descriptionEn}` : "",
     "",
     "## Program prescription",

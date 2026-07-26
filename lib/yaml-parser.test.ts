@@ -11,7 +11,8 @@ program:
       name_en: "Day 1 EN"
       exercises:
         - name: "Exercise A"
-          muscles: ["Chest"]
+          muscles:
+            primary: [pec_major_sternal]
           sets: 3
           reps: 10
     `;
@@ -31,6 +32,8 @@ program:
     - name: "Day 1"
       exercises:
         - name: "Exercise"
+          muscles:
+            primary: [quadriceps]
           sets: 4
           reps: [12, 10, 8, 6]
     `;
@@ -46,10 +49,14 @@ program:
     - name: "Day 1"
       exercises:
         - name: "Ex A"
+          muscles:
+            primary: [lats]
           sets: 3
           reps: 10
           superset_with: "Ex B"
         - name: "Ex B"
+          muscles:
+            primary: [lats]
           sets: 3
           reps: 10
           superset_with: "Ex A"
@@ -77,6 +84,8 @@ program:
   days:
     - exercises:
         - name: "Ex"
+          muscles:
+            primary: [lats]
           sets: 3
           reps: 10
     `;
@@ -91,6 +100,8 @@ program:
     - name: "Day 1"
       exercises:
         - name: "Ex"
+          muscles:
+            primary: [lats]
           sets: 3
           reps: 10
           video: "https://example.com/ex.mp4"
@@ -116,6 +127,8 @@ program:
     - name: "Day 1"
       exercises:
         - name: "Ex"
+          muscles:
+            primary: [lats]
           sets: 3
           reps: 10
     `;
@@ -133,10 +146,96 @@ program:
     - name: "Day 1"
       exercises:
         - name: "Ex"
+          muscles:
+            primary: [lats]
           sets: 3
           reps: 10
     `;
     const result = parseWorkoutYaml(yaml);
     expect(result.name_en).toBeUndefined();
+  });
+});
+
+describe('parseWorkoutYaml — muscles', () => {
+  const wrap = (musclesBlock: string) => `
+program:
+  name: "Test"
+  days:
+    - name: "Day 1"
+      exercises:
+        - name: "Lat Pulldown"
+${musclesBlock}
+          sets: 3
+          reps: 10
+  `;
+
+  it('parses primary and secondary into separate lists', () => {
+    const ex = parseWorkoutYaml(
+      wrap(`          muscles:
+            primary: [lats, rhomboids]
+            secondary: [biceps_brachii]`)
+    ).days[0].exercises[0];
+
+    expect(ex.musclesPrimary).toEqual(['lats', 'rhomboids']);
+    expect(ex.musclesSecondary).toEqual(['biceps_brachii']);
+  });
+
+  it('defaults secondary to an empty list', () => {
+    const ex = parseWorkoutYaml(
+      wrap(`          muscles:
+            primary: [lats]`)
+    ).days[0].exercises[0];
+
+    expect(ex.musclesSecondary).toEqual([]);
+  });
+
+  it('rejects the legacy flat free-text list', () => {
+    expect(() =>
+      parseWorkoutYaml(wrap('          muscles: ["Chest", "Triceps"]'))
+    ).toThrow(/"muscles" is now an object, not a list/);
+  });
+
+  it('rejects an unknown muscle and names the exercise', () => {
+    expect(() =>
+      parseWorkoutYaml(
+        wrap(`          muscles:
+            primary: [latisimus]`)
+      )
+    ).toThrow(/exercise "Lat Pulldown": unknown muscle "latisimus"/);
+  });
+
+  it('suggests the nearest canonical key for a near miss', () => {
+    expect(() =>
+      parseWorkoutYaml(
+        wrap(`          muscles:
+            primary: [latts]`)
+      )
+    ).toThrow(/did you mean "lats"\?/);
+  });
+
+  it('rejects an empty primary list', () => {
+    expect(() =>
+      parseWorkoutYaml(
+        wrap(`          muscles:
+            primary: []
+            secondary: [lats]`)
+      )
+    ).toThrow(/muscles\.primary must list at least one muscle/);
+  });
+
+  it('rejects a muscle listed as both primary and secondary', () => {
+    expect(() =>
+      parseWorkoutYaml(
+        wrap(`          muscles:
+            primary: [lats]
+            secondary: [lats]`)
+      )
+    ).toThrow(/listed as both primary and secondary/);
+  });
+
+  it('rejects a missing muscles block', () => {
+    expect(() => parseWorkoutYaml(wrap('          video: "x.mp4"'))).toThrow(
+      /missing "muscles"/
+    );
   });
 });

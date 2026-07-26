@@ -9,7 +9,8 @@ const exercise: CoachExercise = {
   id: 1,
   nameFa: "اسکات",
   nameEn: "Squat",
-  muscles: ["Quads", "Glutes"],
+  musclesPrimary: ["quadriceps", "glute_max"],
+  musclesSecondary: ["hamstrings"],
 };
 
 const programExercise: CoachProgramExercise = {
@@ -77,5 +78,45 @@ describe("buildCoachPrompt", () => {
     expect(idxJune).toBeGreaterThan(-1);
     expect(idxJan).toBeGreaterThan(-1);
     expect(idxJune).toBeLessThan(idxJan);
+  });
+});
+
+describe("buildCoachPrompt — muscles and volume", () => {
+  const base = {
+    exercise,
+    programExercise,
+    history: [],
+    exerciseMemory: null,
+    globalMemory: null,
+  };
+
+  it("renders primary and secondary movers under their display names", () => {
+    const prompt = buildCoachPrompt(base);
+    expect(prompt).toContain("Primary muscles: Quadriceps, Glute Max");
+    expect(prompt).toContain("Secondary muscles: Hamstrings");
+  });
+
+  it("omits the secondary line when there are none", () => {
+    const prompt = buildCoachPrompt({
+      ...base,
+      exercise: { ...exercise, musclesSecondary: [] },
+    });
+    expect(prompt).not.toContain("Secondary muscles:");
+  });
+
+  it("includes the volume block with a verdict per group", () => {
+    const prompt = buildCoachPrompt({
+      ...base,
+      groupVolume: [
+        { group: "back", sets: 18.5, verdict: "high" },
+        { group: "arms", sets: 9, verdict: "low" },
+      ],
+    });
+    expect(prompt).toContain("Back: 18.5 hard sets - above the 20-set ceiling");
+    expect(prompt).toContain("Arms: 9 hard sets - below the 10-set floor");
+  });
+
+  it("omits the volume block entirely when no volume is supplied", () => {
+    expect(buildCoachPrompt(base)).not.toContain("Weekly volume");
   });
 });
