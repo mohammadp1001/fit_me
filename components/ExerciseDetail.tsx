@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { ProgramExerciseData } from "./AppShell";
 import { computeInitialSets, SetLog, SuggestionSet } from "@/lib/log-prefill";
 import { MUSCLE_LABEL } from "@/lib/muscles";
+import { getYouTubeId, youTubeWatchUrl } from "@/lib/youtube";
 
 type Tab = "info" | "video" | "log";
 
@@ -224,12 +225,35 @@ function VideoPanel({
   exercise: ProgramExerciseData["exercise"];
 }) {
   const t = useTranslations();
+  const youTubeId =
+    getYouTubeId(exercise.videoUrl) ?? getYouTubeId(exercise.wikiUrl);
   return (
     <div>
       <p className="text-xs text-center mb-3" style={{ color: "#777" }}>
         {locale === "fa" ? "نحوه انجام حرکت" : "How to perform this exercise"}
       </p>
-      {exercise.videoUrl ? (
+      {youTubeId ? (
+        <a
+          href={youTubeWatchUrl(youTubeId)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 rounded-xl p-4"
+          style={{
+            background: "#2a1a1a",
+            border: "1px solid #4a2a2a",
+            textDecoration: "none",
+          }}
+        >
+          <span className="text-2xl">▶️</span>
+          <span
+            className="text-sm font-bold flex-1"
+            style={{ color: "#ff4d4d" }}
+          >
+            {t("exercise.openInYouTube")}
+          </span>
+          <span style={{ color: "#ff4d4d" }}>←</span>
+        </a>
+      ) : exercise.videoUrl ? (
         <video
           src={exercise.videoUrl}
           controls
