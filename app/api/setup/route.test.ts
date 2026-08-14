@@ -21,20 +21,24 @@ const YT = "https://www.youtube.com/watch?v=YXjhMV7uz4c";
 /** Unique per run so parallel/repeat runs never collide on the name key. */
 const EX_NAME = `Setup Route Test Press ${Date.now()}`;
 
-function yamlWith(fields: string): string {
+function yamlFor(exerciseName: string, fields: string): string {
   return `
 program:
   name: "Setup Route Test Program"
   days:
     - name: "Day 1"
       exercises:
-        - name: "${EX_NAME}"
+        - name: "${exerciseName}"
           muscles:
             primary: [pec_major_sternal]
           sets: 3
           reps: 10
 ${fields}
 `;
+}
+
+function yamlWith(fields: string): string {
+  return yamlFor(EX_NAME, fields);
 }
 
 async function upload(yamlContent: string) {
@@ -131,5 +135,101 @@ describe("/api/setup library upsert", () => {
     await upload(yamlWith(`          description: "terser replacement"`));
 
     expect((await libraryRow()).descriptionFa).toBe("hand-written original");
+  });
+});
+
+// #45. The library seed is Persian-named (`nameFa`) with an English `nameEn`.
+// Matching on `nameFa` alone meant an English-named YAML could never bind to a
+// seeded row, so every upload minted a duplicate: one upload of the 26-exercise
+// example program took a freshly seeded library from 29 rows to 55.
+describe("/api/setup library lookup by name", () => {
+  const FA_NAME = `تست پرس ${Date.now()}`;
+  const EN_NAME = `Setup Route Lookup Press ${Date.now()}`;
+  const createdProgramIds: number[] = [];
+  let seededId: number;
+
+  beforeAll(async () => {
+    const row = await prisma.exercise.create({
+      data: {
+        nameFa: FA_NAME,
+        nameEn: EN_NAME,
+        musclesPrimary: ["pec_major_sternal"],
+        videoUrl: MP4,
+      },
+    });
+    seededId = row.id;
+  });
+
+  afterEach(async () => {
+    const programs = await prisma.program.findMany({
+      where: { nameFa: "Setup Route Test Program" },
+      select: { id: true },
+    });
+    createdProgramIds.push(...programs.map((p) => p.id));
+  });
+
+  afterAll(async () => {
+    const ids = [...new Set(createdProgramIds)];
+    const days = await prisma.programDay.findMany({
+      where: { programId: { in: ids } },
+      select: { id: true },
+    });
+    await prisma.programExercise.deleteMany({
+      where: { dayId: { in: days.map((d) => d.id) } },
+    });
+    await prisma.programDay.deleteMany({ where: { programId: { in: ids } } });
+    await prisma.program.deleteMany({ where: { id: { in: ids } } });
+    await prisma.exercise.deleteMany({
+      where: { OR: [{ nameFa: FA_NAME }, { nameFa: EN_NAME }] },
+    });
+    await prisma.$disconnect();
+  });
+
+  it("binds an English YAML name to the existing Persian-named row", async () => {
+    await upload(yamlFor(EN_NAME, `          video: "${YT}"`));
+
+    const matches = await prisma.exercise.findMany({
+      where: { OR: [{ nameFa: FA_NAME }, { nameFa: EN_NAME }] },
+    });
+
+    // The point of the fix: one row, not two.
+    expect(matches).toHaveLength(1);
+    expect(matches[0].id).toBe(seededId);
+    expect(matches[0].nameFa).toBe(FA_NAME);
+    expect(matches[0].videoUrl).toBe(YT);
+  });
+
+  it("still matches on the Persian name, which stays the canonical key", async () => {
+    await upload(yamlFor(FA_NAME, `          video: "${MP4}"`));
+
+    const matches = await prisma.exercise.findMany({
+      where: { OR: [{ nameFa: FA_NAME }, { nameFa: EN_NAME }] },
+    });
+
+    expect(matches).toHaveLength(1);
+    expect(matches[0].id).toBe(seededId);
+    expect(matches[0].videoUrl).toBe(MP4);
+  });
+
+  it("picks the lowest id when several rows share a nameEn", async () => {
+    // `nameEn` is not unique, so the fallback must be deterministic - otherwise
+    // a program can silently rebind to a different row between uploads.
+    const second = await prisma.exercise.create({
+      data: {
+        nameFa: `${FA_NAME} duplicate`,
+        nameEn: EN_NAME,
+        musclesPrimary: ["pec_major_sternal"],
+      },
+    });
+
+    await upload(yamlFor(EN_NAME, `          video: "${YT}"`));
+
+    const winner = await prisma.exercise.findUnique({ where: { id: seededId } });
+    const loser = await prisma.exercise.findUnique({ where: { id: second.id } });
+    expect(winner!.videoUrl).toBe(YT);
+    expect(loser!.videoUrl).toBe("");
+
+    await prisma.programExercise.deleteMany({ where: { exerciseId: second.id } });
+    await prisma.exercise.delete({ where: { id: second.id } });
   });
 });
