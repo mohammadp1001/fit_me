@@ -2,7 +2,6 @@
 
 A personal workout tracker. Define your training program in a YAML file, log every set at the gym, and watch your progress over time. Bilingual (Persian / English), installable as a phone app.
 
-**Live:** [fit-me.vercel.app](https://fit-me.vercel.app)
 
 ## What it does
 
