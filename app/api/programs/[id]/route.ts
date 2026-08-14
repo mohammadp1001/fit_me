@@ -19,7 +19,7 @@ export async function DELETE(
   // Verify the program belongs to this user and is not currently active
   const program = await prisma.program.findFirst({
     where: { id: programId, userId: 1 },
-    include: { days: { include: { exercises: { select: { id: true } } } } },
+    select: { isActive: true },
   });
 
   if (!program) {
@@ -33,18 +33,13 @@ export async function DELETE(
     );
   }
 
-  // Collect all ProgramExercise ids so we can delete their WorkoutLogs first
-  const programExerciseIds = program.days.flatMap((d) =>
-    d.exercises.map((e) => e.id)
-  );
-
-  // Delete workout logs, then the program (cascade handles days + exercises)
+  // Workout logs are deliberately NOT deleted here. They are the user's
+  // training history and outlive the program they happened to be logged
+  // under - deleting a program used to destroy them permanently. The
+  // `programExerciseId` foreign key is `ON DELETE SET NULL`, so the cascade
+  // below simply detaches each log from the slot it was recorded in and
+  // leaves `exerciseId`, the durable key, intact.
   try {
-    if (programExerciseIds.length > 0) {
-      await prisma.workoutLog.deleteMany({
-        where: { programExerciseId: { in: programExerciseIds } },
-      });
-    }
     await prisma.program.delete({ where: { id: programId } });
   } catch (e) {
     console.error("[programs/delete] failed:", e);

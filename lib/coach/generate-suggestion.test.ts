@@ -30,7 +30,6 @@ const programExercise: CoachProgramExercise = {
 const history: CoachWorkoutLog[] = [
   {
     id: 100,
-    programExerciseId: 10,
     date: "2026-07-01",
     sets: [
       { weight: 40, reps: 10 },
@@ -40,7 +39,6 @@ const history: CoachWorkoutLog[] = [
   },
   {
     id: 101,
-    programExerciseId: 10,
     date: "2026-07-08",
     sets: [
       { weight: 42.5, reps: 10 },

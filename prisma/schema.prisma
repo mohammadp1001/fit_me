@@ -92,6 +92,7 @@ model Exercise {
   wikiUrl          String            @default("")
   videoUrl         String            @default("")
   programExercises ProgramExercise[]
+  workoutLogs      WorkoutLog[]
   suggestions      Suggestion[]
   memory           ExerciseMemory?
 }
@@ -132,16 +133,29 @@ model ProgramExercise {
   suggestions   Suggestion[]
 }
 
+/// A logged set belongs to the *user's* training history, not to whichever
+/// program happened to be active when it was recorded. `exerciseId` is the
+/// durable key: it is what the log is about, and it survives program deletion.
+///
+/// `programExerciseId` is kept only as context (which program/day this was
+/// logged under) and is `SetNull` on delete, so removing a program detaches
+/// its logs instead of destroying them. It is nullable for the same reason.
+///
+/// `exerciseId` is nullable purely so the column can be added to a table that
+/// already has rows; every write sets it, and existing rows are backfilled by
+/// the accompanying migration.
 model WorkoutLog {
-  id                Int             @id @default(autoincrement())
+  id                Int              @id @default(autoincrement())
   userId            Int
-  programExerciseId Int
-  date              DateTime        @db.Date
+  exerciseId        Int?
+  programExerciseId Int?
+  date              DateTime         @db.Date
   sets              Json
-  user              User            @relation(fields: [userId], references: [id])
-  programExercise   ProgramExercise @relation(fields: [programExerciseId], references: [id])
+  user              User             @relation(fields: [userId], references: [id])
+  exercise          Exercise?        @relation(fields: [exerciseId], references: [id])
+  programExercise   ProgramExercise? @relation(fields: [programExerciseId], references: [id], onDelete: SetNull)
 
-  @@unique([userId, programExerciseId, date])
+  @@unique([userId, exerciseId, date])
 }
 
 model Suggestion {
@@ -152,7 +166,11 @@ model Suggestion {
   sets              Json
   rationale         String
   exercise          Exercise        @relation(fields: [exerciseId], references: [id])
-  programExercise   ProgramExercise @relation(fields: [programExerciseId], references: [id])
+  // A suggestion is a disposable per-date proposal, so it goes with the
+  // program. Without this, deleting a program that had any suggestions failed
+  // outright on the foreign key - `ProgramExercise` cascade-deletes with the
+  // program, but nothing cleaned these up.
+  programExercise   ProgramExercise @relation(fields: [programExerciseId], references: [id], onDelete: Cascade)
 
   @@unique([exerciseId, date])
 }

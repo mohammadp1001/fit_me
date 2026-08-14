@@ -50,7 +50,11 @@ async function inferDueDay(programId: number): Promise<number | null> {
     include: { programExercise: { include: { day: true } } },
   });
 
-  if (!lastLog) {
+  // The `where` above only matches logs still attached to a slot in this
+  // program, so `programExercise` is non-null in practice - but it is nullable
+  // in the schema now (a deleted program detaches its logs), so treat a missing
+  // slot the same as no history at all rather than asserting.
+  if (!lastLog?.programExercise) {
     return 1;
   }
 
@@ -113,13 +117,12 @@ export async function runSuggestionsCron(
     }
 
     try {
-      // Cross-program history for this exercise (same pattern as the
-      // `exerciseId` branch in app/api/logs/route.ts).
+      // Full history for this exercise (same pattern as the `exerciseId`
+      // branch in app/api/logs/route.ts). Read off the log's own `exerciseId`,
+      // so sets logged under a program that has since been deleted still
+      // inform the suggestion.
       const history = await prisma.workoutLog.findMany({
-        where: {
-          userId: 1,
-          programExercise: { exerciseId: exercise.id },
-        },
+        where: { userId: 1, exerciseId: exercise.id },
         orderBy: { date: "asc" },
       });
 
@@ -138,7 +141,6 @@ export async function runSuggestionsCron(
           },
           history: history.map((log) => ({
             id: log.id,
-            programExerciseId: log.programExerciseId,
             date: log.date,
             sets: toLoggedSets(log.sets),
           })),
