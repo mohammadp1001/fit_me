@@ -46,10 +46,15 @@ export interface CoachProgramExercise {
   reps: number[];
 }
 
-/** Subset of the Prisma `WorkoutLog` model relevant to generating a suggestion. */
+/**
+ * Subset of the Prisma `WorkoutLog` model relevant to generating a suggestion.
+ *
+ * Deliberately carries no program reference. History is keyed on the exercise
+ * and outlives the program it was logged under, and the coach never read the
+ * slot id anyway - what matters is the sets and when they happened.
+ */
 export interface CoachWorkoutLog {
   id: number;
-  programExerciseId: number;
   date: Date | string;
   sets: Array<{ weight: number | null; reps: number | null }>;
 }

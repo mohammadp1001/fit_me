@@ -27,25 +27,26 @@ export function windowStart(now: Date = new Date()): Date {
 export async function computeGroupVolume(
   now: Date = new Date()
 ): Promise<Record<MuscleGroup, number>> {
+  // Muscles are read through the log's own `exerciseId`, not through the
+  // program slot: a log whose program has since been deleted has no slot left,
+  // but it is still training that happened and still counts.
   const logs = await prisma.workoutLog.findMany({
     where: { userId: 1, date: { gte: windowStart(now) } },
     include: {
-      programExercise: {
-        include: {
-          exercise: {
-            select: { musclesPrimary: true, musclesSecondary: true },
-          },
-        },
+      exercise: {
+        select: { musclesPrimary: true, musclesSecondary: true },
       },
     },
   });
 
-  const entries: VolumeEntry[] = logs.map((log) => ({
-    date: log.date,
-    sets: toLoggedSets(log.sets),
-    musclesPrimary: log.programExercise.exercise.musclesPrimary,
-    musclesSecondary: log.programExercise.exercise.musclesSecondary,
-  }));
+  const entries: VolumeEntry[] = logs
+    .filter((log) => log.exercise !== null)
+    .map((log) => ({
+      date: log.date,
+      sets: toLoggedSets(log.sets),
+      musclesPrimary: log.exercise!.musclesPrimary,
+      musclesSecondary: log.exercise!.musclesSecondary,
+    }));
 
   return volumeByGroup(entries, now);
 }

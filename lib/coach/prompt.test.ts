@@ -53,13 +53,11 @@ describe("buildCoachPrompt", () => {
     const history: CoachWorkoutLog[] = [
       {
         id: 1,
-        programExerciseId: 5,
         date: "2026-01-01",
         sets: [{ weight: 50, reps: 8 }],
       },
       {
         id: 2,
-        programExerciseId: 5,
         date: "2026-06-01",
         sets: [{ weight: 60, reps: 8 }],
       },
