@@ -44,12 +44,12 @@
   },
   "exercise": {
     "guide": "راهنما",
-    "video": "فیلم",
     "logWeight": "ثبت وزنه",
     "description": "توضیح حرکت",
     "tips": "نکات مهم",
     "mistakes": "اشتباهات رایج",
     "watchVideo": "مشاهده فیلم در MuscleWiki",
+    "watchVideoFile": "مشاهده فیلم",
     "openInYouTube": "باز کردن در یوتیوب",
     "back": "← برگشت",
     "set": "ست",
