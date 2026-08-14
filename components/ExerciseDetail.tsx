@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { ProgramExerciseData } from "./AppShell";
 import { computeInitialSets, SetLog, SuggestionSet } from "@/lib/log-prefill";
 import { MUSCLE_LABEL } from "@/lib/muscles";
-import { getYouTubeId, youTubeWatchUrl } from "@/lib/youtube";
+import { selectVideoPresentation } from "@/lib/youtube";
 
 type Tab = "info" | "video" | "log";
 
@@ -225,16 +225,25 @@ function VideoPanel({
   exercise: ProgramExerciseData["exercise"];
 }) {
   const t = useTranslations();
-  const youTubeId =
-    getYouTubeId(exercise.videoUrl) ?? getYouTubeId(exercise.wikiUrl);
+  const video = selectVideoPresentation(exercise.videoUrl, exercise.wikiUrl);
   return (
     <div>
       <p className="text-xs text-center mb-3" style={{ color: "#777" }}>
         {locale === "fa" ? "نحوه انجام حرکت" : "How to perform this exercise"}
       </p>
-      {youTubeId ? (
+      {video.kind === "inline" ? (
+        <video
+          src={video.src}
+          controls
+          playsInline
+          loop
+          muted
+          className="w-full rounded-xl"
+          style={{ background: "#000" }}
+        />
+      ) : video.kind === "youtube" ? (
         <a
-          href={youTubeWatchUrl(youTubeId)}
+          href={video.href}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-3 rounded-xl p-4"
@@ -253,19 +262,9 @@ function VideoPanel({
           </span>
           <span style={{ color: "#ff4d4d" }}>←</span>
         </a>
-      ) : exercise.videoUrl ? (
-        <video
-          src={exercise.videoUrl}
-          controls
-          playsInline
-          loop
-          muted
-          className="w-full rounded-xl"
-          style={{ background: "#000" }}
-        />
-      ) : exercise.wikiUrl ? (
+      ) : video.kind === "wiki" ? (
         <a
-          href={exercise.wikiUrl}
+          href={video.href}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-3 rounded-xl p-4"

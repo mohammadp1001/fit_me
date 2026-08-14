@@ -44,3 +44,34 @@ export function getYouTubeId(url: string | null | undefined): string | null {
 export function youTubeWatchUrl(id: string): string {
   return `https://www.youtube.com/watch?v=${id}`;
 }
+
+export type VideoPresentation =
+  | { kind: "inline"; src: string }
+  | { kind: "youtube"; href: string }
+  | { kind: "wiki"; href: string }
+  | { kind: "none" };
+
+/**
+ * Decides how the exercise video tab renders, given the two URLs an Exercise
+ * carries.
+ *
+ * The inline player only ever receives a direct media file — in practice the
+ * MuscleWiki `.mp4`. A YouTube watch page cannot load in a `<video>` element,
+ * so any YouTube link on either field degrades to an outbound link instead,
+ * which the mobile OS hands to the YouTube app.
+ */
+export function selectVideoPresentation(
+  videoUrl: string | null | undefined,
+  wikiUrl: string | null | undefined,
+): VideoPresentation {
+  if (videoUrl && !getYouTubeId(videoUrl)) {
+    return { kind: "inline", src: videoUrl };
+  }
+
+  const youTubeId = getYouTubeId(videoUrl) ?? getYouTubeId(wikiUrl);
+  if (youTubeId) return { kind: "youtube", href: youTubeWatchUrl(youTubeId) };
+
+  if (wikiUrl) return { kind: "wiki", href: wikiUrl };
+
+  return { kind: "none" };
+}
