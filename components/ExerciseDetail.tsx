@@ -7,7 +7,7 @@ import { computeInitialSets, SetLog, SuggestionSet } from "@/lib/log-prefill";
 import { MUSCLE_LABEL } from "@/lib/muscles";
 import { selectVideoPresentation } from "@/lib/youtube";
 
-type Tab = "info" | "video" | "log";
+type Tab = "info" | "log";
 
 function getToday() {
   const d = new Date();
@@ -32,7 +32,6 @@ export default function ExerciseDetail({
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "info", label: t("exercise.guide") },
-    { key: "video", label: t("exercise.video") },
     { key: "log", label: t("exercise.logWeight") },
   ];
 
@@ -125,9 +124,6 @@ export default function ExerciseDetail({
         {tab === "info" && (
           <InfoPanel locale={locale} exercise={ex} dayColor={dayColor} />
         )}
-        {tab === "video" && (
-          <VideoPanel locale={locale} exercise={ex} />
-        )}
         {tab === "log" && (
           <LogPanel
             locale={locale}
@@ -210,85 +206,58 @@ function InfoPanel({
 
       {!description && tips.length === 0 && mistakes.length === 0 && (
         <p className="text-sm text-center py-4" style={{ color: "var(--muted)" }}>
-          —
+          -
         </p>
       )}
+
+      <VideoLink exercise={exercise} />
     </div>
   );
 }
 
-function VideoPanel({
-  locale,
+/**
+ * The single outbound video link that closes the guide. Nothing plays in-app.
+ */
+function VideoLink({
   exercise,
 }: {
-  locale: string;
   exercise: ProgramExerciseData["exercise"];
 }) {
   const t = useTranslations();
   const video = selectVideoPresentation(exercise.videoUrl, exercise.wikiUrl);
+
+  if (video.kind === "none") return null;
+
+  const style =
+    video.kind === "youtube"
+      ? { background: "#2a1a1a", border: "1px solid #4a2a2a", color: "#ff4d4d", icon: "▶️" }
+      : { background: "#1a2a1a", border: "1px solid #2a4a2a", color: "var(--green)", icon: "💪" };
+
+  const label =
+    video.kind === "youtube"
+      ? t("exercise.openInYouTube")
+      : video.kind === "wiki"
+        ? t("exercise.watchVideo")
+        : t("exercise.watchVideoFile");
+
   return (
-    <div>
-      <p className="text-xs text-center mb-3" style={{ color: "#777" }}>
-        {locale === "fa" ? "نحوه انجام حرکت" : "How to perform this exercise"}
-      </p>
-      {video.kind === "inline" ? (
-        <video
-          src={video.src}
-          controls
-          playsInline
-          loop
-          muted
-          className="w-full rounded-xl"
-          style={{ background: "#000" }}
-        />
-      ) : video.kind === "youtube" ? (
-        <a
-          href={video.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-3 rounded-xl p-4"
-          style={{
-            background: "#2a1a1a",
-            border: "1px solid #4a2a2a",
-            textDecoration: "none",
-          }}
-        >
-          <span className="text-2xl">▶️</span>
-          <span
-            className="text-sm font-bold flex-1"
-            style={{ color: "#ff4d4d" }}
-          >
-            {t("exercise.openInYouTube")}
-          </span>
-          <span style={{ color: "#ff4d4d" }}>←</span>
-        </a>
-      ) : video.kind === "wiki" ? (
-        <a
-          href={video.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-3 rounded-xl p-4"
-          style={{
-            background: "#1a2a1a",
-            border: "1px solid #2a4a2a",
-            textDecoration: "none",
-          }}
-        >
-          <span className="text-2xl">💪</span>
-          <span
-            className="text-sm font-bold flex-1"
-            style={{ color: "var(--green)" }}
-          >
-            {t("exercise.watchVideo")}
-          </span>
-          <span style={{ color: "var(--green)" }}>←</span>
-        </a>
-      ) : (
-        <p className="text-sm text-center py-4" style={{ color: "var(--muted)" }}>
-          {locale === "fa" ? "لینک ویدیو موجود نیست" : "No video link available"}
-        </p>
-      )}
-    </div>
+    <a
+      href={video.href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center gap-3 rounded-xl p-4"
+      style={{
+        background: style.background,
+        border: style.border,
+        textDecoration: "none",
+      }}
+    >
+      <span className="text-2xl">{style.icon}</span>
+      <span className="text-sm font-bold flex-1" style={{ color: style.color }}>
+        {label}
+      </span>
+      <span style={{ color: style.color }}>←</span>
+    </a>
   );
 }
 

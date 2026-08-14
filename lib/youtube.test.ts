@@ -49,14 +49,14 @@ describe("youTubeWatchUrl", () => {
 });
 
 describe("selectVideoPresentation", () => {
-  it("plays a direct MuscleWiki media file inline", () => {
+  it("links straight to a direct MuscleWiki media file", () => {
     expect(selectVideoPresentation(MP4, WIKI)).toEqual({
-      kind: "inline",
-      src: MP4,
+      kind: "direct",
+      href: MP4,
     });
   });
 
-  it("never plays a YouTube link inline, even with no other URL", () => {
+  it("routes a YouTube link to YouTube, even with no other URL", () => {
     expect(selectVideoPresentation(YT, "")).toEqual({
       kind: "youtube",
       href: YT_CANONICAL,
@@ -64,11 +64,11 @@ describe("selectVideoPresentation", () => {
   });
 
   // The regression this rule exists for: a YouTube wikiUrl used to hijack the
-  // panel and suppress the inline player for an exercise that had real media.
-  it("keeps the inline player when the media is direct but the wiki link is YouTube", () => {
+  // link for an exercise that had a real media file of its own.
+  it("prefers the direct media file when the wiki link is YouTube", () => {
     expect(selectVideoPresentation(MP4, YT)).toEqual({
-      kind: "inline",
-      src: MP4,
+      kind: "direct",
+      href: MP4,
     });
   });
 

@@ -44,12 +44,12 @@
   },
   "exercise": {
     "guide": "Guide",
-    "video": "Video",
     "logWeight": "Log Weight",
     "description": "Exercise Description",
     "tips": "Key Tips",
     "mistakes": "Common Mistakes",
     "watchVideo": "Watch on MuscleWiki",
+    "watchVideoFile": "Watch the video",
     "openInYouTube": "Open in YouTube",
     "back": "← Back",
     "set": "Set",
