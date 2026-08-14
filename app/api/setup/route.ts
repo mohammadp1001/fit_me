@@ -80,10 +80,29 @@ export async function POST(request: NextRequest) {
       for (let exIdx = 0; exIdx < day.exercises.length; exIdx++) {
         const ex = day.exercises[exIdx];
 
-        // Find or auto-create the exercise in the library
-        let dbExercise = await prisma.exercise.findFirst({
+        // Find or auto-create the exercise in the library.
+        //
+        // A YAML `name:` is matched against *either* stored name. Matching
+        // `nameFa` alone meant an English-named YAML could never bind to the
+        // Persian-named MuscleWiki seed rows, so every upload minted a second
+        // library row for the same movement - one upload of the 26-exercise
+        // example program took the library from 29 rows to 55 (#45).
+        //
+        // Order matters and is not cosmetic: `nameFa` is `@unique` and is the
+        // canonical key, so it is tried first via `findUnique`. `nameEn` is
+        // *not* unique, so its fallback pins `orderBy: id` - without that,
+        // which of several same-nameEn rows you get is undefined, and a
+        // program could silently rebind to a different row on a later upload.
+        let dbExercise = await prisma.exercise.findUnique({
           where: { nameFa: ex.name },
         });
+
+        if (!dbExercise) {
+          dbExercise = await prisma.exercise.findFirst({
+            where: { nameEn: ex.name },
+            orderBy: { id: "asc" },
+          });
+        }
 
         if (!dbExercise) {
           dbExercise = await prisma.exercise.create({
