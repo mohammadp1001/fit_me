@@ -102,15 +102,23 @@ export async function POST(request: NextRequest) {
             },
           });
         } else {
-          // Backfill guide/video content onto an existing library exercise,
-          // filling only the fields that are still empty.
+          // Backfill guide *prose* onto an existing library exercise, filling
+          // only the fields that are still empty. The backfill rule exists to
+          // protect hand-written prose from being blanked by a terser YAML.
           //
-          // Muscles are the deliberate exception: they are overwritten on every
-          // upload. The backfill rule exists to protect hand-written prose from
-          // being blanked by a terser YAML, but muscles are drawn from a closed
-          // enum where every value is valid and non-empty, so there is nothing
-          // to protect - and overwriting is the only way a user can ever correct
-          // a mis-tagged exercise.
+          // Muscles and the video URL are the deliberate exceptions: both are
+          // overwritten whenever the upload supplies them. Neither is prose.
+          // Muscles come from a closed enum where every value is valid, and a
+          // video URL is a single pointer that is either right or wrong -
+          // there is nothing to protect, and overwriting is the only way a
+          // user can ever *correct* a mis-tagged exercise or a stale link.
+          //
+          // Video specifically: leaving this as backfill-only meant a library
+          // row seeded (or created by an earlier upload) with a MuscleWiki
+          // `.mp4` silently ignored a newer YAML's `video:` forever, so the
+          // Guide-tab link kept pointing at MuscleWiki no matter what the user
+          // uploaded. `ex.video` is still guarded - an upload that omits
+          // `video:` leaves the stored URL alone rather than blanking it.
           const patch: Record<string, unknown> = {
             musclesPrimary: ex.musclesPrimary,
             musclesSecondary: ex.musclesSecondary,
@@ -118,7 +126,7 @@ export async function POST(request: NextRequest) {
           const descEn = ex.description_en ?? ex.description;
           const tipsEn = ex.tips_en ?? ex.tips;
           const mistakesEn = ex.mistakes_en ?? ex.mistakes;
-          if (ex.video && !dbExercise.videoUrl) patch.videoUrl = ex.video;
+          if (ex.video) patch.videoUrl = ex.video;
           if (ex.description && !dbExercise.descriptionFa) patch.descriptionFa = ex.description;
           if (descEn && !dbExercise.descriptionEn) patch.descriptionEn = descEn;
           if (ex.tips?.length && dbExercise.tipsFa.length === 0) patch.tipsFa = ex.tips;
