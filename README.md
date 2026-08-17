@@ -8,5 +8,4 @@ A personal workout tracker. You define your training program in a YAML file, log
 - **Set logging** — record weight and reps for each set; history is kept per exercise
 - **Progress charts** — body weight over time and best-set weight per exercise
 - **Multiple programs** — keep several programs and switch between them without losing logs
-- **Bilingual & RTL** — full Persian and English, switchable anytime
 - **Installable** — add to your home screen and use it offline like a native app
