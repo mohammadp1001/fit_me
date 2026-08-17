@@ -186,3 +186,99 @@ model GlobalMemory {
   id    Int    @id @default(1)
   notes String
 }
+
+// --- OAuth 2.1 provider for the MCP server (#52) ---
+//
+// The MCP endpoint is a public URL, so it needs a real authorization server in
+// front of it. These three models are the whole of it. Nothing here references
+// `User`: the app has exactly one user (`id = 1`) and the passphrase already
+// identifies them, so a token grants access to *the* account by construction.
+
+/// A registered OAuth client, created by open Dynamic Client Registration.
+///
+/// Registration is deliberately unauthenticated: a `clientId` on its own grants
+/// nothing, because every token still has to pass through `/api/oauth/authorize`
+/// (passphrase + explicit Allow). The exposure is junk rows, not data, so the
+/// defence is `lastUsedAt` pruning plus a row cap rather than an auth check.
+model OAuthClient {
+  id                      String       @id
+  /// SHA-256 of the client secret. Null for public clients
+  /// (`token_endpoint_auth_method: "none"`), which is what PKCE clients use.
+  secretHash              String?
+  name                    String
+  redirectUris            String[]
+  /// Stored verbatim from the registration request so the token endpoint can
+  /// tell a public client from a confidential one.
+  tokenEndpointAuthMethod String       @default("none")
+  scope                   String
+  createdAt               DateTime     @default(now())
+  /// Bumped on every successful authorize/token exchange. The cleanup cron
+  /// deletes clients that never got used, which is what a registration flood
+  /// leaves behind.
+  lastUsedAt              DateTime     @default(now())
+  codes                   OAuthCode[]
+  tokens                  OAuthToken[]
+
+  @@index([lastUsedAt])
+}
+
+/// A single-use authorization code, issued only after the human clicks Allow.
+///
+/// The code itself is never stored - only its SHA-256 - so a database leak
+/// cannot be replayed against the token endpoint within the 60s window.
+model OAuthCode {
+  id                  Int         @id @default(autoincrement())
+  codeHash            String      @unique
+  clientId            String
+  redirectUri         String
+  codeChallenge       String
+  codeChallengeMethod String
+  scope               String
+  /// RFC 8707 resource indicator, echoed into the audience of the issued token.
+  resource            String?
+  expiresAt           DateTime
+  /// Set the first time the code is exchanged. A second exchange finds this
+  /// non-null and is rejected - replay must fail even inside the 60s window.
+  consumedAt          DateTime?
+  createdAt           DateTime    @default(now())
+  client              OAuthClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+}
+
+/// An issued access token and its refresh token, both stored as SHA-256.
+///
+/// One row holds the pair because they share a lifecycle: refreshing rotates
+/// both, and revoking either kills the grant.
+model OAuthToken {
+  id                Int         @id @default(autoincrement())
+  accessTokenHash   String      @unique
+  /// Null once the refresh token has been rotated away or the grant is
+  /// access-only.
+  refreshTokenHash  String?     @unique
+  clientId          String
+  scope             String
+  resource          String?
+  expiresAt         DateTime
+  refreshExpiresAt  DateTime?
+  revokedAt         DateTime?
+  createdAt         DateTime    @default(now())
+  client            OAuthClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@index([clientId])
+}
+
+/// Fixed-window rate-limit counters.
+///
+/// Lives in Postgres because Vercel functions share no memory - an in-process
+/// counter would reset on every cold start and rate-limit nothing at all.
+model RateLimit {
+  /// `"<bucket>:<identifier>:<window start epoch ms>"`, e.g.
+  /// `"register:203.0.113.7:1755432000000"`.
+  key         String   @id
+  count       Int      @default(0)
+  windowEndsAt DateTime
+
+  @@index([windowEndsAt])
+}

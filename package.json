@@ -20,6 +20,7 @@
     "seed": "ts-node --project tsconfig.json prisma/seed.ts"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "@prisma/client": "^6.0.0",
     "@types/js-yaml": "^4.0.9",
     "iron-session": "^8.0.4",
