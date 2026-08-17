@@ -20,8 +20,8 @@
 #            OR a list of integers, one per set (length should equal `sets`).
 #   • `superset_with` links two exercises; put the partner's exact `name`
 #     on BOTH exercises so the app pairs them.
-#   • `video` is a direct video URL (e.g. an .mp4). Plays inline on the
-#     Video tab. Optional.
+#   • `video` is a direct video URL (e.g. an .mp4) or a YouTube link. It shows
+#     as a link at the bottom of the exercise's Guide tab. Optional.
 #   • `description`, `tips`, `mistakes` (and their `*_en` variants) populate
 #     the exercise's Guide tab. All optional.
 #
