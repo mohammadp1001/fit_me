@@ -42,7 +42,76 @@ describe("MCP server wiring", () => {
 
     // Update this list when a tool is added. It is the guard against shipping
     // a tool that exists in `lib/` but was never registered here.
-    expect(tools.map((t) => t.name).sort()).toEqual(["get_program_schema"]);
+    expect(tools.map((t) => t.name).sort()).toEqual([
+      "get_body_weight",
+      "get_coach_memory",
+      "get_exercise_history",
+      "get_program",
+      "get_program_schema",
+      "get_progress_summary",
+      "get_volume",
+      "list_exercises",
+      "list_programs",
+      "validate_program_yaml",
+    ]);
+
+    await close();
+  });
+
+  it("declares every tool read-only", async () => {
+    // #53 ships no writes at all. The first tool without this annotation should
+    // be a deliberate decision in #54, not an oversight here.
+    const { client, close } = await connectedClient();
+
+    const { tools } = await client.listTools();
+
+    for (const tool of tools) {
+      expect(tool.annotations?.readOnlyHint).toBe(true);
+    }
+
+    await close();
+  });
+
+  it("gives every tool a description and a title", async () => {
+    // These are the only thing the model has to choose between ten tools.
+    const { client, close } = await connectedClient();
+
+    const { tools } = await client.listTools();
+
+    for (const tool of tools) {
+      expect(tool.description?.length ?? 0).toBeGreaterThan(30);
+      expect(tool.title ?? tool.annotations?.title).toEqual(expect.any(String));
+    }
+
+    await close();
+  });
+
+  it("surfaces a resolution failure as a readable tool error", async () => {
+    // The strict resolver puts near-matches in its message. That only helps if
+    // the message reaches the model instead of becoming a transport failure.
+    const { client, close } = await connectedClient();
+
+    const result = await client.callTool({
+      name: "get_exercise_history",
+      arguments: { name: "Definitely Not A Real Exercise" },
+    });
+    const content = result.content as Array<{ type: string; text: string }>;
+
+    expect(result.isError).toBe(true);
+    expect(content[0].text).toContain("Definitely Not A Real Exercise");
+
+    await close();
+  });
+
+  it("rejects arguments that violate a tool's input schema", async () => {
+    const { client, close } = await connectedClient();
+
+    const result = await client.callTool({
+      name: "get_progress_summary",
+      arguments: { weeks: 0 },
+    });
+
+    expect(result.isError).toBe(true);
 
     await close();
   });

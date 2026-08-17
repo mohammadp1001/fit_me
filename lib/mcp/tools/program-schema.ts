@@ -28,6 +28,7 @@ import {
  * one is a rejection it would otherwise discover by trial and error.
  */
 const RULES = [
+  "The whole document is a single top-level `program:` object. A file whose `name:` and `days:` sit at the root is rejected - this is the most common structural mistake.",
   "`name` is the primary key for an exercise. An exercise is matched against the library by name, so reuse the exact existing name when you mean an existing lift.",
   "`muscles` is an object with `primary` (required, non-empty) and `secondary` (optional). The legacy flat list is rejected, not coerced.",
   "Every entry in `primary` and `secondary` must come from the muscle vocabulary below. Unknown values are a validation error.",

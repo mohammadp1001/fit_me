@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { isAuthenticated } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { parseWorkoutYaml } from "@/lib/yaml-parser";
+import { findExerciseByName } from "@/lib/exercise-lookup";
 import { z } from "zod";
 
 const schema = z.object({
@@ -82,27 +83,18 @@ export async function POST(request: NextRequest) {
 
         // Find or auto-create the exercise in the library.
         //
-        // A YAML `name:` is matched against *either* stored name. Matching
-        // `nameFa` alone meant an English-named YAML could never bind to the
-        // Persian-named MuscleWiki seed rows, so every upload minted a second
-        // library row for the same movement - one upload of the 26-exercise
-        // example program took the library from 29 rows to 55 (#45).
+        // The lookup itself now lives in `lib/exercise-lookup.ts`, shared with
+        // the MCP tools so the two cannot drift. Its ordering rule (`nameFa`
+        // first because it is `@unique`, then `nameEn` with an explicit
+        // `orderBy: id` tie-break) is the fix for #45 and is documented there.
         //
-        // Order matters and is not cosmetic: `nameFa` is `@unique` and is the
-        // canonical key, so it is tried first via `findUnique`. `nameEn` is
-        // *not* unique, so its fallback pins `orderBy: id` - without that,
-        // which of several same-nameEn rows you get is undefined, and a
-        // program could silently rebind to a different row on a later upload.
-        let dbExercise = await prisma.exercise.findUnique({
-          where: { nameFa: ex.name },
-        });
-
-        if (!dbExercise) {
-          dbExercise = await prisma.exercise.findFirst({
-            where: { nameEn: ex.name },
-            orderBy: { id: "asc" },
-          });
-        }
+        // Creating on a miss is this route's own behaviour and stays here: a
+        // YAML naming a new movement should add it, whereas the MCP tools must
+        // never create - see `resolveExerciseStrict`.
+        const found = await findExerciseByName(ex.name);
+        let dbExercise = found
+          ? await prisma.exercise.findUnique({ where: { id: found.id } })
+          : null;
 
         if (!dbExercise) {
           dbExercise = await prisma.exercise.create({
