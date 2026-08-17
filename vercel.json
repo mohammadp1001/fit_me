@@ -7,10 +7,6 @@
   },
   "crons": [
     {
-      "path": "/api/cron/suggestions",
-      "schedule": "0 3 * * *"
-    },
-    {
       "path": "/api/cron/oauth-cleanup",
       "schedule": "0 4 * * 1"
     }

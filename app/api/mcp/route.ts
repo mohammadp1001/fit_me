@@ -54,10 +54,9 @@ async function handle(request: NextRequest): Promise<Response> {
     return unauthorized("Invalid or expired token");
   }
 
-  // Scopes are parsed and carried into `authInfo`, but nothing enforces them
-  // yet - every tool in #52 is read-only, so there is no privilege to separate.
-  // The write tool in #54 must gate on `fitme:write` before it does anything,
-  // or the scope is decoration.
+  // Scopes ride along in `authInfo` and are enforced per tool, not here:
+  // `save_suggestions` refuses without `fitme:write` (see lib/mcp/server.ts).
+  // Gating the whole endpoint would block reads for a read-only connection.
   const server = buildMcpServer();
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
