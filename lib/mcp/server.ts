@@ -13,6 +13,7 @@ import {
   validateProgramYaml,
   LIMITS,
 } from "./tools/read-tools";
+import { saveSuggestions } from "./tools/save-suggestions";
 
 /**
  * Builds the FitMe MCP server.
@@ -52,8 +53,31 @@ function asError(err: unknown) {
   };
 }
 
-/** Every tool here is read-only and touches nothing outside this deployment. */
+/** Read-only tools touch nothing outside this deployment. */
 const READ_ONLY = { readOnlyHint: true, openWorldHint: false } as const;
+
+/**
+ * `save_suggestions` writes, but never destroys: it upserts a proposal for a
+ * future date and appends to notes. `idempotentHint` because saving the same
+ * day twice converges rather than accumulating.
+ */
+const WRITES = {
+  readOnlyHint: false,
+  destructiveHint: false,
+  idempotentHint: true,
+  openWorldHint: false,
+} as const;
+
+/**
+ * Refuses a call whose token was not granted `fitme:write`.
+ *
+ * The scope is granted at consent time, so this is the difference between a
+ * connection the user approved for reading and one approved for writing. Read
+ * tools deliberately do not check it - every token carries `fitme:read`.
+ */
+function requiresWriteScope(extra: { authInfo?: { scopes?: string[] } }): boolean {
+  return !(extra.authInfo?.scopes ?? []).includes("fitme:write");
+}
 
 export function buildMcpServer(): McpServer {
   const server = new McpServer(
@@ -69,7 +93,11 @@ export function buildMcpServer(): McpServer {
         "and validate_program_yaml before showing a draft to the user - " +
         "invented muscle names are rejected by the parser. " +
         "Exercises are addressed by name; if a name is not found the error " +
-        "lists near-matches, and list_exercises shows the whole library.",
+        "lists near-matches, and list_exercises shows the whole library. " +
+        "When coaching a session: read get_coach_memory first so you continue " +
+        "from what was already learned, then propose sets, show them to the " +
+        "user with your reasoning, and only then call save_suggestions. What " +
+        "you save appears on the log screen at the gym.",
     },
   );
 
@@ -301,6 +329,87 @@ export function buildMcpServer(): McpServer {
     async ({ yaml }) => {
       try {
         return asText(await validateProgramYaml({ yaml }));
+      } catch (err) {
+        return asError(err);
+      }
+    },
+  );
+
+  server.registerTool(
+    "save_suggestions",
+    {
+      title: "Save suggested sets",
+      description:
+        "Saves the sets you propose for an upcoming session, so they appear on " +
+        "the log screen at the gym, and appends what you learned to the coach's " +
+        "notes. This is the only tool that writes. " +
+        "Show the user what you intend to save and why before calling it - the " +
+        "arguments are what they approve. " +
+        "Refused if the date is in the past, if that exercise was already logged " +
+        "that day, or if the exercise is not in the active program.",
+      inputSchema: {
+        date: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .describe("Session date, YYYY-MM-DD. Today or later only."),
+        items: z
+          .array(
+            z.object({
+              exercise: z
+                .string()
+                .min(1)
+                .describe("Exercise name, Persian or English, as stored."),
+              sets: z
+                .array(
+                  z.object({
+                    weightKg: z
+                      .number()
+                      .nonnegative()
+                      .nullable()
+                      .describe("Load in kg, or null for bodyweight."),
+                    reps: z.number().int().positive(),
+                  }),
+                )
+                .min(1),
+              why: z
+                .string()
+                .min(1)
+                .describe(
+                  "Short reason for these numbers. Shown to the user, so make it judgeable.",
+                ),
+            }),
+          )
+          .min(1),
+        exerciseNotes: z
+          .array(
+            z.object({
+              exercise: z.string().min(1),
+              note: z.string().min(1),
+            }),
+          )
+          .optional()
+          .describe("Durable observations about a lift. Appended, never replaced."),
+        globalNote: z
+          .string()
+          .optional()
+          .describe("A durable observation about the user's training overall."),
+      },
+      annotations: WRITES,
+    },
+    async ({ date, items, exerciseNotes, globalNote }, extra) => {
+      if (requiresWriteScope(extra)) {
+        return asError(
+          new Error(
+            "This connection was not granted the fitme:write scope. " +
+              "Reconnect and approve write access to save suggestions.",
+          ),
+        );
+      }
+
+      try {
+        return asText(
+          await saveSuggestions({ date, items, exerciseNotes, globalNote }),
+        );
       } catch (err) {
         return asError(err);
       }

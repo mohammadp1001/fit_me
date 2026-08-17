@@ -13,10 +13,26 @@ import { ALL_MUSCLES } from "@/lib/muscles";
  * cover is the wiring: a tool that is implemented but never registered would
  * otherwise pass every unit test and still be invisible to the chatbot.
  */
-async function connectedClient() {
+/**
+ * @param scopes Scopes to present as the caller's granted scopes. `undefined`
+ * models an unauthenticated call, which is what the transport does by default.
+ */
+async function connectedClient(scopes?: string[]) {
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   const server = buildMcpServer();
   const client = new Client({ name: "test", version: "1.0.0" });
+
+  if (scopes) {
+    // The in-memory transport carries `authInfo` on send, which is how the real
+    // route hands scopes to the tools. Wrapping send is the only way to
+    // exercise the scope gate without standing up the HTTP layer.
+    const send = clientTransport.send.bind(clientTransport);
+    clientTransport.send = (message, options) =>
+      send(message, {
+        ...options,
+        authInfo: { token: "test-token", clientId: "test-client", scopes },
+      });
+  }
 
   await Promise.all([
     server.connect(serverTransport),
@@ -52,22 +68,23 @@ describe("MCP server wiring", () => {
       "get_volume",
       "list_exercises",
       "list_programs",
+      "save_suggestions",
       "validate_program_yaml",
     ]);
 
     await close();
   });
 
-  it("declares every tool read-only", async () => {
-    // #53 ships no writes at all. The first tool without this annotation should
-    // be a deliberate decision in #54, not an oversight here.
+  it("declares exactly one writing tool", async () => {
+    // Every other tool must stay read-only. A second writer should be a
+    // deliberate decision, not something that appears by accident.
     const { client, close } = await connectedClient();
 
     const { tools } = await client.listTools();
+    const writers = tools.filter((t) => t.annotations?.readOnlyHint !== true);
 
-    for (const tool of tools) {
-      expect(tool.annotations?.readOnlyHint).toBe(true);
-    }
+    expect(writers.map((t) => t.name)).toEqual(["save_suggestions"]);
+    expect(writers[0].annotations?.destructiveHint).toBe(false);
 
     await close();
   });
@@ -99,6 +116,86 @@ describe("MCP server wiring", () => {
 
     expect(result.isError).toBe(true);
     expect(content[0].text).toContain("Definitely Not A Real Exercise");
+
+    await close();
+  });
+
+  it("refuses save_suggestions without the fitme:write scope", async () => {
+    // The scope is granted at consent time. A connection the user approved for
+    // reading must not be able to write, no matter what the client allows.
+    const { client, close } = await connectedClient(["fitme:read"]);
+
+    const result = await client.callTool({
+      name: "save_suggestions",
+      arguments: {
+        date: "2099-01-01",
+        items: [
+          { exercise: "anything", sets: [{ weightKg: 60, reps: 8 }], why: "x" },
+        ],
+      },
+    });
+    const content = result.content as Array<{ type: string; text: string }>;
+
+    expect(result.isError).toBe(true);
+    expect(content[0].text).toContain("fitme:write");
+
+    await close();
+  });
+
+  it("refuses save_suggestions when no scopes are presented at all", async () => {
+    const { client, close } = await connectedClient();
+
+    const result = await client.callTool({
+      name: "save_suggestions",
+      arguments: {
+        date: "2099-01-01",
+        items: [
+          { exercise: "anything", sets: [{ weightKg: 60, reps: 8 }], why: "x" },
+        ],
+      },
+    });
+
+    expect(result.isError).toBe(true);
+
+    await close();
+  });
+
+  it("lets a write-scoped call past the gate and into the tool", async () => {
+    // Reaching the tool is the point; the exercise does not exist, so it fails
+    // on resolution rather than on scope. The distinct message proves the gate
+    // was passed rather than silently allowing everything.
+    const { client, close } = await connectedClient(["fitme:read", "fitme:write"]);
+
+    const result = await client.callTool({
+      name: "save_suggestions",
+      arguments: {
+        date: "2099-01-01",
+        items: [
+          {
+            exercise: "No Such Exercise At All",
+            sets: [{ weightKg: 60, reps: 8 }],
+            why: "x",
+          },
+        ],
+      },
+    });
+    const content = result.content as Array<{ type: string; text: string }>;
+
+    expect(result.isError).toBe(true);
+    expect(content[0].text).not.toContain("fitme:write");
+    expect(content[0].text).toContain("No Such Exercise At All");
+
+    await close();
+  });
+
+  it("does not gate read tools on scope", async () => {
+    // Every token carries fitme:read, and gating reads would break a read-only
+    // connection for no gain.
+    const { client, close } = await connectedClient(["fitme:read"]);
+
+    const result = await client.callTool({ name: "get_program_schema" });
+
+    expect(result.isError).toBeFalsy();
 
     await close();
   });
