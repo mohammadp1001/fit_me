@@ -132,11 +132,17 @@ describe("Suggestion & coach-memory models", () => {
     expect(found?.notes).toBe("Client plateaued at 60kg for three sessions; consider a deload.");
   });
 
-  it("round-trips the singleton GlobalMemory create/read", async () => {
+  it("round-trips one GlobalMemory row per user", async () => {
+    // `GlobalMemory` stopped being an `id = 1` singleton in #59 - it is now one
+    // row per user, keyed on `userId`. Asserting `id === 1` here passed only
+    // while the row happened to be the first ever inserted, and failed against
+    // any database with history. `userId` is the key that actually means
+    // something.
     const existing = await prisma.globalMemory.findUnique({ where: { userId: 1 } });
     if (existing) {
       // Already present (e.g. a real dev DB) - just verify a read round-trips.
-      expect(existing.id).toBe(1);
+      expect(existing.userId).toBe(1);
+      expect(existing.notes).toEqual(expect.any(String));
       return;
     }
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { signIn } from "@/lib/session";
-import { claimLegacyAccount, unclaimedAccountExists } from "@/lib/db/accounts";
+import { claimLegacyAccount, claimAvailable } from "@/lib/db/accounts";
 import { checkPasswordStrength, checkUsername } from "@/lib/auth/password";
 import { clientIp, consumeRateLimit } from "@/lib/oauth/rate-limit";
 
@@ -25,7 +25,7 @@ const CLAIM_RATE_LIMIT = { limit: 10, windowMs: 15 * 60 * 1000 };
  * follow-up once it has been used.
  */
 export async function POST(request: NextRequest) {
-  if (!(await unclaimedAccountExists())) {
+  if (!(await claimAvailable())) {
     return NextResponse.json(
       { error: "There is no unclaimed account. Sign in normally." },
       { status: 410 }
@@ -80,5 +80,5 @@ export async function POST(request: NextRequest) {
 
 /** Lets the claim page decide whether to render at all. */
 export async function GET() {
-  return NextResponse.json({ available: await unclaimedAccountExists() });
+  return NextResponse.json({ available: await claimAvailable() });
 }
