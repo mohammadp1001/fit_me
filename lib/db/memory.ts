@@ -3,20 +3,20 @@ import { prisma } from "@/lib/prisma";
 /**
  * The coach's memory: one global note plus one note per exercise.
  *
- * `GlobalMemory` is still an `id = 1` singleton - it gains a `userId` in #59.
- * Until then `userId` is accepted and ignored here rather than omitted, so the
- * call sites already read correctly and #59 is a change to this file only.
+ * `GlobalMemory` is one row per user (#59). `ExerciseMemory` needs no `userId`
+ * of its own: it hangs off an exercise, and an exercise now has exactly one
+ * owner, so `exerciseId @unique` is correct again.
  */
 
-export async function getGlobalMemory(_userId: number) {
-  return prisma.globalMemory.findUnique({ where: { id: 1 } });
+export async function getGlobalMemory(userId: number) {
+  return prisma.globalMemory.findUnique({ where: { userId } });
 }
 
-export async function setGlobalMemory(_userId: number, notes: string) {
+export async function setGlobalMemory(userId: number, notes: string) {
   return prisma.globalMemory.upsert({
-    where: { id: 1 },
+    where: { userId },
     update: { notes },
-    create: { id: 1, notes },
+    create: { userId, notes },
   });
 }
 
@@ -33,8 +33,9 @@ export async function setExerciseMemory(exerciseId: number, notes: string) {
 }
 
 /** Every per-exercise note, with the exercise's names. */
-export async function listExerciseMemory(_userId: number) {
+export async function listExerciseMemory(userId: number) {
   return prisma.exerciseMemory.findMany({
+    where: { exercise: { userId } },
     include: { exercise: { select: { nameFa: true, nameEn: true } } },
     orderBy: { exerciseId: "asc" },
   });

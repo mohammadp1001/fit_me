@@ -477,12 +477,21 @@ const exercises = [
   },
 ];
 
-async function main() {
-  console.log("Seeding exercise library...");
-
+/**
+ * Copies the template library into one account.
+ *
+ * Exported so account creation (#60) can call it for each new user: every
+ * account owns its own copy of these rows, because an upload deliberately
+ * overwrites muscles and video links (#44) and that must not reach across
+ * accounts.
+ *
+ * Idempotent per user - re-running refreshes the template rows it owns and
+ * leaves anything the user added themselves alone.
+ */
+export async function seedExerciseLibrary(userId: number): Promise<number> {
   for (const ex of exercises) {
     await prisma.exercise.upsert({
-      where: { nameFa: ex.nameFa },
+      where: { userId_nameFa: { userId, nameFa: ex.nameFa } },
       update: {
         nameEn: ex.nameEn,
         musclesPrimary: ex.musclesPrimary,
@@ -496,11 +505,33 @@ async function main() {
         wikiUrl: ex.wikiUrl,
         videoUrl: ex.videoUrl,
       },
-      create: ex,
+      create: { userId, ...ex },
     });
   }
 
-  console.log(`Seeded ${exercises.length} exercises.`);
+  return exercises.length;
+}
+
+async function main() {
+  // `npm run db:seed` still seeds account 1 - the only account until #60. The
+  // user row has to exist first, because an exercise now has an owner.
+  const userId = 1;
+
+  await prisma.user.upsert({
+    where: { id: userId },
+    update: {},
+    create: {
+      id: userId,
+      name: "FitMe",
+      weightKg: 80,
+      heightCm: 180,
+      isAdmin: true,
+    },
+  });
+
+  console.log(`Seeding exercise library for user ${userId}...`);
+  const count = await seedExerciseLibrary(userId);
+  console.log(`Seeded ${count} exercises.`);
 }
 
 main()

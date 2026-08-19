@@ -9,20 +9,22 @@ import type { Prisma } from "@prisma/client";
  */
 
 export async function getSuggestionBySlot(
-  _userId: number,
+  userId: number,
   programExerciseId: number,
   date: Date,
 ) {
-  return prisma.suggestion.findFirst({ where: { programExerciseId, date } });
+  return prisma.suggestion.findFirst({
+    where: { programExerciseId, date, exercise: { userId } },
+  });
 }
 
 export async function getSuggestionByExercise(
-  _userId: number,
+  userId: number,
   exerciseId: number,
   date: Date,
 ) {
-  return prisma.suggestion.findUnique({
-    where: { exerciseId_date: { exerciseId, date } },
+  return prisma.suggestion.findFirst({
+    where: { exerciseId, date, exercise: { userId } },
   });
 }
 

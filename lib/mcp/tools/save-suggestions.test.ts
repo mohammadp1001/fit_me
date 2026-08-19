@@ -47,6 +47,7 @@ beforeAll(async () => {
 
   const bench = await prisma.exercise.create({
     data: {
+      userId: 1,
       nameFa: `پرس سینه ${TAG}`,
       nameEn: `Bench ${TAG}`,
       musclesPrimary: ["pec_major_sternal"],
@@ -56,6 +57,7 @@ beforeAll(async () => {
 
   const squat = await prisma.exercise.create({
     data: {
+      userId: 1,
       nameFa: `اسکوات ${TAG}`,
       nameEn: `Squat ${TAG}`,
       musclesPrimary: ["quadriceps"],
@@ -66,6 +68,7 @@ beforeAll(async () => {
   // Deliberately not in any program, to exercise the "nowhere to show" guard.
   const orphan = await prisma.exercise.create({
     data: {
+      userId: 1,
       nameFa: `یتیم ${TAG}`,
       nameEn: `Orphan ${TAG}`,
       musclesPrimary: ["lats"],
@@ -390,7 +393,7 @@ describe("coach memory writes", () => {
   });
 
   it("appends the global note without dropping what was there", async () => {
-    const before = await prisma.globalMemory.findUnique({ where: { id: 1 } });
+    const before = await prisma.globalMemory.findUnique({ where: { userId: 1 } });
     const countBefore = parseNote(before?.notes).length;
 
     await saveSuggestions({
@@ -400,7 +403,7 @@ describe("coach memory writes", () => {
       now: NOW,
     });
 
-    const after = await prisma.globalMemory.findUnique({ where: { id: 1 } });
+    const after = await prisma.globalMemory.findUnique({ where: { userId: 1 } });
     const entries = parseNote(after!.notes);
 
     expect(entries.length).toBe(countBefore + 1);

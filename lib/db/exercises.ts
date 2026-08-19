@@ -7,9 +7,9 @@ import { prisma } from "@/lib/prisma";
  * Moved here from `lib/exercise-lookup.ts` when route handlers stopped talking
  * to Prisma directly (#58). The behaviour is unchanged.
  *
- * `userId` is not a parameter yet: `Exercise` is still a global table. #59
- * gives it an owner, at which point every function here gains the same
- * required `userId` first argument the rest of `lib/db` already has.
+ * Every function takes `userId` first: an exercise belongs to exactly one
+ * account (#59), and a lookup that forgets the owner would read - or edit -
+ * someone else's library.
  *
  * The single place an exercise name is resolved against the library.
  *
@@ -48,9 +48,12 @@ export type ExerciseRef = Prisma.ExerciseGetPayload<{ select: typeof SELECT }>;
  * Matching either name is what stops an English-named YAML minting duplicates
  * of the Persian-named seed rows.
  */
-export async function findExerciseByName(name: string): Promise<ExerciseRef | null> {
+export async function findExerciseByName(
+  userId: number,
+  name: string,
+): Promise<ExerciseRef | null> {
   const byFa = await prisma.exercise.findUnique({
-    where: { nameFa: name },
+    where: { userId_nameFa: { userId, nameFa: name } },
     select: SELECT,
   });
   if (byFa) {
@@ -58,7 +61,7 @@ export async function findExerciseByName(name: string): Promise<ExerciseRef | nu
   }
 
   return prisma.exercise.findFirst({
-    where: { nameEn: name },
+    where: { userId, nameEn: name },
     orderBy: { id: "asc" },
     select: SELECT,
   });
@@ -105,11 +108,14 @@ export class AmbiguousExerciseError extends Error {
  *   reading history: silently reporting the wrong lift's numbers is worse than
  *   refusing.
  */
-export async function resolveExerciseStrict(name: string): Promise<ExerciseRef> {
+export async function resolveExerciseStrict(
+  userId: number,
+  name: string,
+): Promise<ExerciseRef> {
   const trimmed = name.trim();
 
   const byFa = await prisma.exercise.findUnique({
-    where: { nameFa: trimmed },
+    where: { userId_nameFa: { userId, nameFa: trimmed } },
     select: SELECT,
   });
   if (byFa) {
@@ -119,7 +125,7 @@ export async function resolveExerciseStrict(name: string): Promise<ExerciseRef> 
   }
 
   const byEn = await prisma.exercise.findMany({
-    where: { nameEn: trimmed },
+    where: { userId, nameEn: trimmed },
     orderBy: { id: "asc" },
     select: SELECT,
   });
@@ -130,7 +136,7 @@ export async function resolveExerciseStrict(name: string): Promise<ExerciseRef> 
     throw new AmbiguousExerciseError(trimmed, byEn);
   }
 
-  throw new ExerciseNotFoundError(trimmed, await suggestExercises(trimmed));
+  throw new ExerciseNotFoundError(trimmed, await suggestExercises(userId, trimmed));
 }
 
 /**
@@ -141,6 +147,7 @@ export async function resolveExerciseStrict(name: string): Promise<ExerciseRef> 
  * capitalisation is the other thing models vary freely.
  */
 export async function suggestExercises(
+  userId: number,
   name: string,
   limit = 5,
 ): Promise<ExerciseRef[]> {
@@ -151,6 +158,7 @@ export async function suggestExercises(
 
   const contains = await prisma.exercise.findMany({
     where: {
+      userId,
       OR: [
         { nameEn: { contains: needle, mode: "insensitive" } },
         { nameFa: { contains: needle, mode: "insensitive" } },
@@ -175,6 +183,7 @@ export async function suggestExercises(
 
   return prisma.exercise.findMany({
     where: {
+      userId,
       OR: [
         { nameEn: { contains: longestWord, mode: "insensitive" } },
         { nameFa: { contains: longestWord, mode: "insensitive" } },
@@ -186,16 +195,33 @@ export async function suggestExercises(
   });
 }
 
-/** One exercise by id, or null. */
-export async function getExercise(id: number) {
-  return prisma.exercise.findUnique({ where: { id } });
+/**
+ * One exercise by id, or null if it does not exist **or belongs to someone
+ * else**. Ownership is part of the lookup, not a separate check a caller can
+ * forget.
+ */
+export async function getExercise(userId: number, id: number) {
+  return prisma.exercise.findFirst({ where: { id, userId } });
 }
 
-/** Applies a validated patch to one exercise and returns the new row. */
+/**
+ * Applies a validated patch to one of this user's exercises.
+ *
+ * Returns null when the row is not theirs, so a mistyped or guessed id cannot
+ * edit another account's library.
+ */
 export async function updateExercise(
+  userId: number,
   id: number,
   data: Record<string, unknown>,
 ) {
+  const owned = await prisma.exercise.findFirst({
+    where: { id, userId },
+    select: { id: true },
+  });
+  if (!owned) {
+    return null;
+  }
   return prisma.exercise.update({ where: { id }, data });
 }
 
@@ -203,19 +229,22 @@ export async function updateExercise(
  * The library, optionally filtered by a case-insensitive substring on either
  * name. Used by the MCP `list_exercises` tool.
  */
-export async function listExercises({
-  search,
-  limit,
-}: { search?: string; limit: number }) {
+export async function listExercises(
+  userId: number,
+  { search, limit }: { search?: string; limit: number },
+) {
   return prisma.exercise.findMany({
-    where: search
-      ? {
-          OR: [
-            { nameEn: { contains: search, mode: "insensitive" } },
-            { nameFa: { contains: search, mode: "insensitive" } },
-          ],
-        }
-      : undefined,
+    where: {
+      userId,
+      ...(search
+        ? {
+            OR: [
+              { nameEn: { contains: search, mode: "insensitive" } },
+              { nameFa: { contains: search, mode: "insensitive" } },
+            ],
+          }
+        : {}),
+    },
     orderBy: { id: "asc" },
     take: limit,
     select: {

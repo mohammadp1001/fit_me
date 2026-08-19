@@ -81,6 +81,7 @@ describe("workout history outlives the program it was logged under", () => {
     });
     const exercise = await prisma.exercise.create({
       data: {
+        userId: 1,
         nameFa: `تست حرکت ${Date.now()}`,
         nameEn: `Progress Ownership Exercise ${Date.now()}`,
         musclesPrimary: ["pec_major_sternal"],

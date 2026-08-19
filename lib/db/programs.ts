@@ -180,7 +180,7 @@ export async function installProgram(
       // Creating on a miss is this path's own behaviour: a YAML naming a new
       // movement should add it. The MCP tools must never create - see
       // `resolveExerciseStrict` in `lib/db/exercises.ts`.
-      const found = await findExerciseByName(ex.name);
+      const found = await findExerciseByName(userId, ex.name);
       let dbExercise = found
         ? await prisma.exercise.findUnique({ where: { id: found.id } })
         : null;
@@ -188,6 +188,7 @@ export async function installProgram(
       if (!dbExercise) {
         dbExercise = await prisma.exercise.create({
           data: {
+            userId,
             nameFa: ex.name,
             nameEn: ex.name,
             musclesPrimary: ex.musclesPrimary,
