@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAuthenticated } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
+import { currentUserId } from "@/lib/db/current-user";
+import { activateProgram, findProgram } from "@/lib/db/programs";
 import { z } from "zod";
 
 const schema = z.object({ programId: z.number().int().positive() });
@@ -17,24 +18,15 @@ export async function PATCH(request: NextRequest) {
   }
 
   const { programId } = parsed.data;
+  const userId = await currentUserId();
 
-  // Verify the program belongs to this user
-  const program = await prisma.program.findFirst({
-    where: { id: programId, userId: 1 },
-  });
+  // Verify the program belongs to this user before touching anything.
+  const program = await findProgram(userId, programId);
   if (!program) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  // Deactivate all, then activate the chosen one
-  await prisma.program.updateMany({
-    where: { userId: 1 },
-    data: { isActive: false },
-  });
-  await prisma.program.update({
-    where: { id: programId },
-    data: { isActive: true },
-  });
+  await activateProgram(userId, programId);
 
   return NextResponse.json({ ok: true });
 }

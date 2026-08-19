@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isAuthenticated } from "@/lib/session";
-import { computeGroupVolume } from "@/lib/volume-server";
+import { currentUserId } from "@/lib/db/current-user";
+import { computeGroupVolume } from "@/lib/db/volume";
 import { MUSCLE_GROUPS, verdictForVolume } from "@/lib/muscles";
 import { VOLUME_WINDOW_DAYS } from "@/lib/volume";
 
@@ -10,7 +11,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const volume = await computeGroupVolume();
+  const volume = await computeGroupVolume(await currentUserId());
 
   return NextResponse.json({
     windowDays: VOLUME_WINDOW_DAYS,

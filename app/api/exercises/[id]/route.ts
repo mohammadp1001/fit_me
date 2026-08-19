@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAuthenticated } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
+import { getExercise, updateExercise } from "@/lib/db/exercises";
 import { z } from "zod";
 import { Muscle } from "@prisma/client";
 
-// Second write path into the shared exercise library. It validates against the
-// same canonical vocabulary as the YAML parser so muscles cannot enter the
-// library through this door untyped.
+// Second write path into the exercise library. It validates against the same
+// canonical vocabulary as the YAML parser so muscles cannot enter the library
+// through this door untyped.
 const MuscleSchema = z.nativeEnum(Muscle);
 
 const updateSchema = z.object({
@@ -44,10 +44,7 @@ export async function PATCH(
     return NextResponse.json({ error: parsed.error.message }, { status: 400 });
   }
 
-  const exercise = await prisma.exercise.update({
-    where: { id: parseInt(id) },
-    data: parsed.data,
-  });
+  const exercise = await updateExercise(parseInt(id), parsed.data);
 
   return NextResponse.json({ exercise });
 }
@@ -61,9 +58,7 @@ export async function GET(
   }
 
   const { id } = await params;
-  const exercise = await prisma.exercise.findUnique({
-    where: { id: parseInt(id) },
-  });
+  const exercise = await getExercise(parseInt(id));
 
   if (!exercise) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });

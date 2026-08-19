@@ -3,7 +3,7 @@
  */
 import { PrismaClient } from "@prisma/client";
 import { saveSuggestions, SuggestionRejected } from "./save-suggestions";
-import { ExerciseNotFoundError } from "@/lib/exercise-lookup";
+import { ExerciseNotFoundError } from "@/lib/db/exercises";
 import { parseNote } from "@/lib/coach-notes";
 
 /**

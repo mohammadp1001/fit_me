@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAuthenticated } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
+import { currentUserId } from "@/lib/db/current-user";
+import { getUser, updateUser } from "@/lib/db/user";
 import { z } from "zod";
 
 export async function GET() {
@@ -8,7 +9,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const user = await prisma.user.findUnique({ where: { id: 1 } });
+  const user = await getUser(await currentUserId());
   return NextResponse.json({ user });
 }
 
@@ -29,10 +30,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: parsed.error.message }, { status: 400 });
   }
 
-  const user = await prisma.user.update({
-    where: { id: 1 },
-    data: parsed.data,
-  });
+  const user = await updateUser(await currentUserId(), parsed.data);
 
   return NextResponse.json({ user });
 }

@@ -1,11 +1,19 @@
-import { prisma } from "./prisma";
-import { MuscleGroup } from "./muscles";
+import { MuscleGroup } from "@/lib/muscles";
 import {
   VOLUME_WINDOW_DAYS,
   toLoggedSets,
   volumeByGroup,
   type VolumeEntry,
-} from "./volume";
+} from "@/lib/volume";
+import { listLogsSince } from "./logs";
+
+/**
+ * Hard-set volume per muscle group, read from the database.
+ *
+ * Moved here from `lib/volume-server.ts` in #58 so that every Prisma call
+ * lives under `lib/db`. The arithmetic itself stays in `lib/volume.ts`, which
+ * is pure and unit-tested without a database.
+ */
 
 /** Today truncated to a day-only `Date`, matching the `@db.Date` columns. */
 export function todayDateOnly(now: Date = new Date()): Date {
@@ -20,24 +28,18 @@ export function windowStart(now: Date = new Date()): Date {
 }
 
 /**
- * Hard-set volume per muscle group over the trailing window, for the single
- * user. Reads logs across all programs: volume is a property of the training
- * that happened, not of whichever program happens to be active now.
+ * Hard-set volume per muscle group over the trailing window.
+ *
+ * Reads logs across all programs: volume is a property of the training that
+ * happened, not of whichever program happens to be active now. Muscles are
+ * read through the log's own `exerciseId`, so a log whose program has since
+ * been deleted still counts.
  */
 export async function computeGroupVolume(
-  now: Date = new Date()
+  userId: number,
+  now: Date = new Date(),
 ): Promise<Record<MuscleGroup, number>> {
-  // Muscles are read through the log's own `exerciseId`, not through the
-  // program slot: a log whose program has since been deleted has no slot left,
-  // but it is still training that happened and still counts.
-  const logs = await prisma.workoutLog.findMany({
-    where: { userId: 1, date: { gte: windowStart(now) } },
-    include: {
-      exercise: {
-        select: { musclesPrimary: true, musclesSecondary: true },
-      },
-    },
-  });
+  const logs = await listLogsSince(userId, windowStart(now));
 
   const entries: VolumeEntry[] = logs
     .filter((log) => log.exercise !== null)

@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { isAuthenticated } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
+import { currentUserId } from "@/lib/db/current-user";
+import { getUser } from "@/lib/db/user";
+import { getActiveProgram, listPrograms } from "@/lib/db/programs";
 import AppShell from "@/components/AppShell";
 
 export default async function HomePage({
@@ -14,32 +16,16 @@ export default async function HomePage({
     redirect(`/${locale}/login`);
   }
 
-  const user = await prisma.user.findUnique({ where: { id: 1 } });
+  const userId = await currentUserId();
+  const user = await getUser(userId);
 
   if (!user) {
     redirect(`/${locale}/onboarding`);
   }
 
   const [program, allPrograms] = await Promise.all([
-    prisma.program.findFirst({
-      where: { userId: 1, isActive: true },
-      include: {
-        days: {
-          orderBy: { dayNumber: "asc" },
-          include: {
-            exercises: {
-              orderBy: { displayOrder: "asc" },
-              include: { exercise: true },
-            },
-          },
-        },
-      },
-    }),
-    prisma.program.findMany({
-      where: { userId: 1 },
-      orderBy: { id: "desc" },
-      select: { id: true, nameFa: true, nameEn: true, startDate: true, isActive: true },
-    }),
+    getActiveProgram(userId),
+    listPrograms(userId),
   ]);
 
   if (!program) {

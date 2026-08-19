@@ -1,7 +1,22 @@
-import { prisma } from "@/lib/prisma";
 import { parseWorkoutYaml } from "@/lib/yaml-parser";
 import { toLoggedSets } from "@/lib/volume";
-import { computeGroupVolume } from "@/lib/volume-server";
+import { currentUserId } from "@/lib/db/current-user";
+import { computeGroupVolume } from "@/lib/db/volume";
+import { listBodyWeight, listRecentBodyWeight } from "@/lib/db/body-weight";
+import {
+  listLogsForExercise,
+  listLogsSince,
+} from "@/lib/db/logs";
+import {
+  getExerciseMemory,
+  getGlobalMemory,
+  listExerciseMemory,
+} from "@/lib/db/memory";
+import {
+  getActiveProgram,
+  getProgramById,
+  listProgramsWithDayCount,
+} from "@/lib/db/programs";
 import {
   MUSCLE_GROUP_LABEL,
   WEEKLY_SET_CEILING,
@@ -9,7 +24,10 @@ import {
   verdictForVolume,
 } from "@/lib/muscles";
 import { summariseExercise, trendPerWeek } from "@/lib/progress";
-import { resolveExerciseStrict } from "@/lib/exercise-lookup";
+import {
+  listExercises as listLibraryExercises,
+  resolveExerciseStrict,
+} from "@/lib/db/exercises";
 
 /**
  * The read tools.
@@ -19,10 +37,10 @@ import { resolveExerciseStrict } from "@/lib/exercise-lookup";
  * them. Every response carries both `nameFa` and `nameEn` so the model never
  * has to guess which language it is looking at.
  *
- * The single user is `id = 1` throughout, matching the rest of the app.
+ * All database access goes through `lib/db/*`, which is where the `userId`
+ * filter is enforced (#58). The id comes from `currentUserId()`; in #61 it will
+ * come from the OAuth token instead, and only these call sites change.
  */
-
-const USER_ID = 1;
 
 /** Caps on anything unbounded, so one call cannot swamp a context window. */
 export const LIMITS = {
@@ -61,22 +79,9 @@ export async function getProgressSummary({
   now = new Date(),
 }: ProgressSummaryOptions = {}) {
   const from = windowStart(weeks, now);
+  const userId = await currentUserId();
 
-  const logs = await prisma.workoutLog.findMany({
-    where: { userId: USER_ID, date: { gte: from } },
-    include: {
-      exercise: {
-        select: {
-          id: true,
-          nameFa: true,
-          nameEn: true,
-          musclesPrimary: true,
-          musclesSecondary: true,
-        },
-      },
-    },
-    orderBy: { date: "asc" },
-  });
+  const logs = await listLogsSince(userId, from);
 
   const byExercise = new Map<number, typeof logs>();
   for (const log of logs) {
@@ -106,12 +111,9 @@ export async function getProgressSummary({
     // the exercises worth discussing at the top if the list gets long.
     .sort((a, b) => b.hardSets - a.hardSets);
 
-  const bodyWeights = await prisma.bodyWeight.findMany({
-    where: { userId: USER_ID, date: { gte: from } },
-    orderBy: { date: "asc" },
-  });
+  const bodyWeights = await listBodyWeight(userId, { from });
 
-  const volume = await computeGroupVolume(now);
+  const volume = await computeGroupVolume(userId, now);
   const volumeByGroup = Object.entries(volume).map(([group, sets]) => ({
     group,
     labelEn: MUSCLE_GROUP_LABEL[group as keyof typeof MUSCLE_GROUP_LABEL].en,
@@ -161,10 +163,8 @@ export async function getExerciseHistory({
   const exercise = await resolveExerciseStrict(name);
   const capped = Math.min(Math.max(1, limit), LIMITS.exerciseHistory);
 
-  const logs = await prisma.workoutLog.findMany({
-    where: { userId: USER_ID, exerciseId: exercise.id },
-    orderBy: { date: "desc" },
-    take: capped,
+  const logs = await listLogsForExercise(await currentUserId(), exercise.id, {
+    limit: capped,
   });
 
   return {
@@ -187,7 +187,7 @@ export async function getExerciseHistory({
 
 /** Trailing 7-day hard-set volume per muscle group, with the 10/20 verdicts. */
 export async function getVolume({ now = new Date() }: { now?: Date } = {}) {
-  const volume = await computeGroupVolume(now);
+  const volume = await computeGroupVolume(await currentUserId(), now);
 
   return {
     windowDays: 7,
@@ -215,20 +215,10 @@ export async function getBodyWeight({
 } = {}) {
   const capped = Math.min(Math.max(1, limit), LIMITS.bodyWeight);
 
-  const entries = await prisma.bodyWeight.findMany({
-    where: {
-      userId: USER_ID,
-      ...(from || to
-        ? {
-            date: {
-              ...(from ? { gte: new Date(from) } : {}),
-              ...(to ? { lte: new Date(to) } : {}),
-            },
-          }
-        : {}),
-    },
-    orderBy: { date: "desc" },
-    take: capped,
+  const entries = await listRecentBodyWeight(await currentUserId(), {
+    from: from ? new Date(from) : undefined,
+    to: to ? new Date(to) : undefined,
+    limit: capped,
   });
 
   // Query descending to honour the limit against the most recent entries, then
@@ -257,13 +247,12 @@ export async function getBodyWeight({
  * placeholder text.
  */
 export async function getCoachMemory({ name }: { name?: string } = {}) {
-  const global = await prisma.globalMemory.findUnique({ where: { id: 1 } });
+  const userId = await currentUserId();
+  const global = await getGlobalMemory(userId);
 
   if (name) {
     const exercise = await resolveExerciseStrict(name);
-    const memory = await prisma.exerciseMemory.findUnique({
-      where: { exerciseId: exercise.id },
-    });
+    const memory = await getExerciseMemory(exercise.id);
 
     return {
       global: global?.notes ?? null,
@@ -277,10 +266,7 @@ export async function getCoachMemory({ name }: { name?: string } = {}) {
     };
   }
 
-  const memories = await prisma.exerciseMemory.findMany({
-    include: { exercise: { select: { nameFa: true, nameEn: true } } },
-    orderBy: { exerciseId: "asc" },
-  });
+  const memories = await listExerciseMemory(userId);
 
   return {
     global: global?.notes ?? null,
@@ -295,11 +281,7 @@ export async function getCoachMemory({ name }: { name?: string } = {}) {
 // --- list_programs / get_program --------------------------------------------
 
 export async function listPrograms() {
-  const programs = await prisma.program.findMany({
-    where: { userId: USER_ID },
-    orderBy: { id: "asc" },
-    include: { _count: { select: { days: true } } },
-  });
+  const programs = await listProgramsWithDayCount(await currentUserId());
 
   return {
     programs: programs.map((p) => ({
@@ -314,29 +296,10 @@ export async function listPrograms() {
 
 /** Full structure of one program, defaulting to the active one. */
 export async function getProgram({ id }: { id?: number } = {}) {
-  const program = await prisma.program.findFirst({
-    where: id ? { id, userId: USER_ID } : { userId: USER_ID, isActive: true },
-    include: {
-      days: {
-        orderBy: { dayNumber: "asc" },
-        include: {
-          exercises: {
-            orderBy: { displayOrder: "asc" },
-            include: {
-              exercise: {
-                select: {
-                  nameFa: true,
-                  nameEn: true,
-                  musclesPrimary: true,
-                  musclesSecondary: true,
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-  });
+  const userId = await currentUserId();
+  const program = id
+    ? await getProgramById(userId, id)
+    : await getActiveProgram(userId);
 
   if (!program) {
     throw new Error(
@@ -388,24 +351,7 @@ export async function listExercises({
 } = {}) {
   const capped = Math.min(Math.max(1, limit), LIMITS.exercises);
 
-  const exercises = await prisma.exercise.findMany({
-    where: search
-      ? {
-          OR: [
-            { nameEn: { contains: search, mode: "insensitive" } },
-            { nameFa: { contains: search, mode: "insensitive" } },
-          ],
-        }
-      : undefined,
-    orderBy: { id: "asc" },
-    take: capped,
-    select: {
-      nameFa: true,
-      nameEn: true,
-      musclesPrimary: true,
-      musclesSecondary: true,
-    },
-  });
+  const exercises = await listLibraryExercises({ search, limit: capped });
 
   return { returned: exercises.length, exercises };
 }
