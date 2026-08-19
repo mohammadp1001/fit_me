@@ -14,6 +14,7 @@ import {
 } from "./read-tools";
 import { saveSuggestions } from "./save-suggestions";
 import { ExerciseNotFoundError } from "@/lib/db/exercises";
+import { realignUserSequence } from "@/lib/db/accounts";
 
 /**
  * One account's MCP token must not reach another account's data.
@@ -118,6 +119,16 @@ async function makeAccount(label: string, weight: number) {
 }
 
 beforeAll(async () => {
+  // Other suites insert account 1 with an *explicit* id, and Postgres does not
+  // advance a sequence for an explicit id. On a fresh database - which is what
+  // CI has - the sequence therefore still points at 1 while row 1 exists, and
+  // the `user.create()` below collides on the primary key.
+  //
+  // Exactly the trap #65 fixed for signup, hit again here because a test
+  // fixture creates users too. It passed locally only because this machine's
+  // database had already advanced past it.
+  await realignUserSequence();
+
   const a = await makeAccount("Alice", 60);
   const b = await makeAccount("Bob", 100);
   alice = a.userId;
