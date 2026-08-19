@@ -65,6 +65,9 @@ export type UserData = {
   weightKg: number;
   heightCm: number;
   createdAt: string;
+  /// Drives whether the profile screen offers invite links. The API enforces
+  /// it independently - this only decides what is worth rendering.
+  isAdmin: boolean;
 };
 
 export type ProgramSummary = {

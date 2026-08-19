@@ -12,17 +12,19 @@
     "test:coverage": "jest --coverage",
     "db:migrate": "prisma migrate deploy",
     "db:push": "prisma db push",
-    "db:seed": "ts-node --project tsconfig.json prisma/seed.ts",
+    "db:seed": "node --experimental-strip-types prisma/seed.ts",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate"
   },
   "prisma": {
-    "seed": "ts-node --project tsconfig.json prisma/seed.ts"
+    "seed": "node --experimental-strip-types prisma/seed.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@prisma/client": "^6.0.0",
+    "@types/bcryptjs": "^2.4.6",
     "@types/js-yaml": "^4.0.9",
+    "bcryptjs": "^3.0.3",
     "iron-session": "^8.0.4",
     "js-yaml": "^4.2.0",
     "next": "^16.2.7",

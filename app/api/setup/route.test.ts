@@ -6,8 +6,11 @@ import { PrismaClient } from "@prisma/client";
 
 // The route gates on the session cookie; these tests are about the library
 // upsert rules underneath it, so authentication is stubbed as always-passing.
+// `currentUserId()` reads the session, so stubbing "logged in" now means
+// stubbing *who*. Account 1 is the one the fixtures below create.
 jest.mock("@/lib/session", () => ({
   isAuthenticated: jest.fn(async () => true),
+  sessionUserId: jest.fn(async () => 1),
 }));
 
 import { POST } from "./route";

@@ -102,6 +102,7 @@ export async function POST(request: NextRequest) {
 
     const tokens = await issueTokens({
       clientId: auth.client.id,
+      userId: consumed.userId,
       scope: consumed.scope,
       resource: consumed.resource,
     });

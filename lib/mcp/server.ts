@@ -79,7 +79,12 @@ function requiresWriteScope(extra: { authInfo?: { scopes?: string[] } }): boolea
   return !(extra.authInfo?.scopes ?? []).includes("fitme:write");
 }
 
-export function buildMcpServer(): McpServer {
+/**
+ * @param userId The account this connection acts as, taken from the verified
+ * OAuth token. Passed in rather than read from a session: the MCP endpoint is
+ * reached with a bearer token and has no browser cookie to consult.
+ */
+export function buildMcpServer(userId: number): McpServer {
   const server = new McpServer(
     { name: "fitme", version: "0.2.0" },
     {
@@ -148,7 +153,7 @@ export function buildMcpServer(): McpServer {
     },
     async ({ weeks }) => {
       try {
-        return asText(await getProgressSummary({ weeks }));
+        return asText(await getProgressSummary({ userId, weeks }));
       } catch (err) {
         return asError(err);
       }
@@ -179,7 +184,7 @@ export function buildMcpServer(): McpServer {
     },
     async ({ name, limit }) => {
       try {
-        return asText(await getExerciseHistory({ name, limit }));
+        return asText(await getExerciseHistory({ userId, name, limit }));
       } catch (err) {
         return asError(err);
       }
@@ -197,7 +202,7 @@ export function buildMcpServer(): McpServer {
     },
     async () => {
       try {
-        return asText(await getVolume());
+        return asText(await getVolume({ userId }));
       } catch (err) {
         return asError(err);
       }
@@ -219,7 +224,7 @@ export function buildMcpServer(): McpServer {
     },
     async ({ from, to, limit }) => {
       try {
-        return asText(await getBodyWeight({ from, to, limit }));
+        return asText(await getBodyWeight({ userId, from, to, limit }));
       } catch (err) {
         return asError(err);
       }
@@ -244,7 +249,7 @@ export function buildMcpServer(): McpServer {
     },
     async ({ name }) => {
       try {
-        return asText(await getCoachMemory({ name }));
+        return asText(await getCoachMemory({ userId, name }));
       } catch (err) {
         return asError(err);
       }
@@ -260,7 +265,7 @@ export function buildMcpServer(): McpServer {
     },
     async () => {
       try {
-        return asText(await listPrograms());
+        return asText(await listPrograms({ userId }));
       } catch (err) {
         return asError(err);
       }
@@ -281,7 +286,7 @@ export function buildMcpServer(): McpServer {
     },
     async ({ id }) => {
       try {
-        return asText(await getProgram({ id }));
+        return asText(await getProgram({ userId, id }));
       } catch (err) {
         return asError(err);
       }
@@ -306,7 +311,7 @@ export function buildMcpServer(): McpServer {
     },
     async ({ search, limit }) => {
       try {
-        return asText(await listExercises({ search, limit }));
+        return asText(await listExercises({ userId, search, limit }));
       } catch (err) {
         return asError(err);
       }
@@ -408,7 +413,13 @@ export function buildMcpServer(): McpServer {
 
       try {
         return asText(
-          await saveSuggestions({ date, items, exerciseNotes, globalNote }),
+          await saveSuggestions({
+            userId,
+            date,
+            items,
+            exerciseNotes,
+            globalNote,
+          }),
         );
       } catch (err) {
         return asError(err);

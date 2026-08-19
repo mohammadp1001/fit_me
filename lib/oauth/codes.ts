@@ -9,6 +9,8 @@ import { CODE_TTL_MS } from "./config";
 
 export interface IssueCodeInput {
   clientId: string;
+  /** The account that approved this at the consent screen. */
+  userId: number;
   redirectUri: string;
   codeChallenge: string;
   codeChallengeMethod: string;
@@ -27,6 +29,7 @@ export async function issueCode(
     data: {
       codeHash: hashSecret(code),
       clientId: input.clientId,
+      userId: input.userId,
       redirectUri: input.redirectUri,
       codeChallenge: input.codeChallenge,
       codeChallengeMethod: input.codeChallengeMethod,
@@ -40,7 +43,7 @@ export async function issueCode(
 }
 
 export type ConsumeCodeResult =
-  | { ok: true; scope: string; resource: string | null }
+  | { ok: true; scope: string; resource: string | null; userId: number }
   | { ok: false; error: "invalid_grant"; reason: string };
 
 /**
@@ -96,7 +99,7 @@ export async function consumeCode(
     return { ok: false, error: "invalid_grant", reason: "PKCE verification failed" };
   }
 
-  return { ok: true, scope: row.scope, resource: row.resource };
+  return { ok: true, scope: row.scope, resource: row.resource, userId: row.userId };
 }
 
 /** Deletes codes past their expiry. Called by the cleanup cron. */

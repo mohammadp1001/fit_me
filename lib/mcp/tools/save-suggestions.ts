@@ -1,6 +1,5 @@
 import { resolveExerciseStrict, type ExerciseRef } from "@/lib/db/exercises";
 import { appendNote } from "@/lib/coach-notes";
-import { currentUserId } from "@/lib/db/current-user";
 import { findActiveSlotFor } from "@/lib/db/programs";
 import { hasLogOn } from "@/lib/db/logs";
 import { upsertSuggestion } from "@/lib/db/suggestions";
@@ -41,6 +40,8 @@ export interface SuggestionItemInput {
 }
 
 export interface SaveSuggestionsInput {
+  /** The account this grant acts as, from the verified OAuth token. */
+  userId: number;
   date: string;
   items: SuggestionItemInput[];
   exerciseNotes?: Array<{ exercise: string; note: string }>;
@@ -85,6 +86,7 @@ export interface SaveSuggestionsResult {
 }
 
 export async function saveSuggestions({
+  userId,
   date,
   items,
   exerciseNotes = [],
@@ -113,8 +115,6 @@ export async function saveSuggestions({
   if (items.length === 0) {
     throw new SuggestionRejected("items must contain at least one exercise.");
   }
-
-  const userId = await currentUserId();
 
   // Resolve and validate everything before writing anything, so a bad item
   // cannot leave half a day's suggestions saved.

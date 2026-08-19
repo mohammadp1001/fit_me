@@ -22,9 +22,10 @@ export interface IssuedTokens {
 export async function issueTokens(
   {
     clientId,
+    userId,
     scope,
     resource,
-  }: { clientId: string; scope: string; resource?: string | null },
+  }: { clientId: string; userId: number; scope: string; resource?: string | null },
   now: Date = new Date(),
 ): Promise<IssuedTokens> {
   const accessToken = randomSecret();
@@ -35,6 +36,7 @@ export async function issueTokens(
       accessTokenHash: hashSecret(accessToken),
       refreshTokenHash: hashSecret(refreshToken),
       clientId,
+      userId,
       scope,
       resource: resource ?? null,
       expiresAt: new Date(now.getTime() + ACCESS_TOKEN_TTL_MS),
@@ -94,7 +96,12 @@ export async function refreshTokens(
   }
 
   const tokens = await issueTokens(
-    { clientId: row.clientId, scope: row.scope, resource: row.resource },
+    {
+      clientId: row.clientId,
+      userId: row.userId,
+      scope: row.scope,
+      resource: row.resource,
+    },
     now,
   );
   return { ok: true, tokens };
@@ -102,6 +109,8 @@ export async function refreshTokens(
 
 export interface VerifiedToken {
   clientId: string;
+  /** The account this token acts as. Every MCP tool scopes by it. */
+  userId: number;
   scopes: string[];
   resource: string | null;
 }
@@ -126,6 +135,7 @@ export async function verifyAccessToken(
 
   return {
     clientId: row.clientId,
+    userId: row.userId,
     scopes: row.scope.split(/\s+/).filter(Boolean),
     resource: row.resource,
   };
