@@ -226,6 +226,16 @@ export async function setPassword(userId: number, password: string) {
 }
 
 // --- bootstrapping the first account ----------------------------------------
+//
+// This section is PERMANENT, not transitional. `/claim` is the only way to
+// create the first account on a deployment that has none - there is nothing to
+// log in as, no invite to redeem, and no admin to issue one. Deleting it
+// because "the migration is done" re-introduces the deadlock fixed in #65.
+//
+// It is safe to leave routed forever because it disables itself: once every
+// account has a password, `claimAvailable()` is false and the endpoint answers
+// 410. `APP_PASSPHRASE` is its permanent bootstrap secret, and grants nothing
+// else.
 
 /**
  * Whether `/claim` should still be open.
@@ -253,9 +263,6 @@ export async function claimAvailable(): Promise<boolean> {
   }
   return (await prisma.user.count({ where: { passwordHash: null } })) > 0;
 }
-
-/** @deprecated Use `claimAvailable`. Kept so the name change is greppable. */
-export const unclaimedAccountExists = claimAvailable;
 
 export type ClaimResult =
   | { ok: true; userId: number }

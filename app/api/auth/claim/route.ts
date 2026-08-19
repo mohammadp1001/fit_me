@@ -14,15 +14,23 @@ const schema = z.object({
 const CLAIM_RATE_LIMIT = { limit: 10, windowMs: 15 * 60 * 1000 };
 
 /**
- * The one-time bridge from the shared passphrase to real accounts.
+ * The bootstrap door. **Do not delete this** once you have used it.
  *
- * The account that predates accounts has a full training history and no
- * credentials. Whoever knows the old passphrase attaches a username and
- * password to it here, once, and becomes the admin.
+ * It covers the two situations where nobody can log in yet:
  *
- * Deliberately self-disabling: once no account is missing credentials it
- * answers 410 forever, so leaving it routed is harmless. Delete it in a
- * follow-up once it has been used.
+ * - an account exists with no password (a database upgraded from before
+ *   accounts, carrying the training history)
+ * - there are no accounts at all (a fresh deployment)
+ *
+ * The second case is why this is permanent rather than transitional: with an
+ * empty database you cannot log in, cannot sign up without an invite, and
+ * cannot create an invite without an admin. Removing this endpoint restores
+ * that deadlock (#65).
+ *
+ * Safe to leave routed forever because it disables itself: once every account
+ * has a password it answers 410 to everything, whatever passphrase is offered.
+ * `APP_PASSPHRASE` is its bootstrap secret and grants nothing else - it is not
+ * dead config, and removing it from the environment breaks recovery.
  */
 export async function POST(request: NextRequest) {
   if (!(await claimAvailable())) {
