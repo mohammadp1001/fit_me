@@ -225,33 +225,52 @@ export async function setPassword(userId: number, password: string) {
   });
 }
 
-// --- claiming account 1 -----------------------------------------------------
+// --- bootstrapping the first account ----------------------------------------
 
 /**
- * Whether any account still has no password.
+ * Whether `/claim` should still be open.
  *
- * "Unclaimed" is defined by `passwordHash`, not `username`: the password is
- * what makes an account loggable-into, so an account without one cannot be
- * reached no matter what else it has. Exactly one account can be in this state -
- * account 1, which existed before accounts did. Once it is claimed the answer is
+ * Two situations need it, and both are "there is no way to log in yet":
+ *
+ * 1. **An account exists with no password.** That is account 1 on an upgraded
+ *    database - it predates accounts entirely and carries the training history.
+ *    "Unclaimed" is defined by `passwordHash`, not `username`, because the
+ *    password is what makes an account reachable.
+ * 2. **There are no accounts at all.** A brand-new deployment. Without this
+ *    case the app deadlocks: you cannot log in (no accounts), cannot sign up
+ *    (needs an invite), and cannot create an invite (needs an admin).
+ *
+ * Found while preparing the first deploy of accounts, by checking what an empty
+ * database actually does rather than assuming.
+ *
+ * Once some account has a password and none is left without one, this is
  * permanently false and the claim screen disappears.
  */
-export async function unclaimedAccountExists(): Promise<boolean> {
-  const count = await prisma.user.count({ where: { passwordHash: null } });
-  return count > 0;
+export async function claimAvailable(): Promise<boolean> {
+  const total = await prisma.user.count();
+  if (total === 0) {
+    return true;
+  }
+  return (await prisma.user.count({ where: { passwordHash: null } })) > 0;
 }
+
+/** @deprecated Use `claimAvailable`. Kept so the name change is greppable. */
+export const unclaimedAccountExists = claimAvailable;
 
 export type ClaimResult =
   | { ok: true; userId: number }
   | { ok: false; reason: "nothing-to-claim" | "username-taken" };
 
 /**
- * Attaches a username and password to the pre-accounts account.
+ * Creates the first account, or attaches credentials to the one that predates
+ * accounts.
  *
- * This is the one-time bridge from the shared passphrase to real accounts. The
- * caller is responsible for checking the old passphrase first; this function
- * only refuses when there is nothing left to claim, which is what makes it
- * safe to leave routed after the fact.
+ * The single bootstrap door, gated by `APP_PASSPHRASE` in the route above.
+ * Whoever comes through it is the admin - they are the only person who can hand
+ * out invites, and there is nobody else yet.
+ *
+ * Refuses once every account has a password, which is what makes it safe to
+ * leave routed forever.
  */
 export async function claimLegacyAccount({
   username,
@@ -260,25 +279,51 @@ export async function claimLegacyAccount({
   username: string;
   password: string;
 }): Promise<ClaimResult> {
+  const passwordHash = await hashPassword(password);
+
   const legacy = await prisma.user.findFirst({
     where: { passwordHash: null },
     orderBy: { id: "asc" },
   });
-  if (!legacy) {
+
+  // Upgraded database: attach credentials to the existing account so its
+  // history stays exactly where it is.
+  if (legacy) {
+    try {
+      await prisma.user.update({
+        where: { id: legacy.id },
+        data: { username, passwordHash, isAdmin: true },
+      });
+    } catch (err) {
+      if (isUniqueViolation(err)) {
+        return { ok: false, reason: "username-taken" };
+      }
+      throw err;
+    }
+    return { ok: true, userId: legacy.id };
+  }
+
+  // Brand-new deployment: no accounts at all, so create the first one.
+  if ((await prisma.user.count()) > 0) {
     return { ok: false, reason: "nothing-to-claim" };
   }
 
+  let userId: number;
   try {
-    await prisma.user.update({
-      where: { id: legacy.id },
+    await realignUserSequence();
+    const user = await prisma.user.create({
       data: {
         username,
-        passwordHash: await hashPassword(password),
-        // Whoever claims the original account is the admin: they are the only
-        // person who can hand out invites, and there is nobody else yet.
+        passwordHash,
+        name: username,
+        // Placeholders, same as an invited account: the first YAML upload is
+        // the screen that asks for these properly.
+        weightKg: 0,
+        heightCm: 0,
         isAdmin: true,
       },
     });
+    userId = user.id;
   } catch (err) {
     if (isUniqueViolation(err)) {
       return { ok: false, reason: "username-taken" };
@@ -286,7 +331,9 @@ export async function claimLegacyAccount({
     throw err;
   }
 
-  return { ok: true, userId: legacy.id };
+  await seedExerciseLibrary(userId);
+
+  return { ok: true, userId };
 }
 
 /** Deletes invites that expired without being used. Called by the cleanup cron. */

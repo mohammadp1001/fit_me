@@ -4,13 +4,13 @@
 import { PrismaClient } from "@prisma/client";
 import {
   authenticate,
+  claimAvailable,
   checkInvite,
   claimLegacyAccount,
   createInvite,
   isAdmin,
   pruneInvites,
   redeemInvite,
-  unclaimedAccountExists,
 } from "./accounts";
 import { checkPasswordStrength, checkUsername } from "@/lib/auth/password";
 
@@ -274,7 +274,7 @@ describe("authenticate", () => {
 
 describe("claiming the pre-accounts account", () => {
   it("reports that an unclaimed account exists", async () => {
-    expect(await unclaimedAccountExists()).toBe(true);
+    expect(await claimAvailable()).toBe(true);
   });
 
   it("attaches credentials to the existing account and makes it admin", async () => {
@@ -309,7 +309,7 @@ describe("claiming the pre-accounts account", () => {
     });
 
     try {
-      expect(await unclaimedAccountExists()).toBe(false);
+      expect(await claimAvailable()).toBe(false);
       expect(
         await claimLegacyAccount({ username: `again-${TAG}`, password: PASSWORD }),
       ).toMatchObject({ ok: false, reason: "nothing-to-claim" });
@@ -318,6 +318,46 @@ describe("claiming the pre-accounts account", () => {
         where: { id: adminId },
         data: { username: `admin-${TAG}`, passwordHash: null },
       });
+    }
+  });
+});
+
+describe("bootstrapping a brand-new deployment", () => {
+  // Found while preparing the first deploy: on an empty database you cannot log
+  // in (no accounts), cannot sign up (needs an invite) and cannot create an
+  // invite (needs an admin). Without this path the app is simply locked.
+  it("offers the claim screen when there are no accounts at all", async () => {
+    const saved = await prisma.user.findMany();
+    await prisma.exercise.deleteMany({ where: { userId: adminId } });
+    await prisma.invite.deleteMany();
+    await prisma.user.deleteMany();
+
+    try {
+      expect(await claimAvailable()).toBe(true);
+
+      const result = await claimLegacyAccount({
+        username: uniq("founder"),
+        password: PASSWORD,
+      });
+
+      expect(result).toMatchObject({ ok: true });
+      if (!result.ok) throw new Error("expected ok");
+
+      const created = await prisma.user.findUnique({ where: { id: result.userId } });
+      expect(created!.isAdmin).toBe(true);
+
+      // A first account is useless without a library to upload against.
+      const library = await prisma.exercise.count({ where: { userId: result.userId } });
+      expect(library).toBeGreaterThan(20);
+
+      // And the door closes behind it.
+      expect(await claimAvailable()).toBe(false);
+    } finally {
+      await prisma.exercise.deleteMany();
+      await prisma.user.deleteMany();
+      for (const u of saved) {
+        await prisma.user.create({ data: u });
+      }
     }
   });
 });
