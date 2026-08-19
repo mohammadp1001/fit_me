@@ -64,6 +64,7 @@ beforeAll(async () => {
 
   const bench = await prisma.exercise.create({
     data: {
+      userId: 1,
       nameFa: `پرس سینه ${TAG}`,
       nameEn: `Bench Press ${TAG}`,
       musclesPrimary: ["pec_major_sternal"],
@@ -74,6 +75,7 @@ beforeAll(async () => {
 
   const squat = await prisma.exercise.create({
     data: {
+      userId: 1,
       nameFa: `اسکوات ${TAG}`,
       nameEn: `Squat ${TAG}`,
       musclesPrimary: ["quadriceps"],
@@ -166,9 +168,9 @@ beforeAll(async () => {
     data: { exerciseId: benchId, notes: "Stalls around week three." },
   });
   await prisma.globalMemory.upsert({
-    where: { id: 1 },
+    where: { userId: 1 },
     update: { notes: "Prefers 6-10 reps." },
-    create: { id: 1, notes: "Prefers 6-10 reps." },
+    create: { userId: 1, notes: "Prefers 6-10 reps." },
   });
 });
 
@@ -187,17 +189,17 @@ afterAll(async () => {
 
 describe("exercise name resolution", () => {
   it("resolves by Persian name", async () => {
-    const found = await resolveExerciseStrict(`پرس سینه ${TAG}`);
+    const found = await resolveExerciseStrict(1, `پرس سینه ${TAG}`);
     expect(found.id).toBe(benchId);
   });
 
   it("resolves by English name", async () => {
-    const found = await resolveExerciseStrict(`Bench Press ${TAG}`);
+    const found = await resolveExerciseStrict(1, `Bench Press ${TAG}`);
     expect(found.id).toBe(benchId);
   });
 
   it("trims surrounding whitespace", async () => {
-    const found = await resolveExerciseStrict(`  Bench Press ${TAG}  `);
+    const found = await resolveExerciseStrict(1, `  Bench Press ${TAG}  `);
     expect(found.id).toBe(benchId);
   });
 
@@ -206,7 +208,7 @@ describe("exercise name resolution", () => {
     // mint a library row that then competes with the real one on every upload.
     const before = await prisma.exercise.count();
 
-    await expect(resolveExerciseStrict("Completely Invented Lift")).rejects.toThrow(
+    await expect(resolveExerciseStrict(1, "Completely Invented Lift")).rejects.toThrow(
       ExerciseNotFoundError,
     );
 
@@ -214,7 +216,7 @@ describe("exercise name resolution", () => {
   });
 
   it("suggests near-matches so the model can correct itself", async () => {
-    await expect(resolveExerciseStrict(`Bench Press ${TAG} Extra`)).rejects.toThrow(
+    await expect(resolveExerciseStrict(1, `Bench Press ${TAG} Extra`)).rejects.toThrow(
       /Did you mean/,
     );
   });
@@ -224,6 +226,7 @@ describe("exercise name resolution", () => {
     // another lift's numbers as this one's.
     const dupA = await prisma.exercise.create({
       data: {
+        userId: 1,
         nameFa: `ابهام الف ${TAG}`,
         nameEn: `Ambiguous ${TAG}`,
         musclesPrimary: ["lats"],
@@ -231,6 +234,7 @@ describe("exercise name resolution", () => {
     });
     const dupB = await prisma.exercise.create({
       data: {
+        userId: 1,
         nameFa: `ابهام ب ${TAG}`,
         nameEn: `Ambiguous ${TAG}`,
         musclesPrimary: ["lats"],
@@ -238,14 +242,14 @@ describe("exercise name resolution", () => {
     });
 
     try {
-      await expect(resolveExerciseStrict(`Ambiguous ${TAG}`)).rejects.toThrow(
+      await expect(resolveExerciseStrict(1, `Ambiguous ${TAG}`)).rejects.toThrow(
         AmbiguousExerciseError,
       );
 
       // The lenient lookup still resolves, because an upload rebinding an
       // existing program needs a deterministic answer. The two behaviours are
       // different on purpose.
-      const lenient = await findExerciseByName(`Ambiguous ${TAG}`);
+      const lenient = await findExerciseByName(1, `Ambiguous ${TAG}`);
       expect(lenient?.id).toBe(dupA.id);
     } finally {
       await prisma.exercise.deleteMany({ where: { id: { in: [dupA.id, dupB.id] } } });
@@ -255,6 +259,7 @@ describe("exercise name resolution", () => {
   it("prefers an exact Persian hit over an ambiguous English one", async () => {
     const dup = await prisma.exercise.create({
       data: {
+        userId: 1,
         nameFa: `یکتا ${TAG}`,
         nameEn: `Bench Press ${TAG}`,
         musclesPrimary: ["lats"],
@@ -263,7 +268,7 @@ describe("exercise name resolution", () => {
 
     try {
       // `Bench Press ${TAG}` is now ambiguous, but the Persian name is unique.
-      const found = await resolveExerciseStrict(`یکتا ${TAG}`);
+      const found = await resolveExerciseStrict(1, `یکتا ${TAG}`);
       expect(found.id).toBe(dup.id);
     } finally {
       await prisma.exercise.delete({ where: { id: dup.id } });

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAuthenticated } from "@/lib/session";
+import { currentUserId } from "@/lib/db/current-user";
 import { getExercise, updateExercise } from "@/lib/db/exercises";
 import { z } from "zod";
 import { Muscle } from "@prisma/client";
@@ -44,7 +45,17 @@ export async function PATCH(
     return NextResponse.json({ error: parsed.error.message }, { status: 400 });
   }
 
-  const exercise = await updateExercise(parseInt(id), parsed.data);
+  const exercise = await updateExercise(
+    await currentUserId(),
+    parseInt(id),
+    parsed.data
+  );
+
+  // Null means the row is not this user's. Answer 404 rather than 403 so a
+  // guessed id cannot be used to probe which exercises exist.
+  if (!exercise) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
 
   return NextResponse.json({ exercise });
 }
@@ -58,7 +69,7 @@ export async function GET(
   }
 
   const { id } = await params;
-  const exercise = await getExercise(parseInt(id));
+  const exercise = await getExercise(await currentUserId(), parseInt(id));
 
   if (!exercise) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });

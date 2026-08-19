@@ -34,7 +34,7 @@ describe("Suggestion & coach-memory models", () => {
     }
 
     const exercise = await prisma.exercise.create({
-      data: { nameFa: `Test Exercise FA ${Date.now()}`, nameEn: "Test Exercise", musclesPrimary: ["pec_major_sternal"] },
+      data: { userId, nameFa: `Test Exercise FA ${Date.now()}`, nameEn: "Test Exercise", musclesPrimary: ["pec_major_sternal"] },
     });
     exerciseId = exercise.id;
 
@@ -133,7 +133,7 @@ describe("Suggestion & coach-memory models", () => {
   });
 
   it("round-trips the singleton GlobalMemory create/read", async () => {
-    const existing = await prisma.globalMemory.findUnique({ where: { id: 1 } });
+    const existing = await prisma.globalMemory.findUnique({ where: { userId: 1 } });
     if (existing) {
       // Already present (e.g. a real dev DB) - just verify a read round-trips.
       expect(existing.id).toBe(1);
@@ -141,11 +141,11 @@ describe("Suggestion & coach-memory models", () => {
     }
 
     const created = await prisma.globalMemory.create({
-      data: { id: 1, notes: "Adherence has been strong for the last 4 weeks." },
+      data: { userId: 1, notes: "Adherence has been strong for the last 4 weeks." },
     });
     globalMemoryCreatedByTest = true;
 
-    const found = await prisma.globalMemory.findUnique({ where: { id: 1 } });
+    const found = await prisma.globalMemory.findUnique({ where: { userId: 1 } });
 
     expect(found).not.toBeNull();
     expect(found?.id).toBe(created.id);

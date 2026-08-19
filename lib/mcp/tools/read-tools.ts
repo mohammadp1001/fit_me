@@ -160,10 +160,11 @@ export async function getExerciseHistory({
   name: string;
   limit?: number;
 }) {
-  const exercise = await resolveExerciseStrict(name);
+  const userId = await currentUserId();
+  const exercise = await resolveExerciseStrict(userId, name);
   const capped = Math.min(Math.max(1, limit), LIMITS.exerciseHistory);
 
-  const logs = await listLogsForExercise(await currentUserId(), exercise.id, {
+  const logs = await listLogsForExercise(userId, exercise.id, {
     limit: capped,
   });
 
@@ -251,7 +252,7 @@ export async function getCoachMemory({ name }: { name?: string } = {}) {
   const global = await getGlobalMemory(userId);
 
   if (name) {
-    const exercise = await resolveExerciseStrict(name);
+    const exercise = await resolveExerciseStrict(userId, name);
     const memory = await getExerciseMemory(exercise.id);
 
     return {
@@ -351,7 +352,10 @@ export async function listExercises({
 } = {}) {
   const capped = Math.min(Math.max(1, limit), LIMITS.exercises);
 
-  const exercises = await listLibraryExercises({ search, limit: capped });
+  const exercises = await listLibraryExercises(await currentUserId(), {
+    search,
+    limit: capped,
+  });
 
   return { returned: exercises.length, exercises };
 }

@@ -151,6 +151,7 @@ describe("/api/setup library lookup by name", () => {
   beforeAll(async () => {
     const row = await prisma.exercise.create({
       data: {
+        userId: 1,
         nameFa: FA_NAME,
         nameEn: EN_NAME,
         musclesPrimary: ["pec_major_sternal"],
@@ -216,6 +217,7 @@ describe("/api/setup library lookup by name", () => {
     // a program can silently rebind to a different row between uploads.
     const second = await prisma.exercise.create({
       data: {
+        userId: 1,
         nameFa: `${FA_NAME} duplicate`,
         nameEn: EN_NAME,
         musclesPrimary: ["pec_major_sternal"],

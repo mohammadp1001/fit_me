@@ -9,15 +9,19 @@ datasource db {
 }
 
 model User {
-  id          Int          @id @default(1)
-  name        String
-  weightKg    Float
-  heightCm    Float
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  programs    Program[]
-  bodyWeights BodyWeight[]
-  workoutLogs WorkoutLog[]
+  id           Int           @id @default(1)
+  name         String
+  weightKg     Float
+  heightCm     Float
+  /// Only an admin can create invites (#60). Account 1 is the admin.
+  isAdmin      Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  programs     Program[]
+  bodyWeights  BodyWeight[]
+  workoutLogs  WorkoutLog[]
+  exercises    Exercise[]
+  globalMemory GlobalMemory?
 }
 
 model BodyWeight {
@@ -77,9 +81,17 @@ enum Muscle {
   hip_flexors
 }
 
+/// The exercise library, owned per user.
+///
+/// An upload deliberately overwrites `muscles` and `videoUrl` (#44) - it is the
+/// only way to correct a mis-tagged exercise or a stale link. With a shared
+/// library that would let one user's upload silently rewrite the muscle tags
+/// another user's volume chart depends on, so each account gets its own copy of
+/// the ~30 seed rows instead.
 model Exercise {
   id               Int               @id @default(autoincrement())
-  nameFa           String            @unique
+  userId           Int
+  nameFa           String
   nameEn           String
   musclesPrimary   Muscle[]
   musclesSecondary Muscle[]
@@ -91,10 +103,21 @@ model Exercise {
   mistakesEn       String[]          @default([])
   wikiUrl          String            @default("")
   videoUrl         String            @default("")
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   programExercises ProgramExercise[]
   workoutLogs      WorkoutLog[]
   suggestions      Suggestion[]
   memory           ExerciseMemory?
+
+  // `nameFa` was globally `@unique`. Scoping it per user is what lets two
+  // people both own a row called "پرس سینه دستگاه".
+  //
+  // `Suggestion` (@@unique([exerciseId, date])) and `ExerciseMemory`
+  // (exerciseId @unique) need no change of their own: both hang off an
+  // exercise, so once an exercise has exactly one owner their constraints are
+  // correct again.
+  @@unique([userId, nameFa])
+  @@index([userId])
 }
 
 model Program {
@@ -102,7 +125,7 @@ model Program {
   userId      Int
   nameFa      String
   nameEn      String
-  startDate   DateTime     @db.Date @default(now())
+  startDate   DateTime     @default(now()) @db.Date
   isActive    Boolean      @default(true)
   yamlContent String
   user        User         @relation(fields: [userId], references: [id])
@@ -182,9 +205,15 @@ model ExerciseMemory {
   exercise   Exercise @relation(fields: [exerciseId], references: [id])
 }
 
+/// The coach's cross-exercise notes, one row per user.
+///
+/// Was an `id = 1` singleton - the last table that physically could not hold a
+/// second person's data.
 model GlobalMemory {
-  id    Int    @id @default(1)
-  notes String
+  id     Int    @id @default(autoincrement())
+  userId Int    @unique
+  notes  String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // --- OAuth 2.1 provider for the MCP server (#52) ---
@@ -251,19 +280,19 @@ model OAuthCode {
 /// One row holds the pair because they share a lifecycle: refreshing rotates
 /// both, and revoking either kills the grant.
 model OAuthToken {
-  id                Int         @id @default(autoincrement())
-  accessTokenHash   String      @unique
+  id               Int         @id @default(autoincrement())
+  accessTokenHash  String      @unique
   /// Null once the refresh token has been rotated away or the grant is
   /// access-only.
-  refreshTokenHash  String?     @unique
-  clientId          String
-  scope             String
-  resource          String?
-  expiresAt         DateTime
-  refreshExpiresAt  DateTime?
-  revokedAt         DateTime?
-  createdAt         DateTime    @default(now())
-  client            OAuthClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  refreshTokenHash String?     @unique
+  clientId         String
+  scope            String
+  resource         String?
+  expiresAt        DateTime
+  refreshExpiresAt DateTime?
+  revokedAt        DateTime?
+  createdAt        DateTime    @default(now())
+  client           OAuthClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
   @@index([expiresAt])
   @@index([clientId])
@@ -276,8 +305,8 @@ model OAuthToken {
 model RateLimit {
   /// `"<bucket>:<identifier>:<window start epoch ms>"`, e.g.
   /// `"register:203.0.113.7:1755432000000"`.
-  key         String   @id
-  count       Int      @default(0)
+  key          String   @id
+  count        Int      @default(0)
   windowEndsAt DateTime
 
   @@index([windowEndsAt])

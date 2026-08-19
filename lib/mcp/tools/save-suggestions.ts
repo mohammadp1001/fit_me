@@ -143,7 +143,7 @@ export async function saveSuggestions({
       );
     }
 
-    const exercise = await resolveExerciseStrict(item.exercise);
+    const exercise = await resolveExerciseStrict(userId, item.exercise);
 
     // Guard 2: never overwrite a day that has already been trained. Once sets
     // are logged, the suggestion is history - replacing it would rewrite what
@@ -188,7 +188,7 @@ export async function saveSuggestions({
   for (const { exercise: name, note } of exerciseNotes) {
     if (!note.trim()) continue;
 
-    const exercise = await resolveExerciseStrict(name);
+    const exercise = await resolveExerciseStrict(userId, name);
     const existing = await getExerciseMemory(exercise.id);
 
     // Append, never replace - see lib/coach-notes.ts.
