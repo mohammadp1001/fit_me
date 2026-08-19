@@ -116,6 +116,13 @@ export async function deleteProgram(
  *
  * When a program lists the same exercise twice, the lowest `displayOrder`
  * wins - deterministic, and it matches the order the day is performed in.
+ *
+ * The `userId` filter is **redundant today and kept deliberately**: an
+ * `Exercise` has exactly one owner (#59), so filtering on `exerciseId` already
+ * implies the user. Mutation-testing in #61 confirmed removing it changes no
+ * behaviour and breaks no test. It stays as defence in depth - if exercise
+ * ownership ever loosens, this is the query that would silently start crossing
+ * accounts.
  */
 export async function findActiveSlotFor(userId: number, exerciseId: number) {
   return prisma.programExercise.findFirst({

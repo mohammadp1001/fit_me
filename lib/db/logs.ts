@@ -105,7 +105,12 @@ export async function listLogsSince(userId: number, from: Date) {
   });
 }
 
-/** Whether a session for this exercise on this date has already been logged. */
+/**
+ * Whether a session for this exercise on this date has already been logged.
+ *
+ * As in `findActiveSlotFor`, the `userId` filter is redundant while an exercise
+ * has exactly one owner, and kept for the same reason - see that function.
+ */
 export async function hasLogOn(
   userId: number,
   exerciseId: number,

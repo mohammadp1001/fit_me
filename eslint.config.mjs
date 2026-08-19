@@ -11,10 +11,16 @@ import nextTs from "eslint-config-next/typescript";
  * this rule, a new route handler could reach for `prisma` directly and write an
  * unscoped query that reads every user's rows, and nothing would notice.
  *
- * `lib/oauth/` is exempt because its tables (`OAuthClient`, `OAuthCode`,
- * `OAuthToken`, `RateLimit`) carry no `userId` at all: they are authorization
- * plumbing, not user data. **#61 gives codes and tokens an owner**, and this
- * exemption should be revisited then rather than left standing out of habit.
+ * `lib/oauth/` is exempt, and that was revisited in #61 rather than left
+ * standing out of habit. `OAuthCode` and `OAuthToken` did gain a `userId`, but
+ * the exemption still earns its place: these modules issue and verify
+ * credentials *before* there is an authenticated user to scope by. Their
+ * queries are keyed on a token hash, not on an owner, so routing them through
+ * `lib/db/*` would mean inventing a `userId` argument they cannot have.
+ *
+ * The user-scoped question they answer - "which account does this token act
+ * as?" - is returned by `verifyAccessToken` and enforced downstream, where the
+ * MCP tools take that id as a required argument.
  */
 const prismaRestriction = {
   files: ["**/*.ts", "**/*.tsx"],
