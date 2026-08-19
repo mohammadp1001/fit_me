@@ -4,8 +4,11 @@
 import { NextRequest } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
+// `currentUserId()` reads the session, so stubbing "logged in" now means
+// stubbing *who*. Account 1 is the one the fixtures below create.
 jest.mock("@/lib/session", () => ({
   isAuthenticated: jest.fn(async () => true),
+  sessionUserId: jest.fn(async () => 1),
 }));
 
 import { DELETE } from "./route";

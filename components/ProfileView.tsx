@@ -28,6 +28,12 @@ export default function ProfileView({
   const [switching, setSwitching] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  // Invite creation. The token comes back exactly once, so it is held in state
+  // rather than re-fetched - there is nothing to re-fetch it from.
+  const [inviteLabel, setInviteLabel] = useState("");
+  const [inviteLink, setInviteLink] = useState("");
+  const [invitePending, setInvitePending] = useState(false);
+  const [inviteCopied, setInviteCopied] = useState(false);
 
   async function handleSaveProfile() {
     setSaving(true);
@@ -98,6 +104,34 @@ export default function ProfileView({
     });
     setSwitching(false);
     router.refresh();
+  }
+
+  async function handleCreateInvite() {
+    setInvitePending(true);
+    setInviteCopied(false);
+    try {
+      const res = await fetch("/api/invites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ label: inviteLabel }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setInviteLink(`${window.location.origin}/${locale}/join/${data.token}`);
+      setInviteLabel("");
+    } finally {
+      setInvitePending(false);
+    }
+  }
+
+  async function handleCopyInvite() {
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      setInviteCopied(true);
+    } catch {
+      // Clipboard is blocked outside a secure context; the link is on screen
+      // and selectable either way, so there is nothing to recover from.
+    }
   }
 
   async function handleLogout() {
@@ -380,6 +414,73 @@ export default function ProfileView({
           </button>
         </div>
       </div>
+
+      {/* Invites - admin only. The API answers 404 for everyone else, so a
+          non-admin simply never sees a link here. */}
+      {user.isAdmin && (
+        <div
+          className="rounded-2xl p-5 mb-4"
+          style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+        >
+          <h3 className="text-base font-bold mb-3" style={{ color: "var(--text)" }}>
+            {t("auth.invites")}
+          </h3>
+
+          <input
+            type="text"
+            value={inviteLabel}
+            onChange={(e) => setInviteLabel(e.target.value)}
+            placeholder={t("auth.inviteLabel")}
+            className="w-full rounded-xl px-4 py-3 text-sm mb-3 outline-none"
+            style={{
+              background: "var(--surface2)",
+              border: "1px solid var(--border)",
+              color: "var(--text)",
+            }}
+          />
+
+          <button
+            onClick={handleCreateInvite}
+            disabled={invitePending}
+            className="w-full py-3 rounded-xl text-sm font-bold disabled:opacity-50"
+            style={{
+              background: "var(--surface2)",
+              color: "var(--text)",
+              border: "1px solid var(--border)",
+              cursor: "pointer",
+              fontFamily: "inherit",
+            }}
+          >
+            {invitePending ? t("common.loading") : t("auth.createInvite")}
+          </button>
+
+          {inviteLink && (
+            <div className="mt-3">
+              <p className="text-xs mb-2" style={{ color: "var(--d1)" }}>
+                {t("auth.inviteOnce")}
+              </p>
+              <button
+                onClick={handleCopyInvite}
+                className="w-full rounded-xl px-3 py-3 text-xs text-left break-all"
+                style={{
+                  background: "var(--surface2)",
+                  border: "1px solid var(--border)",
+                  color: "var(--muted)",
+                  cursor: "pointer",
+                  fontFamily: "ui-monospace, monospace",
+                }}
+              >
+                {inviteLink}
+              </button>
+              {inviteCopied && (
+                <p className="text-xs mt-2" style={{ color: "var(--green)" }}>
+                  {t("auth.inviteCopied")}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Logout */}
       <button

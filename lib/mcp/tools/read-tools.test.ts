@@ -278,14 +278,14 @@ describe("exercise name resolution", () => {
 
 describe("getProgressSummary", () => {
   it("reports the window it used", async () => {
-    const summary = await getProgressSummary({ weeks: 8, now: NOW });
+    const summary = await getProgressSummary({ userId: 1, weeks: 8, now: NOW });
 
     expect(summary.window).toMatchObject({ weeks: 8, to: "2026-08-17" });
     expect(summary.window.from).toBe("2026-06-22");
   });
 
   it("summarises a progressing lift", async () => {
-    const summary = await getProgressSummary({ weeks: 8, now: NOW });
+    const summary = await getProgressSummary({ userId: 1, weeks: 8, now: NOW });
     const bench = summary.exercises.find((e) => e.nameEn === `Bench Press ${TAG}`);
 
     expect(bench).toBeDefined();
@@ -297,7 +297,7 @@ describe("getProgressSummary", () => {
   });
 
   it("flags a stalled lift", async () => {
-    const summary = await getProgressSummary({ weeks: 8, now: NOW });
+    const summary = await getProgressSummary({ userId: 1, weeks: 8, now: NOW });
     const squat = summary.exercises.find((e) => e.nameEn === `Squat ${TAG}`);
 
     expect(squat!.stalled).toBe(true);
@@ -305,7 +305,7 @@ describe("getProgressSummary", () => {
   });
 
   it("carries both names for every exercise", async () => {
-    const summary = await getProgressSummary({ weeks: 8, now: NOW });
+    const summary = await getProgressSummary({ userId: 1, weeks: 8, now: NOW });
 
     for (const exercise of summary.exercises) {
       expect(exercise.nameFa).toEqual(expect.any(String));
@@ -316,7 +316,7 @@ describe("getProgressSummary", () => {
   it("returns no raw sets", async () => {
     // The summary exists so the model does not have to read every set. If raw
     // sets leak back in, the context cost this tool was built to avoid returns.
-    const summary = await getProgressSummary({ weeks: 8, now: NOW });
+    const summary = await getProgressSummary({ userId: 1, weeks: 8, now: NOW });
 
     expect(JSON.stringify(summary)).not.toContain('"reps":8,"weight"');
     for (const exercise of summary.exercises) {
@@ -325,7 +325,7 @@ describe("getProgressSummary", () => {
   });
 
   it("excludes sessions outside the window", async () => {
-    const narrow = await getProgressSummary({ weeks: 2, now: NOW });
+    const narrow = await getProgressSummary({ userId: 1, weeks: 2, now: NOW });
     const bench = narrow.exercises.find((e) => e.nameEn === `Bench Press ${TAG}`);
 
     // Only the 7-day-ago session falls inside a 2-week window ending today.
@@ -333,7 +333,7 @@ describe("getProgressSummary", () => {
   });
 
   it("reports the body-weight trend as a loss", async () => {
-    const summary = await getProgressSummary({ weeks: 8, now: NOW });
+    const summary = await getProgressSummary({ userId: 1, weeks: 8, now: NOW });
 
     expect(summary.bodyWeight.startKg).toBe(82);
     expect(summary.bodyWeight.latestKg).toBe(80.5);
@@ -343,7 +343,7 @@ describe("getProgressSummary", () => {
   it("keeps volume on a 7-day window regardless of the summary window", async () => {
     // The 10/20-set landmarks are weekly figures, so widening this with the
     // summary window would make every verdict meaningless.
-    const summary = await getProgressSummary({ weeks: 8, now: NOW });
+    const summary = await getProgressSummary({ userId: 1, weeks: 8, now: NOW });
 
     expect(summary.volume.windowDays).toBe(7);
     expect(summary.volume.landmarks).toEqual({ low: 10, high: 20 });
@@ -352,7 +352,7 @@ describe("getProgressSummary", () => {
 
 describe("getExerciseHistory", () => {
   it("returns raw sets newest first", async () => {
-    const history = await getExerciseHistory({ name: `Bench Press ${TAG}` });
+    const history = await getExerciseHistory({ userId: 1, name: `Bench Press ${TAG}` });
 
     expect(history.exercise.nameEn).toBe(`Bench Press ${TAG}`);
     expect(history.returned).toBe(4);
@@ -364,13 +364,14 @@ describe("getExerciseHistory", () => {
   });
 
   it("honours a limit", async () => {
-    const history = await getExerciseHistory({ name: `Bench Press ${TAG}`, limit: 2 });
+    const history = await getExerciseHistory({ userId: 1, name: `Bench Press ${TAG}`, limit: 2 });
 
     expect(history.returned).toBe(2);
   });
 
   it("caps an absurd limit rather than returning everything", async () => {
     const history = await getExerciseHistory({
+      userId: 1,
       name: `Bench Press ${TAG}`,
       limit: 100_000,
     });
@@ -379,7 +380,7 @@ describe("getExerciseHistory", () => {
   });
 
   it("refuses an unknown exercise", async () => {
-    await expect(getExerciseHistory({ name: "Nope" })).rejects.toThrow(
+    await expect(getExerciseHistory({ userId: 1, name: "Nope" })).rejects.toThrow(
       ExerciseNotFoundError,
     );
   });
@@ -392,7 +393,7 @@ describe("getVolume", () => {
     // known set instead - that isolates the weighting rule under test.
     const totals = async () =>
       Object.fromEntries(
-        (await getVolume({ now: NOW })).byGroup.map((g) => [g.group, g.sets]),
+        (await getVolume({ userId: 1, now: NOW })).byGroup.map((g) => [g.group, g.sets]),
       ) as Record<string, number>;
 
     const before = await totals();
@@ -420,14 +421,14 @@ describe("getVolume", () => {
   });
 
   it("reports the fixed 7-day window", async () => {
-    const volume = await getVolume({ now: NOW });
+    const volume = await getVolume({ userId: 1, now: NOW });
 
     expect(volume.windowDays).toBe(7);
     expect(volume.landmarks).toEqual({ low: 10, high: 20 });
   });
 
   it("labels each group in both languages with a verdict", async () => {
-    const volume = await getVolume({ now: NOW });
+    const volume = await getVolume({ userId: 1, now: NOW });
 
     for (const group of volume.byGroup) {
       expect(group.labelEn).toEqual(expect.any(String));
@@ -439,7 +440,7 @@ describe("getVolume", () => {
 
 describe("getBodyWeight", () => {
   it("returns entries oldest first with a trend", async () => {
-    const result = await getBodyWeight();
+    const result = await getBodyWeight({ userId: 1 });
 
     expect(result.entries[0].weightKg).toBe(82);
     expect(result.entries[result.entries.length - 1].weightKg).toBe(80.5);
@@ -448,6 +449,7 @@ describe("getBodyWeight", () => {
 
   it("filters by date range", async () => {
     const result = await getBodyWeight({
+      userId: 1,
       from: daysAgo(15).toISOString().slice(0, 10),
     });
 
@@ -457,7 +459,7 @@ describe("getBodyWeight", () => {
 
 describe("getCoachMemory", () => {
   it("returns global and per-exercise notes", async () => {
-    const memory = await getCoachMemory();
+    const memory = await getCoachMemory({ userId: 1 });
 
     expect(memory.global).toBe("Prefers 6-10 reps.");
     const bench = memory.exercises.find((e) => e.nameEn === `Bench Press ${TAG}`);
@@ -465,14 +467,14 @@ describe("getCoachMemory", () => {
   });
 
   it("narrows to one exercise", async () => {
-    const memory = await getCoachMemory({ name: `Bench Press ${TAG}` });
+    const memory = await getCoachMemory({ userId: 1, name: `Bench Press ${TAG}` });
 
     expect(memory.exercises).toHaveLength(1);
     expect(memory.exercises[0].nameFa).toBe(`پرس سینه ${TAG}`);
   });
 
   it("reports null rather than failing for an exercise with no notes", async () => {
-    const memory = await getCoachMemory({ name: `Squat ${TAG}` });
+    const memory = await getCoachMemory({ userId: 1, name: `Squat ${TAG}` });
 
     expect(memory.exercises[0].notes).toBeNull();
   });
@@ -480,40 +482,40 @@ describe("getCoachMemory", () => {
 
 describe("listPrograms and getProgram", () => {
   it("lists programs with their day counts", async () => {
-    const { programs } = await listPrograms();
+    const { programs } = await listPrograms({ userId: 1 });
     const mine = programs.find((p) => p.id === programId);
 
     expect(mine).toMatchObject({ isActive: true, days: 1 });
   });
 
   it("returns the active program by default", async () => {
-    const program = await getProgram();
+    const program = await getProgram({ userId: 1 });
 
     expect(program.id).toBe(programId);
     expect(program.days[0].exercises).toHaveLength(2);
   });
 
   it("exposes superset grouping", async () => {
-    const program = await getProgram({ id: programId });
+    const program = await getProgram({ userId: 1, id: programId });
     const groups = program.days[0].exercises.map((e) => e.supersetGroup);
 
     expect(groups).toEqual(["A", "A"]);
   });
 
   it("throws a readable error for a missing program", async () => {
-    await expect(getProgram({ id: 999_999 })).rejects.toThrow(/No program with id/);
+    await expect(getProgram({ userId: 1, id: 999_999 })).rejects.toThrow(/No program with id/);
   });
 });
 
 describe("listExercises", () => {
   it("filters case-insensitively on either name", async () => {
-    const result = await listExercises({ search: `bench press ${TAG}`.toUpperCase() });
+    const result = await listExercises({ userId: 1, search: `bench press ${TAG}`.toUpperCase() });
 
     expect(result.exercises.some((e) => e.nameEn === `Bench Press ${TAG}`)).toBe(true);
   });
 
   it("caps the limit", async () => {
-    const result = await listExercises({ limit: 100_000 });
+    const result = await listExercises({ userId: 1, limit: 100_000 });
 
     expect(result.returned).toBeLessThanOrEqual(LIMITS.exercises);
   });

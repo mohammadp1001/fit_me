@@ -4,10 +4,19 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter, useParams } from "next/navigation";
 
-export default function LoginPage() {
+/**
+ * Redeeming an invite link.
+ *
+ * The token is validated server-side when the form is submitted, not here -
+ * this page renders for any token so that a bad one cannot be distinguished
+ * from a good one by whether the page loads.
+ */
+export default function JoinPage() {
   const t = useTranslations();
   const router = useRouter();
-  const { locale } = useParams<{ locale: string }>();
+  const { locale, token } = useParams<{ locale: string; token: string }>();
+
+  const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -18,19 +27,17 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ token, username, password, name }),
       });
       if (res.ok) {
+        // Straight to onboarding: a new account has a library but no program.
         router.push(`/${locale}`);
       } else {
-        // The server answers the same way for an unknown username, a wrong
-        // password and an unclaimed account. Showing its message verbatim would
-        // leak nothing, but using the translated one keeps the UI bilingual.
         const body = await res.json().catch(() => null);
-        setError(res.status === 429 ? body?.error ?? t("auth.error") : t("auth.error"));
+        setError(body?.error ?? t("auth.inviteInvalid"));
       }
     } finally {
       setLoading(false);
@@ -51,13 +58,26 @@ export default function LoginPage() {
             {t("app.name")}
           </h1>
           <p className="text-sm" style={{ color: "var(--muted)" }}>
-            {t("app.tagline")}
+            {t("auth.signupIntro")}
           </p>
         </div>
+
         <form onSubmit={handleSubmit} className="rounded-2xl p-6" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
           <h2 className="text-lg font-bold mb-4" style={{ color: "var(--text)" }}>
-            {t("auth.title")}
+            {t("auth.signupTitle")}
           </h2>
+
+          <label className="block text-sm mb-2" style={{ color: "var(--muted)" }}>
+            {t("auth.displayName")}
+          </label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full rounded-xl px-4 py-3 text-sm mb-4 outline-none"
+            style={inputStyle}
+            autoFocus
+          />
 
           <label className="block text-sm mb-2" style={{ color: "var(--muted)" }}>
             {t("auth.username")}
@@ -72,7 +92,6 @@ export default function LoginPage() {
             autoComplete="username"
             autoCapitalize="none"
             spellCheck={false}
-            autoFocus
           />
 
           <label className="block text-sm mb-2" style={{ color: "var(--muted)" }}>
@@ -82,42 +101,29 @@ export default function LoginPage() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder={t("auth.passwordPlaceholder")}
-            className="w-full rounded-xl px-4 py-3 text-sm mb-4 outline-none"
+            className="w-full rounded-xl px-4 py-3 text-sm mb-1 outline-none"
             style={inputStyle}
-            autoComplete="current-password"
+            autoComplete="new-password"
           />
+          <p className="text-xs mb-4" style={{ color: "var(--muted)" }}>
+            {t("auth.passwordHint")}
+          </p>
 
           {error && (
             <p className="text-sm mb-3" style={{ color: "var(--red)" }}>
               {error}
             </p>
           )}
+
           <button
             type="submit"
             disabled={loading}
             className="w-full py-3 rounded-xl font-bold text-sm text-white disabled:opacity-50"
-            style={{ background: "var(--d2)" }}
+            style={{ background: "var(--d3)" }}
           >
-            {loading ? t("common.loading") : t("auth.login")}
+            {loading ? t("common.loading") : t("auth.createAccount")}
           </button>
         </form>
-        <div className="flex justify-center gap-4 mt-6">
-          <button
-            onClick={() => router.push("/fa/login")}
-            className="text-xs"
-            style={{ color: locale === "fa" ? "var(--text)" : "var(--muted)" }}
-          >
-            فارسی
-          </button>
-          <button
-            onClick={() => router.push("/en/login")}
-            className="text-xs"
-            style={{ color: locale === "en" ? "var(--text)" : "var(--muted)" }}
-          >
-            English
-          </button>
-        </div>
       </div>
     </div>
   );

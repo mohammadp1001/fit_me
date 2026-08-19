@@ -30,7 +30,17 @@ async function makeClient(id: string, lastUsedAt: Date) {
   });
 }
 
+beforeAll(async () => {
+  // OAuth rows now reference a user, so one has to exist for the foreign key.
+  await prisma.user.upsert({
+    where: { id: 1 },
+    update: {},
+    create: { id: 1, name: "Test User", weightKg: 80, heightCm: 180 },
+  });
+});
+
 beforeEach(async () => {
+  await prisma.invite.deleteMany();
   await prisma.oAuthToken.deleteMany();
   await prisma.oAuthCode.deleteMany();
   await prisma.oAuthClient.deleteMany();
@@ -53,6 +63,7 @@ describe("runOAuthCleanup", () => {
         {
           codeHash: "expired",
           clientId: client.id,
+          userId: 1,
           redirectUri: "https://example.test/cb",
           codeChallenge: "x",
           codeChallengeMethod: "S256",
@@ -62,6 +73,7 @@ describe("runOAuthCleanup", () => {
         {
           codeHash: "live",
           clientId: client.id,
+          userId: 1,
           redirectUri: "https://example.test/cb",
           codeChallenge: "x",
           codeChallengeMethod: "S256",
@@ -88,6 +100,7 @@ describe("runOAuthCleanup", () => {
         accessTokenHash: "stale-access",
         refreshTokenHash: "live-refresh",
         clientId: client.id,
+        userId: 1,
         scope: "fitme:read",
         expiresAt: new Date(NOW.getTime() - HOUR),
         refreshExpiresAt: new Date(NOW.getTime() + 20 * 24 * HOUR),
@@ -107,6 +120,7 @@ describe("runOAuthCleanup", () => {
         accessTokenHash: "dead-access",
         refreshTokenHash: "dead-refresh",
         clientId: client.id,
+        userId: 1,
         scope: "fitme:read",
         expiresAt: new Date(NOW.getTime() - 40 * 24 * HOUR),
         refreshExpiresAt: new Date(NOW.getTime() - 10 * 24 * HOUR),
@@ -142,6 +156,33 @@ describe("runOAuthCleanup", () => {
     const result = await runOAuthCleanup(NOW);
 
     expect(result.clients).toBe(0);
+  });
+
+  it("deletes expired invite links", async () => {
+    await prisma.invite.createMany({
+      data: [
+        {
+          tokenHash: "expired-invite",
+          createdById: 1,
+          expiresAt: new Date(NOW.getTime() - 1000),
+        },
+        {
+          tokenHash: "live-invite",
+          createdById: 1,
+          expiresAt: new Date(NOW.getTime() + 24 * HOUR),
+        },
+      ],
+    });
+
+    try {
+      const result = await runOAuthCleanup(NOW);
+
+      expect(result.invites).toBe(1);
+      const remaining = await prisma.invite.findMany();
+      expect(remaining.map((i) => i.tokenHash)).toEqual(["live-invite"]);
+    } finally {
+      await prisma.invite.deleteMany();
+    }
   });
 
   it("deletes rate-limit rows whose window has closed", async () => {

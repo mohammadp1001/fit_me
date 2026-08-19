@@ -57,7 +57,10 @@ async function handle(request: NextRequest): Promise<Response> {
   // Scopes ride along in `authInfo` and are enforced per tool, not here:
   // `save_suggestions` refuses without `fitme:write` (see lib/mcp/server.ts).
   // Gating the whole endpoint would block reads for a read-only connection.
-  const server = buildMcpServer();
+  //
+  // The account comes off the verified token, never from a cookie - this
+  // endpoint is reached by a chatbot, which has no session.
+  const server = buildMcpServer(verified.userId);
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
     // Return a single JSON response instead of opening an SSE stream. Every

@@ -152,6 +152,7 @@ function item(exercise: string, weightKg: number | null = 60) {
 describe("saving suggestions", () => {
   it("writes sets the log screen can read", async () => {
     const result = await saveSuggestions({
+      userId: 1,
       date: TOMORROW,
       items: [item(`Bench ${TAG}`, 62.5)],
       now: NOW,
@@ -177,7 +178,7 @@ describe("saving suggestions", () => {
   it("attaches the suggestion to the active program's slot", async () => {
     // `Suggestion.programExerciseId` is what the log screen queries by. A row
     // pointing at the wrong slot would exist but never be seen.
-    await saveSuggestions({ date: TODAY, items: [item(`Bench ${TAG}`)], now: NOW });
+    await saveSuggestions({ userId: 1, date: TODAY, items: [item(`Bench ${TAG}`)], now: NOW });
 
     const row = await prisma.suggestion.findFirst({ where: { exerciseId: benchId } });
     const slot = await prisma.programExercise.findUnique({
@@ -191,6 +192,7 @@ describe("saving suggestions", () => {
 
   it("accepts today", async () => {
     const result = await saveSuggestions({
+      userId: 1,
       date: TODAY,
       items: [item(`Bench ${TAG}`)],
       now: NOW,
@@ -201,6 +203,7 @@ describe("saving suggestions", () => {
 
   it("resolves an exercise by its Persian name", async () => {
     const result = await saveSuggestions({
+      userId: 1,
       date: TOMORROW,
       items: [item(`اسکوات ${TAG}`, 100)],
       now: NOW,
@@ -211,6 +214,7 @@ describe("saving suggestions", () => {
 
   it("stores null weight for bodyweight work", async () => {
     await saveSuggestions({
+      userId: 1,
       date: TOMORROW,
       items: [item(`Bench ${TAG}`, null)],
       now: NOW,
@@ -221,8 +225,8 @@ describe("saving suggestions", () => {
   });
 
   it("replaces an unlogged suggestion for the same day rather than duplicating", async () => {
-    await saveSuggestions({ date: TOMORROW, items: [item(`Bench ${TAG}`, 60)], now: NOW });
-    await saveSuggestions({ date: TOMORROW, items: [item(`Bench ${TAG}`, 65)], now: NOW });
+    await saveSuggestions({ userId: 1, date: TOMORROW, items: [item(`Bench ${TAG}`, 60)], now: NOW });
+    await saveSuggestions({ userId: 1, date: TOMORROW, items: [item(`Bench ${TAG}`, 65)], now: NOW });
 
     const rows = await prisma.suggestion.findMany({ where: { exerciseId: benchId } });
     expect(rows).toHaveLength(1);
@@ -231,6 +235,7 @@ describe("saving suggestions", () => {
 
   it("saves several exercises in one call", async () => {
     const result = await saveSuggestions({
+      userId: 1,
       date: TOMORROW,
       items: [item(`Bench ${TAG}`), item(`Squat ${TAG}`, 100)],
       now: NOW,
@@ -244,7 +249,7 @@ describe("saving suggestions", () => {
 describe("guards that survive an always-allow client", () => {
   it("refuses a date in the past", async () => {
     await expect(
-      saveSuggestions({ date: YESTERDAY, items: [item(`Bench ${TAG}`)], now: NOW }),
+      saveSuggestions({ userId: 1, date: YESTERDAY, items: [item(`Bench ${TAG}`)], now: NOW }),
     ).rejects.toThrow(SuggestionRejected);
 
     expect(await prisma.suggestion.count({ where: { exerciseId: benchId } })).toBe(0);
@@ -263,7 +268,7 @@ describe("guards that survive an always-allow client", () => {
     });
 
     await expect(
-      saveSuggestions({ date: TODAY, items: [item(`Bench ${TAG}`)], now: NOW }),
+      saveSuggestions({ userId: 1, date: TODAY, items: [item(`Bench ${TAG}`)], now: NOW }),
     ).rejects.toThrow(/already logged/);
 
     expect(await prisma.suggestion.count({ where: { exerciseId: benchId } })).toBe(0);
@@ -271,7 +276,7 @@ describe("guards that survive an always-allow client", () => {
 
   it("refuses an exercise that is not in the active program", async () => {
     await expect(
-      saveSuggestions({ date: TOMORROW, items: [item(`Orphan ${TAG}`)], now: NOW }),
+      saveSuggestions({ userId: 1, date: TOMORROW, items: [item(`Orphan ${TAG}`)], now: NOW }),
     ).rejects.toThrow(/not in the active program/);
   });
 
@@ -279,7 +284,7 @@ describe("guards that survive an always-allow client", () => {
     const before = await prisma.exercise.count();
 
     await expect(
-      saveSuggestions({ date: TOMORROW, items: [item("No Such Lift")], now: NOW }),
+      saveSuggestions({ userId: 1, date: TOMORROW, items: [item("No Such Lift")], now: NOW }),
     ).rejects.toThrow(ExerciseNotFoundError);
 
     expect(await prisma.exercise.count()).toBe(before);
@@ -288,6 +293,7 @@ describe("guards that survive an always-allow client", () => {
   it("refuses a set with non-positive reps", async () => {
     await expect(
       saveSuggestions({
+        userId: 1,
         date: TOMORROW,
         items: [
           { exercise: `Bench ${TAG}`, sets: [{ weightKg: 60, reps: 0 }], why: "x" },
@@ -300,6 +306,7 @@ describe("guards that survive an always-allow client", () => {
   it("refuses a negative weight", async () => {
     await expect(
       saveSuggestions({
+        userId: 1,
         date: TOMORROW,
         items: [
           { exercise: `Bench ${TAG}`, sets: [{ weightKg: -5, reps: 8 }], why: "x" },
@@ -314,6 +321,7 @@ describe("guards that survive an always-allow client", () => {
     // prompt. Without it the approval is a rubber stamp.
     await expect(
       saveSuggestions({
+        userId: 1,
         date: TOMORROW,
         items: [
           { exercise: `Bench ${TAG}`, sets: [{ weightKg: 60, reps: 8 }], why: "  " },
@@ -325,13 +333,13 @@ describe("guards that survive an always-allow client", () => {
 
   it("refuses an empty items list", async () => {
     await expect(
-      saveSuggestions({ date: TOMORROW, items: [], now: NOW }),
+      saveSuggestions({ userId: 1, date: TOMORROW, items: [], now: NOW }),
     ).rejects.toThrow(SuggestionRejected);
   });
 
   it("refuses a malformed date", async () => {
     await expect(
-      saveSuggestions({ date: "18-08-2026", items: [item(`Bench ${TAG}`)], now: NOW }),
+      saveSuggestions({ userId: 1, date: "18-08-2026", items: [item(`Bench ${TAG}`)], now: NOW }),
     ).rejects.toThrow(/YYYY-MM-DD/);
   });
 
@@ -340,6 +348,7 @@ describe("guards that survive an always-allow client", () => {
     // item cannot leave half a day's suggestions saved.
     await expect(
       saveSuggestions({
+        userId: 1,
         date: TOMORROW,
         items: [item(`Bench ${TAG}`), item("No Such Lift")],
         now: NOW,
@@ -353,6 +362,7 @@ describe("guards that survive an always-allow client", () => {
 describe("coach memory writes", () => {
   it("appends an exercise note with a date", async () => {
     await saveSuggestions({
+      userId: 1,
       date: TOMORROW,
       items: [item(`Bench ${TAG}`)],
       exerciseNotes: [{ exercise: `Bench ${TAG}`, note: "Stalls at week three." }],
@@ -368,6 +378,7 @@ describe("coach memory writes", () => {
 
   it("keeps earlier notes when appending a new one", async () => {
     await saveSuggestions({
+      userId: 1,
       date: TOMORROW,
       items: [item(`Bench ${TAG}`)],
       exerciseNotes: [{ exercise: `Bench ${TAG}`, note: "First observation." }],
@@ -376,6 +387,7 @@ describe("coach memory writes", () => {
     // A week later. The session date has to move with `now`, or the past-date
     // guard correctly refuses it.
     await saveSuggestions({
+      userId: 1,
       date: "2026-08-25",
       items: [item(`Bench ${TAG}`)],
       exerciseNotes: [{ exercise: `Bench ${TAG}`, note: "Second observation." }],
@@ -397,6 +409,7 @@ describe("coach memory writes", () => {
     const countBefore = parseNote(before?.notes).length;
 
     await saveSuggestions({
+      userId: 1,
       date: TOMORROW,
       items: [item(`Bench ${TAG}`)],
       globalNote: `Skips Fridays ${TAG}.`,
@@ -412,6 +425,7 @@ describe("coach memory writes", () => {
 
   it("reports which notes it touched", async () => {
     const result = await saveSuggestions({
+      userId: 1,
       date: TOMORROW,
       items: [item(`Bench ${TAG}`)],
       exerciseNotes: [{ exercise: `Bench ${TAG}`, note: "A note." }],
@@ -425,6 +439,7 @@ describe("coach memory writes", () => {
 
   it("does not touch memory when no notes are supplied", async () => {
     const result = await saveSuggestions({
+      userId: 1,
       date: TOMORROW,
       items: [item(`Bench ${TAG}`)],
       now: NOW,

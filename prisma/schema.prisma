@@ -8,12 +8,23 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+/// An account.
+///
+/// `username` and `passwordHash` are nullable for exactly one reason: account 1
+/// predates accounts entirely. It exists with a full training history and no
+/// credentials until its owner claims it (see `/claim`), and a user with either
+/// field null cannot log in. Every account created through an invite has both
+/// set from the start.
 model User {
-  id           Int           @id @default(1)
+  id           Int           @id @default(autoincrement())
+  /// Case-insensitive in practice: stored lowercased, compared lowercased.
+  username     String?       @unique
+  /// bcrypt. Never leaves the server, never appears in an API response.
+  passwordHash String?
   name         String
   weightKg     Float
   heightCm     Float
-  /// Only an admin can create invites (#60). Account 1 is the admin.
+  /// Only an admin can create invites. Account 1 is the admin.
   isAdmin      Boolean       @default(false)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -22,6 +33,35 @@ model User {
   workoutLogs  WorkoutLog[]
   exercises    Exercise[]
   globalMemory GlobalMemory?
+  invitesSent  Invite[]      @relation("InviteCreator")
+  invite       Invite?       @relation("InviteRedeemer")
+  oauthCodes   OAuthCode[]
+  oauthTokens  OAuthToken[]
+}
+
+/// A single-use signup link.
+///
+/// Registration is invite-only: there is no public signup page, so the only way
+/// to get an account is a link an admin generated and sent out of band. That is
+/// what keeps a public URL from attracting bots without needing email
+/// verification or a captcha.
+///
+/// The token is stored as SHA-256, like every other bearer-shaped secret in
+/// this codebase - a database leak must not yield usable signup links.
+model Invite {
+  id           Int       @id @default(autoincrement())
+  tokenHash    String    @unique
+  /// Free-text reminder of who the link was meant for. Never shown to them.
+  label        String    @default("")
+  createdById  Int
+  createdAt    DateTime  @default(now())
+  expiresAt    DateTime
+  redeemedAt   DateTime?
+  redeemedById Int?      @unique
+  createdBy    User      @relation("InviteCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  redeemedBy   User?     @relation("InviteRedeemer", fields: [redeemedById], references: [id], onDelete: SetNull)
+
+  @@index([expiresAt])
 }
 
 model BodyWeight {
@@ -259,6 +299,9 @@ model OAuthCode {
   id                  Int         @id @default(autoincrement())
   codeHash            String      @unique
   clientId            String
+  /// Which account approved this at the consent screen. The issued token
+  /// inherits it, and every MCP tool call scopes by it.
+  userId              Int
   redirectUri         String
   codeChallenge       String
   codeChallengeMethod String
@@ -271,6 +314,7 @@ model OAuthCode {
   consumedAt          DateTime?
   createdAt           DateTime    @default(now())
   client              OAuthClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  user                User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([expiresAt])
 }
@@ -292,10 +336,16 @@ model OAuthToken {
   refreshExpiresAt DateTime?
   revokedAt        DateTime?
   createdAt        DateTime    @default(now())
+  /// The account this grant acts as. Without it a token could act as anyone,
+  /// which is why the accounts migration deletes every pre-existing token
+  /// rather than backfilling a guess.
+  userId           Int
   client           OAuthClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([expiresAt])
   @@index([clientId])
+  @@index([userId])
 }
 
 /// Fixed-window rate-limit counters.

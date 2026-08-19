@@ -1,25 +1,27 @@
+import { sessionUserId } from "@/lib/session";
+
 /**
  * Who the current request belongs to.
  *
- * FitMe is still single-user: this returns `1`, the id every row already
- * carries. It exists so that the ~30 call sites which used to hardcode `1`
- * now go through one function, and the switch to real accounts (#60) is a
- * change to this file rather than a hunt through route handlers.
+ * Reads the session cookie. Throws rather than returning a default when there
+ * is none: a query that silently falls back to "account 1" would serve one
+ * user's data to an anonymous caller, and that is precisely the failure this
+ * whole layer exists to make impossible.
  *
- * Deliberately async even though it does nothing yet - #60 reads the session,
- * which is async, and making callers `await` now means that change does not
- * ripple back out through every caller.
+ * Route handlers still check `isAuthenticated()` first and answer 401, so this
+ * throwing is a backstop for a forgotten check, not the primary path.
  */
+export class NotSignedInError extends Error {
+  constructor() {
+    super("Not signed in.");
+    this.name = "NotSignedInError";
+  }
+}
 
-/** The single account every existing row belongs to. Removed in #60. */
-export const SINGLE_USER_ID = 1;
-
-/**
- * The id to scope this request's queries by.
- *
- * In #60 this becomes "read the session, throw if there is none". Until then
- * every request is the same person.
- */
 export async function currentUserId(): Promise<number> {
-  return SINGLE_USER_ID;
+  const userId = await sessionUserId();
+  if (userId === null) {
+    throw new NotSignedInError();
+  }
+  return userId;
 }

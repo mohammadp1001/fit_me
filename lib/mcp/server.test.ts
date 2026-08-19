@@ -19,7 +19,7 @@ import { ALL_MUSCLES } from "@/lib/muscles";
  */
 async function connectedClient(scopes?: string[]) {
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-  const server = buildMcpServer();
+  const server = buildMcpServer(1);
   const client = new Client({ name: "test", version: "1.0.0" });
 
   if (scopes) {

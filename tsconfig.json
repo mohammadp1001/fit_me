@@ -10,6 +10,12 @@
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
+    // `prisma/seed.ts` is run by Node's native type stripping
+    // (`node --experimental-strip-types`), which requires explicit `.ts`
+    // extensions on relative imports. ts-node could not resolve them at all -
+    // see HANDOFF, "What Didn't Work". Safe here because `noEmit` is on and
+    // the bundler resolves the extension itself.
+    "allowImportingTsExtensions": true,
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",

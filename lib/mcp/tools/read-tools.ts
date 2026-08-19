@@ -1,6 +1,5 @@
 import { parseWorkoutYaml } from "@/lib/yaml-parser";
 import { toLoggedSets } from "@/lib/volume";
-import { currentUserId } from "@/lib/db/current-user";
 import { computeGroupVolume } from "@/lib/db/volume";
 import { listBodyWeight, listRecentBodyWeight } from "@/lib/db/body-weight";
 import {
@@ -38,8 +37,11 @@ import {
  * has to guess which language it is looking at.
  *
  * All database access goes through `lib/db/*`, which is where the `userId`
- * filter is enforced (#58). The id comes from `currentUserId()`; in #61 it will
- * come from the OAuth token instead, and only these call sites change.
+ * filter is enforced (#58).
+ *
+ * Every tool takes `userId` explicitly rather than reading it from a session:
+ * these run behind an OAuth token, not a browser cookie, so there is no session
+ * to read. The route pulls the id off the verified token and passes it in.
  */
 
 /** Caps on anything unbounded, so one call cannot swamp a context window. */
@@ -63,6 +65,7 @@ function windowStart(weeks: number, now: Date): Date {
 // --- get_progress_summary ---------------------------------------------------
 
 export interface ProgressSummaryOptions {
+  userId: number;
   weeks?: number;
   now?: Date;
 }
@@ -75,11 +78,11 @@ export interface ProgressSummaryOptions {
  * about a whole training block in one call.
  */
 export async function getProgressSummary({
+  userId,
   weeks = 8,
   now = new Date(),
-}: ProgressSummaryOptions = {}) {
+}: ProgressSummaryOptions) {
   const from = windowStart(weeks, now);
-  const userId = await currentUserId();
 
   const logs = await listLogsSince(userId, from);
 
@@ -154,13 +157,14 @@ export async function getProgressSummary({
  * share an English name is worse than refusing to answer.
  */
 export async function getExerciseHistory({
+  userId,
   name,
   limit = 50,
 }: {
+  userId: number;
   name: string;
   limit?: number;
 }) {
-  const userId = await currentUserId();
   const exercise = await resolveExerciseStrict(userId, name);
   const capped = Math.min(Math.max(1, limit), LIMITS.exerciseHistory);
 
@@ -187,8 +191,11 @@ export async function getExerciseHistory({
 // --- get_volume -------------------------------------------------------------
 
 /** Trailing 7-day hard-set volume per muscle group, with the 10/20 verdicts. */
-export async function getVolume({ now = new Date() }: { now?: Date } = {}) {
-  const volume = await computeGroupVolume(await currentUserId(), now);
+export async function getVolume({
+  userId,
+  now = new Date(),
+}: { userId: number; now?: Date }) {
+  const volume = await computeGroupVolume(userId, now);
 
   return {
     windowDays: 7,
@@ -206,17 +213,19 @@ export async function getVolume({ now = new Date() }: { now?: Date } = {}) {
 // --- get_body_weight --------------------------------------------------------
 
 export async function getBodyWeight({
+  userId,
   from,
   to,
   limit = 200,
 }: {
+  userId: number;
   from?: string;
   to?: string;
   limit?: number;
-} = {}) {
+}) {
   const capped = Math.min(Math.max(1, limit), LIMITS.bodyWeight);
 
-  const entries = await listRecentBodyWeight(await currentUserId(), {
+  const entries = await listRecentBodyWeight(userId, {
     from: from ? new Date(from) : undefined,
     to: to ? new Date(to) : undefined,
     limit: capped,
@@ -247,8 +256,10 @@ export async function getBodyWeight({
  * then these tables hold only whatever the retired mock cron wrote, which is
  * placeholder text.
  */
-export async function getCoachMemory({ name }: { name?: string } = {}) {
-  const userId = await currentUserId();
+export async function getCoachMemory({
+  userId,
+  name,
+}: { userId: number; name?: string }) {
   const global = await getGlobalMemory(userId);
 
   if (name) {
@@ -281,8 +292,8 @@ export async function getCoachMemory({ name }: { name?: string } = {}) {
 
 // --- list_programs / get_program --------------------------------------------
 
-export async function listPrograms() {
-  const programs = await listProgramsWithDayCount(await currentUserId());
+export async function listPrograms({ userId }: { userId: number }) {
+  const programs = await listProgramsWithDayCount(userId);
 
   return {
     programs: programs.map((p) => ({
@@ -296,8 +307,10 @@ export async function listPrograms() {
 }
 
 /** Full structure of one program, defaulting to the active one. */
-export async function getProgram({ id }: { id?: number } = {}) {
-  const userId = await currentUserId();
+export async function getProgram({
+  userId,
+  id,
+}: { userId: number; id?: number }) {
   const program = id
     ? await getProgramById(userId, id)
     : await getActiveProgram(userId);
@@ -344,15 +357,17 @@ export async function getProgram({ id }: { id?: number } = {}) {
  * turns a failed lookup into a one-turn correction.
  */
 export async function listExercises({
+  userId,
   search,
   limit = 200,
 }: {
+  userId: number;
   search?: string;
   limit?: number;
-} = {}) {
+}) {
   const capped = Math.min(Math.max(1, limit), LIMITS.exercises);
 
-  const exercises = await listLibraryExercises(await currentUserId(), {
+  const exercises = await listLibraryExercises(userId, {
     search,
     limit: capped,
   });

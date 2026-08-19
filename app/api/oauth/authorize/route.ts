@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession, isAuthenticated } from "@/lib/session";
+import { isAuthenticated, sessionUserId, signIn } from "@/lib/session";
+import { authenticate } from "@/lib/db/accounts";
+import { normaliseUsername } from "@/lib/auth/password";
 import { findClient, touchClient } from "@/lib/oauth/clients";
 import { issueCode } from "@/lib/oauth/codes";
 import {
@@ -10,7 +12,7 @@ import {
 import {
   renderConsentPage,
   renderErrorPage,
-  renderPassphrasePage,
+  renderSignInPage,
 } from "@/lib/oauth/consent-page";
 
 /**
@@ -62,7 +64,7 @@ export async function GET(request: NextRequest) {
   const clientName = client?.name ?? "An application";
 
   if (!(await isAuthenticated())) {
-    return htmlResponse(renderPassphrasePage(parsed.params, clientName));
+    return htmlResponse(renderSignInPage(parsed.params, clientName));
   }
 
   return htmlResponse(renderConsentPage(parsed.params, clientName));
@@ -92,27 +94,31 @@ export async function POST(request: NextRequest) {
 
   const clientName = client?.name ?? "An application";
   const action = raw.get("action");
-  const passphrase = raw.get("passphrase");
+  const username = raw.get("username");
+  const password = raw.get("password");
 
   // Step 1: establish a session if there isn't one.
   if (!(await isAuthenticated())) {
-    if (passphrase === null) {
-      return htmlResponse(renderPassphrasePage(parsed.params, clientName));
+    if (username === null || password === null) {
+      return htmlResponse(renderSignInPage(parsed.params, clientName));
     }
 
-    if (passphrase !== process.env.APP_PASSPHRASE) {
+    const userId = await authenticate(normaliseUsername(username), password);
+    if (userId === null) {
       return htmlResponse(
-        renderPassphrasePage(parsed.params, clientName, "Incorrect passphrase."),
+        renderSignInPage(
+          parsed.params,
+          clientName,
+          "Incorrect username or password.",
+        ),
         401,
       );
     }
 
-    const session = await getSession();
-    session.authenticated = true;
-    await session.save();
+    await signIn(userId);
 
     // Signing in is not consent. Show the Allow / Deny screen as a separate,
-    // deliberate step rather than treating a correct passphrase as approval.
+    // deliberate step rather than treating correct credentials as approval.
     return htmlResponse(renderConsentPage(parsed.params, clientName));
   }
 
@@ -128,8 +134,16 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // The code records who approved it, and the token inherits that. This is the
+  // only place a user identity enters the OAuth flow.
+  const approvedBy = await sessionUserId();
+  if (approvedBy === null) {
+    return htmlResponse(renderSignInPage(parsed.params, clientName), 401);
+  }
+
   const code = await issueCode({
     clientId: parsed.params.clientId,
+    userId: approvedBy,
     redirectUri: parsed.params.redirectUri,
     codeChallenge: parsed.params.codeChallenge,
     codeChallengeMethod: parsed.params.codeChallengeMethod,

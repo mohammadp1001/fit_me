@@ -47,12 +47,12 @@ const STYLE = `
   .client { color: var(--text); font-weight: 700; }
   ul { margin: 0 0 20px; padding-left: 20px; color: var(--muted); font-size: 13px; line-height: 1.9; }
   label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
-  input[type=password] {
+  input[type=password], input[type=text] {
     width: 100%; padding: 12px 16px; font-size: 14px; margin-bottom: 16px;
     background: var(--surface2); border: 1px solid var(--border);
     border-radius: 12px; color: var(--text); outline: none;
   }
-  input[type=password]:focus { border-color: var(--muted); }
+  input[type=password]:focus, input[type=text]:focus { border-color: var(--muted); }
   .row { display: flex; gap: 12px; }
   button {
     flex: 1; padding: 12px; font-size: 14px; font-weight: 700;
@@ -114,8 +114,15 @@ function page(title: string, inner: string): string {
 </html>`;
 }
 
-/** The passphrase gate, shown when there is no valid session cookie. */
-export function renderPassphrasePage(
+/**
+ * The sign-in gate, shown when there is no valid session cookie.
+ *
+ * Username and password, the same credentials as the app itself (#60). It used
+ * to be the single shared passphrase; with real accounts the consent screen has
+ * to know *which* account is approving, because that is what the issued token
+ * will be bound to.
+ */
+export function renderSignInPage(
   params: AuthorizeParams,
   clientName: string,
   error?: string,
@@ -127,8 +134,10 @@ export function renderPassphrasePage(
     ${error ? `<div class="error">${esc(error)}</div>` : ""}
     <form method="post" action="/api/oauth/authorize">
       ${hiddenFields(params)}
-      <label for="passphrase">Passphrase</label>
-      <input id="passphrase" type="password" name="passphrase" autofocus autocomplete="current-password">
+      <label for="username">Username</label>
+      <input id="username" type="text" name="username" autofocus autocomplete="username" autocapitalize="none" spellcheck="false">
+      <label for="password">Password</label>
+      <input id="password" type="password" name="password" autocomplete="current-password">
       <div class="row">
         <button class="primary" type="submit" name="action" value="continue">Continue</button>
       </div>

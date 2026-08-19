@@ -4,6 +4,7 @@
 import { createHash, randomBytes } from "crypto";
 import { NextRequest } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import { hashPassword } from "@/lib/auth/password";
 
 /**
  * Drives the whole authorization flow through the real route handlers, against
@@ -15,23 +16,18 @@ import { PrismaClient } from "@prisma/client";
 
 // The session module is the one piece that cannot run under jest (it reads
 // `cookies()` from a request scope that does not exist here), so it is faked
-// with a mutable flag standing in for "is there a valid session cookie".
-let sessionAuthenticated = false;
-const savedSessions: number[] = [];
+// with a mutable id standing in for "which account is signed in".
+let signedInAs: number | null = null;
 
 jest.mock("@/lib/session", () => ({
-  isAuthenticated: jest.fn(async () => sessionAuthenticated),
-  getSession: jest.fn(async () => ({
-    get authenticated() {
-      return sessionAuthenticated;
-    },
-    set authenticated(value: boolean) {
-      sessionAuthenticated = value;
-    },
-    save: jest.fn(async () => {
-      savedSessions.push(Date.now());
-    }),
-  })),
+  isAuthenticated: jest.fn(async () => signedInAs !== null),
+  sessionUserId: jest.fn(async () => signedInAs),
+  signIn: jest.fn(async (userId: number) => {
+    signedInAs = userId;
+  }),
+  signOut: jest.fn(async () => {
+    signedInAs = null;
+  }),
 }));
 
 import { MAX_CLIENTS, REGISTER_RATE_LIMIT } from "@/lib/oauth/config";
@@ -42,7 +38,9 @@ import { POST as token } from "./token/route";
 const prisma = new PrismaClient();
 
 const REDIRECT_URI = "https://claude.ai/api/mcp/auth_callback";
-const PASSPHRASE = "test-passphrase-for-oauth-flow";
+const USERNAME = `oauth-user-${Date.now()}`;
+const PASSWORD = "correct-horse-battery";
+let userId: number;
 
 function pkcePair() {
   const verifier = randomBytes(32).toString("base64url");
@@ -98,7 +96,7 @@ async function postToken(fields: Record<string, string>) {
 /** Registers a client, signs in, clicks Allow, and returns the code. */
 async function getAuthorizationCode(challenge: string) {
   const { body: client } = await registerClient();
-  sessionAuthenticated = true;
+  signedInAs = userId;
 
   const res = await postAuthorize({
     client_id: client.client_id,
@@ -115,13 +113,26 @@ async function getAuthorizationCode(challenge: string) {
   return { clientId: client.client_id as string, code: location.searchParams.get("code")! };
 }
 
-beforeAll(() => {
-  process.env.APP_PASSPHRASE = PASSPHRASE;
+beforeAll(async () => {
+  // A real account, because the consent screen now signs in a specific user and
+  // the issued code records which one.
+  const user = await prisma.user.upsert({
+    where: { id: 1 },
+    update: {},
+    create: { id: 1, name: "OAuth Test User", weightKg: 80, heightCm: 180 },
+  });
+  userId = user.id;
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      username: USERNAME,
+      passwordHash: await hashPassword(PASSWORD),
+    },
+  });
 });
 
 beforeEach(async () => {
-  sessionAuthenticated = false;
-  savedSessions.length = 0;
+  signedInAs = null;
   await prisma.oAuthToken.deleteMany();
   await prisma.oAuthCode.deleteMany();
   await prisma.oAuthClient.deleteMany();
@@ -264,7 +275,7 @@ describe("registration abuse limits", () => {
 });
 
 describe("authorize: the gate", () => {
-  it("shows the passphrase form when there is no session", async () => {
+  it("shows the sign-in form when there is no session", async () => {
     const { body: client } = await registerClient();
     const { challenge } = pkcePair();
 
@@ -283,13 +294,14 @@ describe("authorize: the gate", () => {
 
     expect(res.status).toBe(200);
     expect(html).toContain("Sign in to continue");
-    expect(html).toContain('name="passphrase"');
+    expect(html).toContain('name="username"');
+    expect(html).toContain('name="password"');
   });
 
   it("shows the consent screen when a session exists", async () => {
     const { body: client } = await registerClient();
     const { challenge } = pkcePair();
-    sessionAuthenticated = true;
+    signedInAs = userId;
 
     const res = await authorizeGet(
       new NextRequest(
@@ -308,8 +320,8 @@ describe("authorize: the gate", () => {
     expect(html).toContain("Test MCP Client");
   });
 
-  it("does not treat a correct passphrase as consent", async () => {
-    // Signing in and approving are separate decisions. If the passphrase alone
+  it("does not treat correct credentials as consent", async () => {
+    // Signing in and approving are separate decisions. If credentials alone
     // issued a code, a user who only meant to log in would have granted access.
     const { body: client } = await registerClient();
     const { challenge } = pkcePair();
@@ -320,7 +332,8 @@ describe("authorize: the gate", () => {
       response_type: "code",
       code_challenge: challenge,
       code_challenge_method: "S256",
-      passphrase: PASSPHRASE,
+      username: USERNAME,
+      password: PASSWORD,
       action: "continue",
     });
     const html = await res.text();
@@ -330,7 +343,7 @@ describe("authorize: the gate", () => {
     expect(await prisma.oAuthCode.count()).toBe(0);
   });
 
-  it("rejects a wrong passphrase and issues nothing", async () => {
+  it("rejects wrong credentials and issues nothing", async () => {
     const { body: client } = await registerClient();
     const { challenge } = pkcePair();
 
@@ -340,19 +353,20 @@ describe("authorize: the gate", () => {
       response_type: "code",
       code_challenge: challenge,
       code_challenge_method: "S256",
-      passphrase: "wrong",
+      username: USERNAME,
+      password: "wrong-password",
       action: "continue",
     });
 
     expect(res.status).toBe(401);
-    expect(await res.text()).toContain("Incorrect passphrase");
+    expect(await res.text()).toContain("Incorrect username or password");
     expect(await prisma.oAuthCode.count()).toBe(0);
   });
 
   it("redirects with access_denied when the user clicks Deny", async () => {
     const { body: client } = await registerClient();
     const { challenge } = pkcePair();
-    sessionAuthenticated = true;
+    signedInAs = userId;
 
     const res = await postAuthorize({
       client_id: client.client_id,
@@ -374,7 +388,7 @@ describe("authorize: the gate", () => {
     // Redirecting an unvalidated URI is the open-redirect this must not do.
     const { body: client } = await registerClient();
     const { challenge } = pkcePair();
-    sessionAuthenticated = true;
+    signedInAs = userId;
 
     const res = await authorizeGet(
       new NextRequest(
@@ -396,7 +410,7 @@ describe("authorize: the gate", () => {
   it("refuses a redirect_uri that merely extends a registered one", async () => {
     const { body: client } = await registerClient();
     const { challenge } = pkcePair();
-    sessionAuthenticated = true;
+    signedInAs = userId;
 
     const res = await authorizeGet(
       new NextRequest(
@@ -415,7 +429,7 @@ describe("authorize: the gate", () => {
 
   it("requires PKCE", async () => {
     const { body: client } = await registerClient();
-    sessionAuthenticated = true;
+    signedInAs = userId;
 
     const res = await authorizeGet(
       new NextRequest(
@@ -433,7 +447,7 @@ describe("authorize: the gate", () => {
 
   it("refuses code_challenge_method=plain", async () => {
     const { body: client } = await registerClient();
-    sessionAuthenticated = true;
+    signedInAs = userId;
 
     const res = await authorizeGet(
       new NextRequest(

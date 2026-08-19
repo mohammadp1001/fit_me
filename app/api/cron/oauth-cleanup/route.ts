@@ -3,12 +3,14 @@ import { pruneUnusedClients } from "@/lib/oauth/clients";
 import { pruneCodes } from "@/lib/oauth/codes";
 import { pruneTokens } from "@/lib/oauth/tokens";
 import { pruneRateLimits } from "@/lib/oauth/rate-limit";
+import { pruneInvites } from "@/lib/db/accounts";
 
 export interface OAuthCleanupResult {
   codes: number;
   tokens: number;
   clients: number;
   rateLimits: number;
+  invites: number;
 }
 
 /**
@@ -22,6 +24,9 @@ export interface OAuthCleanupResult {
  * Order matters. Codes and tokens are deleted before clients so their rows go
  * on their own terms; the foreign keys cascade, so a client deleted first would
  * take live grants with it.
+ *
+ * It also sweeps expired invite links (#60). Not OAuth, but the same job: rows
+ * that exist only until they lapse.
  */
 export async function runOAuthCleanup(
   now: Date = new Date(),
@@ -30,8 +35,10 @@ export async function runOAuthCleanup(
   const tokens = await pruneTokens(now);
   const clients = await pruneUnusedClients(now);
   const rateLimits = await pruneRateLimits(now);
+  // Invite links expire after a week; an unused one past that is just a row.
+  const invites = await pruneInvites(now);
 
-  return { codes, tokens, clients, rateLimits };
+  return { codes, tokens, clients, rateLimits, invites };
 }
 
 export async function GET(request: NextRequest) {
