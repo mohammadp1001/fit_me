@@ -1,7 +1,16 @@
 import { Prisma } from "@prisma/client";
-import { prisma } from "./prisma";
+import { prisma } from "@/lib/prisma";
 
 /**
+ * The exercise library: lookup, resolution and listing.
+ *
+ * Moved here from `lib/exercise-lookup.ts` when route handlers stopped talking
+ * to Prisma directly (#58). The behaviour is unchanged.
+ *
+ * `userId` is not a parameter yet: `Exercise` is still a global table. #59
+ * gives it an owner, at which point every function here gains the same
+ * required `userId` first argument the rest of `lib/db` already has.
+ *
  * The single place an exercise name is resolved against the library.
  *
  * Two callers with different needs share it deliberately. `app/api/setup`
@@ -174,5 +183,46 @@ export async function suggestExercises(
     orderBy: { id: "asc" },
     take: limit,
     select: SELECT,
+  });
+}
+
+/** One exercise by id, or null. */
+export async function getExercise(id: number) {
+  return prisma.exercise.findUnique({ where: { id } });
+}
+
+/** Applies a validated patch to one exercise and returns the new row. */
+export async function updateExercise(
+  id: number,
+  data: Record<string, unknown>,
+) {
+  return prisma.exercise.update({ where: { id }, data });
+}
+
+/**
+ * The library, optionally filtered by a case-insensitive substring on either
+ * name. Used by the MCP `list_exercises` tool.
+ */
+export async function listExercises({
+  search,
+  limit,
+}: { search?: string; limit: number }) {
+  return prisma.exercise.findMany({
+    where: search
+      ? {
+          OR: [
+            { nameEn: { contains: search, mode: "insensitive" } },
+            { nameFa: { contains: search, mode: "insensitive" } },
+          ],
+        }
+      : undefined,
+    orderBy: { id: "asc" },
+    take: limit,
+    select: {
+      nameFa: true,
+      nameEn: true,
+      musclesPrimary: true,
+      musclesSecondary: true,
+    },
   });
 }

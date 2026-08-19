@@ -1,6 +1,15 @@
-import { prisma } from "@/lib/prisma";
-import { resolveExerciseStrict, type ExerciseRef } from "@/lib/exercise-lookup";
+import { resolveExerciseStrict, type ExerciseRef } from "@/lib/db/exercises";
 import { appendNote } from "@/lib/coach-notes";
+import { currentUserId } from "@/lib/db/current-user";
+import { findActiveSlotFor } from "@/lib/db/programs";
+import { hasLogOn } from "@/lib/db/logs";
+import { upsertSuggestion } from "@/lib/db/suggestions";
+import {
+  getExerciseMemory,
+  getGlobalMemory,
+  setExerciseMemory,
+  setGlobalMemory,
+} from "@/lib/db/memory";
 
 /**
  * `save_suggestions` - the only tool in the FitMe MCP server that writes.
@@ -11,7 +20,6 @@ import { appendNote } from "@/lib/coach-notes";
  * the grounds that the client asks first: the client will stop asking.
  */
 
-const USER_ID = 1;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export class SuggestionRejected extends Error {
@@ -56,14 +64,8 @@ function todayDateOnly(now: Date): Date {
  * When a program lists the same exercise twice, the lowest `displayOrder` wins
  * - deterministic, and it matches the order the day is performed in.
  */
-async function findActiveSlot(exercise: ExerciseRef) {
-  const slot = await prisma.programExercise.findFirst({
-    where: {
-      exerciseId: exercise.id,
-      day: { program: { userId: USER_ID, isActive: true } },
-    },
-    orderBy: [{ day: { dayNumber: "asc" } }, { displayOrder: "asc" }],
-  });
+async function findActiveSlot(userId: number, exercise: ExerciseRef) {
+  const slot = await findActiveSlotFor(userId, exercise.id);
 
   if (!slot) {
     throw new SuggestionRejected(
@@ -112,6 +114,8 @@ export async function saveSuggestions({
     throw new SuggestionRejected("items must contain at least one exercise.");
   }
 
+  const userId = await currentUserId();
+
   // Resolve and validate everything before writing anything, so a bad item
   // cannot leave half a day's suggestions saved.
   const prepared = [];
@@ -144,9 +148,7 @@ export async function saveSuggestions({
     // Guard 2: never overwrite a day that has already been trained. Once sets
     // are logged, the suggestion is history - replacing it would rewrite what
     // the user was told at the time.
-    const logged = await prisma.workoutLog.findFirst({
-      where: { userId: USER_ID, exerciseId: exercise.id, date: target },
-    });
+    const logged = await hasLogOn(userId, exercise.id, target);
     if (logged) {
       throw new SuggestionRejected(
         `"${exercise.nameEn}" was already logged on ${date}. ` +
@@ -154,7 +156,7 @@ export async function saveSuggestions({
       );
     }
 
-    const slot = await findActiveSlot(exercise);
+    const slot = await findActiveSlot(userId, exercise);
     prepared.push({ item, exercise, slot });
   }
 
@@ -167,20 +169,12 @@ export async function saveSuggestions({
     // suggestion appearing at the gym.
     const sets = item.sets.map((s) => ({ weight: s.weightKg, reps: s.reps }));
 
-    await prisma.suggestion.upsert({
-      where: { exerciseId_date: { exerciseId: exercise.id, date: target } },
-      update: {
-        programExerciseId: slot.id,
-        sets,
-        rationale: item.why.trim(),
-      },
-      create: {
-        exerciseId: exercise.id,
-        programExerciseId: slot.id,
-        date: target,
-        sets,
-        rationale: item.why.trim(),
-      },
+    await upsertSuggestion(userId, {
+      exerciseId: exercise.id,
+      programExerciseId: slot.id,
+      date: target,
+      sets,
+      rationale: item.why.trim(),
     });
 
     saved.push({
@@ -195,30 +189,20 @@ export async function saveSuggestions({
     if (!note.trim()) continue;
 
     const exercise = await resolveExerciseStrict(name);
-    const existing = await prisma.exerciseMemory.findUnique({
-      where: { exerciseId: exercise.id },
-    });
+    const existing = await getExerciseMemory(exercise.id);
 
     // Append, never replace - see lib/coach-notes.ts.
     const notes = appendNote(existing?.notes, note, noteDate);
-    await prisma.exerciseMemory.upsert({
-      where: { exerciseId: exercise.id },
-      update: { notes },
-      create: { exerciseId: exercise.id, notes },
-    });
+    await setExerciseMemory(exercise.id, notes);
 
     exerciseNotesUpdated.push(exercise.nameEn);
   }
 
   let globalNoteUpdated = false;
   if (globalNote?.trim()) {
-    const existing = await prisma.globalMemory.findUnique({ where: { id: 1 } });
+    const existing = await getGlobalMemory(userId);
     const notes = appendNote(existing?.notes, globalNote, noteDate);
-    await prisma.globalMemory.upsert({
-      where: { id: 1 },
-      update: { notes },
-      create: { id: 1, notes },
-    });
+    await setGlobalMemory(userId, notes);
     globalNoteUpdated = true;
   }
 

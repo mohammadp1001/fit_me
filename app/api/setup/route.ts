@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAuthenticated } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
+import { currentUserId } from "@/lib/db/current-user";
+import { upsertUser } from "@/lib/db/user";
+import { installProgram } from "@/lib/db/programs";
 import { parseWorkoutYaml } from "@/lib/yaml-parser";
-import { findExerciseByName } from "@/lib/exercise-lookup";
 import { z } from "zod";
 
 const schema = z.object({
@@ -38,143 +39,12 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Create or update user (single user, id=1)
-    await prisma.user.upsert({
-      where: { id: 1 },
-      update: { name, weightKg, heightCm },
-      create: { id: 1, name, weightKg, heightCm },
-    });
+    const userId = await currentUserId();
 
-    // Deactivate existing programs
-    await prisma.program.updateMany({
-      where: { userId: 1, isActive: true },
-      data: { isActive: false },
-    });
-
-    // Create new program (days created in a nested write — single round-trip)
-    const newProgram = await prisma.program.create({
-      data: {
-        userId: 1,
-        nameFa: program.name,
-        nameEn: program.name_en ?? program.name,
-        yamlContent,
-        isActive: true,
-        days: {
-          create: program.days.map((day, dayIdx) => ({
-            dayNumber: dayIdx + 1,
-            nameFa: day.name,
-            nameEn: day.name_en ?? day.name,
-          })),
-        },
-      },
-      include: { days: true },
-    });
-
-    // For each day create ProgramExercise rows (outside any transaction)
-    let supersetGroupCounter = 0;
-
-    for (let dayIdx = 0; dayIdx < program.days.length; dayIdx++) {
-      const day = program.days[dayIdx];
-      const dbDay = newProgram.days.find((d) => d.dayNumber === dayIdx + 1)!;
-      const supersetMap = new Map<string, string>();
-
-      for (let exIdx = 0; exIdx < day.exercises.length; exIdx++) {
-        const ex = day.exercises[exIdx];
-
-        // Find or auto-create the exercise in the library.
-        //
-        // The lookup itself now lives in `lib/exercise-lookup.ts`, shared with
-        // the MCP tools so the two cannot drift. Its ordering rule (`nameFa`
-        // first because it is `@unique`, then `nameEn` with an explicit
-        // `orderBy: id` tie-break) is the fix for #45 and is documented there.
-        //
-        // Creating on a miss is this route's own behaviour and stays here: a
-        // YAML naming a new movement should add it, whereas the MCP tools must
-        // never create - see `resolveExerciseStrict`.
-        const found = await findExerciseByName(ex.name);
-        let dbExercise = found
-          ? await prisma.exercise.findUnique({ where: { id: found.id } })
-          : null;
-
-        if (!dbExercise) {
-          dbExercise = await prisma.exercise.create({
-            data: {
-              nameFa: ex.name,
-              nameEn: ex.name,
-              musclesPrimary: ex.musclesPrimary,
-              musclesSecondary: ex.musclesSecondary,
-              videoUrl: ex.video ?? "",
-              descriptionFa: ex.description ?? "",
-              descriptionEn: ex.description_en ?? ex.description ?? "",
-              tipsFa: ex.tips ?? [],
-              tipsEn: ex.tips_en ?? ex.tips ?? [],
-              mistakesFa: ex.mistakes ?? [],
-              mistakesEn: ex.mistakes_en ?? ex.mistakes ?? [],
-            },
-          });
-        } else {
-          // Backfill guide *prose* onto an existing library exercise, filling
-          // only the fields that are still empty. The backfill rule exists to
-          // protect hand-written prose from being blanked by a terser YAML.
-          //
-          // Muscles and the video URL are the deliberate exceptions: both are
-          // overwritten whenever the upload supplies them. Neither is prose.
-          // Muscles come from a closed enum where every value is valid, and a
-          // video URL is a single pointer that is either right or wrong -
-          // there is nothing to protect, and overwriting is the only way a
-          // user can ever *correct* a mis-tagged exercise or a stale link.
-          //
-          // Video specifically: leaving this as backfill-only meant a library
-          // row seeded (or created by an earlier upload) with a MuscleWiki
-          // `.mp4` silently ignored a newer YAML's `video:` forever, so the
-          // Guide-tab link kept pointing at MuscleWiki no matter what the user
-          // uploaded. `ex.video` is still guarded - an upload that omits
-          // `video:` leaves the stored URL alone rather than blanking it.
-          const patch: Record<string, unknown> = {
-            musclesPrimary: ex.musclesPrimary,
-            musclesSecondary: ex.musclesSecondary,
-          };
-          const descEn = ex.description_en ?? ex.description;
-          const tipsEn = ex.tips_en ?? ex.tips;
-          const mistakesEn = ex.mistakes_en ?? ex.mistakes;
-          if (ex.video) patch.videoUrl = ex.video;
-          if (ex.description && !dbExercise.descriptionFa) patch.descriptionFa = ex.description;
-          if (descEn && !dbExercise.descriptionEn) patch.descriptionEn = descEn;
-          if (ex.tips?.length && dbExercise.tipsFa.length === 0) patch.tipsFa = ex.tips;
-          if (tipsEn?.length && dbExercise.tipsEn.length === 0) patch.tipsEn = tipsEn;
-          if (ex.mistakes?.length && dbExercise.mistakesFa.length === 0) patch.mistakesFa = ex.mistakes;
-          if (mistakesEn?.length && dbExercise.mistakesEn.length === 0) patch.mistakesEn = mistakesEn;
-          if (Object.keys(patch).length > 0) {
-            dbExercise = await prisma.exercise.update({
-              where: { id: dbExercise.id },
-              data: patch,
-            });
-          }
-        }
-
-        // Resolve superset group label
-        let supersetGroup: string | null = null;
-        if (ex.superset_with) {
-          const key = [ex.name, ex.superset_with].sort().join("|");
-          if (!supersetMap.has(key)) {
-            supersetGroupCounter++;
-            supersetMap.set(key, `ss_${supersetGroupCounter}`);
-          }
-          supersetGroup = supersetMap.get(key)!;
-        }
-
-        await prisma.programExercise.create({
-          data: {
-            dayId: dbDay.id,
-            exerciseId: dbExercise.id,
-            setsCount: ex.sets,
-            reps: Array.isArray(ex.reps) ? ex.reps : [ex.reps],
-            displayOrder: exIdx,
-            supersetGroup,
-          },
-        });
-      }
-    }
+    // The upload doubles as onboarding: a brand-new install gets its name,
+    // weight and height from the same request.
+    await upsertUser(userId, { name, weightKg, heightCm });
+    await installProgram(userId, program, yamlContent);
   } catch (e) {
     console.error("[setup] failed:", e);
     return NextResponse.json(

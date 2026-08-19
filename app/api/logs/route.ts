@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAuthenticated } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
+import { currentUserId } from "@/lib/db/current-user";
+import {
+  exerciseIdForSlot,
+  listActiveProgramLogs,
+  listExerciseHistory,
+  listLogsForExercise,
+  upsertLog,
+} from "@/lib/db/logs";
 import { z } from "zod";
 
 const SetSchema = z.object({
@@ -13,15 +20,6 @@ const LogSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   sets: z.array(SetSchema),
 });
-
-/** The exercise a program slot trains, or null if the slot is gone. */
-async function exerciseIdForSlot(programExerciseId: number) {
-  const slot = await prisma.programExercise.findUnique({
-    where: { id: programExerciseId },
-    select: { exerciseId: true },
-  });
-  return slot?.exerciseId ?? null;
-}
 
 export async function POST(request: NextRequest) {
   if (!(await isAuthenticated())) {
@@ -47,18 +45,11 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const log = await prisma.workoutLog.upsert({
-    where: {
-      userId_exerciseId_date: { userId: 1, exerciseId, date: new Date(date) },
-    },
-    update: { sets, programExerciseId },
-    create: {
-      userId: 1,
-      exerciseId,
-      programExerciseId,
-      date: new Date(date),
-      sets,
-    },
+  const log = await upsertLog(await currentUserId(), {
+    exerciseId,
+    programExerciseId,
+    date: new Date(date),
+    sets,
   });
 
   return NextResponse.json({ log });
@@ -72,6 +63,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const programExerciseId = searchParams.get("programExerciseId");
   const exerciseId = searchParams.get("exerciseId");
+  const userId = await currentUserId();
 
   // `programExerciseId` is accepted for the exercise-detail history list, but
   // it is resolved to the exercise and answered from the full history. Asking
@@ -82,38 +74,20 @@ export async function GET(request: NextRequest) {
     const id = await exerciseIdForSlot(parseInt(programExerciseId));
     if (id === null) return NextResponse.json({ logs: [] });
 
-    const logs = await prisma.workoutLog.findMany({
-      where: { userId: 1, exerciseId: id },
-      orderBy: { date: "desc" },
-    });
+    const logs = await listLogsForExercise(userId, id);
     return NextResponse.json({ logs });
   }
 
   if (exerciseId) {
     // Progress chart: the whole history for one exercise, across every program
     // it has ever appeared in, including programs since deleted.
-    const logs = await prisma.workoutLog.findMany({
-      where: { userId: 1, exerciseId: parseInt(exerciseId) },
-      orderBy: { date: "asc" },
-      include: { programExercise: true },
-    });
+    const logs = await listExerciseHistory(userId, parseInt(exerciseId));
     return NextResponse.json({ logs });
   }
 
   // The log overview stays scoped to the active program: it is a view of what
   // you are training now, not an archive.
-  const logs = await prisma.workoutLog.findMany({
-    where: {
-      userId: 1,
-      programExercise: { day: { program: { isActive: true } } },
-    },
-    orderBy: { date: "desc" },
-    include: {
-      programExercise: {
-        include: { exercise: true, day: true },
-      },
-    },
-  });
+  const logs = await listActiveProgramLogs(userId);
 
   return NextResponse.json({ logs });
 }

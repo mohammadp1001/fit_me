@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAuthenticated } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
+import { currentUserId } from "@/lib/db/current-user";
+import {
+  getSuggestionByExercise,
+  getSuggestionBySlot,
+} from "@/lib/db/suggestions";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -21,25 +25,23 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  const userId = await currentUserId();
+
   if (programExerciseId) {
-    const suggestion = await prisma.suggestion.findFirst({
-      where: {
-        programExerciseId: parseInt(programExerciseId),
-        date: new Date(date),
-      },
-    });
+    const suggestion = await getSuggestionBySlot(
+      userId,
+      parseInt(programExerciseId),
+      new Date(date)
+    );
     return NextResponse.json({ suggestion });
   }
 
   if (exerciseId) {
-    const suggestion = await prisma.suggestion.findUnique({
-      where: {
-        exerciseId_date: {
-          exerciseId: parseInt(exerciseId),
-          date: new Date(date),
-        },
-      },
-    });
+    const suggestion = await getSuggestionByExercise(
+      userId,
+      parseInt(exerciseId),
+      new Date(date)
+    );
     return NextResponse.json({ suggestion });
   }
 

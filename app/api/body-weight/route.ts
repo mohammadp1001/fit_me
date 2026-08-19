@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAuthenticated } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
+import { currentUserId } from "@/lib/db/current-user";
+import { listBodyWeight, upsertBodyWeight } from "@/lib/db/body-weight";
 import { z } from "zod";
 
 const schema = z.object({
@@ -21,10 +22,9 @@ export async function POST(request: NextRequest) {
 
   const { weightKg, date } = parsed.data;
 
-  const entry = await prisma.bodyWeight.upsert({
-    where: { userId_date: { userId: 1, date: new Date(date) } },
-    update: { weightKg },
-    create: { userId: 1, weightKg, date: new Date(date) },
+  const entry = await upsertBodyWeight(await currentUserId(), {
+    weightKg,
+    date: new Date(date),
   });
 
   return NextResponse.json({ entry });
@@ -35,10 +35,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const entries = await prisma.bodyWeight.findMany({
-    where: { userId: 1 },
-    orderBy: { date: "asc" },
-  });
+  const entries = await listBodyWeight(await currentUserId());
 
   return NextResponse.json({ entries });
 }

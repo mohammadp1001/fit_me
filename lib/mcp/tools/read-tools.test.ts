@@ -19,7 +19,7 @@ import {
   ExerciseNotFoundError,
   findExerciseByName,
   resolveExerciseStrict,
-} from "@/lib/exercise-lookup";
+} from "@/lib/db/exercises";
 
 /**
  * The bulk of #53's coverage, against a real Postgres.
