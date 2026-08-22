@@ -247,6 +247,14 @@ model WorkoutLog {
   /// and end are the earliest and latest `loggedAt` it contains, so fixing a
   /// typo in Monday's bench on Thursday must not stretch Monday's session to
   /// three days long.
+  /// The user's note to their coach about this exercise, this session.
+  ///
+  /// Numbers cannot say "last two sets were grindy" or "grip gave out before
+  /// my back did", and those are exactly the observations that should change
+  /// the next prescription. Empty string rather than null: an absent note and
+  /// a cleared one are the same thing, and one representation cannot be
+  /// mishandled the way two can.
+  note              String           @default("")
   loggedAt          DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
   /// The workout this was logged during. Required: sessions are assigned on

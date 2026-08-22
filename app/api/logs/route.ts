@@ -11,6 +11,7 @@ import {
   upsertLog,
 } from "@/lib/db/logs";
 import { z } from "zod";
+import { NOTE_MAX_LENGTH } from "@/lib/notes";
 
 const SetSchema = z.object({
   weight: z.number().nullable(),
@@ -21,6 +22,7 @@ const LogSchema = z.object({
   programExerciseId: z.number().int(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   sets: z.array(SetSchema),
+  note: z.string().max(NOTE_MAX_LENGTH).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -34,7 +36,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: parsed.error.message }, { status: 400 });
   }
 
-  const { programExerciseId, date, sets } = parsed.data;
+  const { programExerciseId, date, sets, note } = parsed.data;
 
   // The client still posts the program slot it was logged from - that is what
   // the UI has to hand. The log is keyed on the *exercise* it trains, so that
@@ -56,6 +58,9 @@ export async function POST(request: NextRequest) {
     date: new Date(date),
     sets,
     plannedReps: expandPlannedReps(slot.setsCount, slot.reps),
+    // Trimmed, so trailing whitespace from a phone keyboard does not make an
+    // otherwise empty note look like content.
+    note: (note ?? "").trim(),
   });
 
   return NextResponse.json({ log });
