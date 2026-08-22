@@ -60,7 +60,7 @@ async function upload(yamlContent: string) {
 }
 
 async function libraryRow() {
-  const row = await prisma.exercise.findFirst({ where: { nameFa: EX_NAME } });
+  const row = await prisma.exercise.findFirst({ where: { name: EX_NAME } });
   if (!row) throw new Error(`library row ${EX_NAME} not found`);
   return row;
 }
@@ -72,7 +72,7 @@ describe("/api/setup library upsert", () => {
     // Every upload creates a fresh Program; collect and drop them all so the
     // suite leaves no active program behind for other DB tests.
     const programs = await prisma.program.findMany({
-      where: { nameFa: "Setup Route Test Program" },
+      where: { name: "Setup Route Test Program" },
       select: { id: true },
     });
     createdProgramIds.push(...programs.map((p) => p.id));
@@ -89,7 +89,7 @@ describe("/api/setup library upsert", () => {
     });
     await prisma.programDay.deleteMany({ where: { programId: { in: ids } } });
     await prisma.program.deleteMany({ where: { id: { in: ids } } });
-    await prisma.exercise.deleteMany({ where: { nameFa: EX_NAME } });
+    await prisma.exercise.deleteMany({ where: { name: EX_NAME } });
     await prisma.$disconnect();
   });
 
@@ -132,22 +132,21 @@ describe("/api/setup library upsert", () => {
     const row = await libraryRow();
     await prisma.exercise.update({
       where: { id: row.id },
-      data: { descriptionFa: "hand-written original" },
+      data: { description: "hand-written original" },
     });
 
     await upload(yamlWith(`          description: "terser replacement"`));
 
-    expect((await libraryRow()).descriptionFa).toBe("hand-written original");
+    expect((await libraryRow()).description).toBe("hand-written original");
   });
 });
 
-// #45. The library seed is Persian-named (`nameFa`) with an English `nameEn`.
-// Matching on `nameFa` alone meant an English-named YAML could never bind to a
-// seeded row, so every upload minted a duplicate: one upload of the 26-exercise
-// example program took a freshly seeded library from 29 rows to 55.
+// #45. An upload used to mint a duplicate library row instead of binding to
+// the existing one - one upload of the 26-exercise example program took a
+// freshly seeded library from 29 rows to 55. The two-name matching that caused
+// it is gone, but the property it protected still has to hold.
 describe("/api/setup library lookup by name", () => {
-  const FA_NAME = `تست پرس ${Date.now()}`;
-  const EN_NAME = `Setup Route Lookup Press ${Date.now()}`;
+  const NAME = `Setup Route Lookup Press ${Date.now()}`;
   const createdProgramIds: number[] = [];
   let seededId: number;
 
@@ -155,8 +154,7 @@ describe("/api/setup library lookup by name", () => {
     const row = await prisma.exercise.create({
       data: {
         userId: 1,
-        nameFa: FA_NAME,
-        nameEn: EN_NAME,
+        name: NAME,
         musclesPrimary: ["pec_major_sternal"],
         videoUrl: MP4,
       },
@@ -166,7 +164,7 @@ describe("/api/setup library lookup by name", () => {
 
   afterEach(async () => {
     const programs = await prisma.program.findMany({
-      where: { nameFa: "Setup Route Test Program" },
+      where: { name: "Setup Route Test Program" },
       select: { id: true },
     });
     createdProgramIds.push(...programs.map((p) => p.id));
@@ -183,58 +181,33 @@ describe("/api/setup library lookup by name", () => {
     });
     await prisma.programDay.deleteMany({ where: { programId: { in: ids } } });
     await prisma.program.deleteMany({ where: { id: { in: ids } } });
-    await prisma.exercise.deleteMany({
-      where: { OR: [{ nameFa: FA_NAME }, { nameFa: EN_NAME }] },
-    });
+    await prisma.exercise.deleteMany({ where: { name: NAME } });
     await prisma.$disconnect();
   });
 
-  it("binds an English YAML name to the existing Persian-named row", async () => {
-    await upload(yamlFor(EN_NAME, `          video: "${YT}"`));
+  it("binds to the existing library row instead of minting a duplicate", async () => {
+    await upload(yamlFor(NAME, `          video: "${YT}"`));
 
-    const matches = await prisma.exercise.findMany({
-      where: { OR: [{ nameFa: FA_NAME }, { nameFa: EN_NAME }] },
-    });
+    const matches = await prisma.exercise.findMany({ where: { name: NAME } });
 
     // The point of the fix: one row, not two.
     expect(matches).toHaveLength(1);
     expect(matches[0].id).toBe(seededId);
-    expect(matches[0].nameFa).toBe(FA_NAME);
     expect(matches[0].videoUrl).toBe(YT);
   });
 
-  it("still matches on the Persian name, which stays the canonical key", async () => {
-    await upload(yamlFor(FA_NAME, `          video: "${MP4}"`));
-
-    const matches = await prisma.exercise.findMany({
-      where: { OR: [{ nameFa: FA_NAME }, { nameFa: EN_NAME }] },
-    });
-
-    expect(matches).toHaveLength(1);
-    expect(matches[0].id).toBe(seededId);
-    expect(matches[0].videoUrl).toBe(MP4);
-  });
-
-  it("picks the lowest id when several rows share a nameEn", async () => {
-    // `nameEn` is not unique, so the fallback must be deterministic - otherwise
-    // a program can silently rebind to a different row between uploads.
-    const second = await prisma.exercise.create({
-      data: {
-        userId: 1,
-        nameFa: `${FA_NAME} duplicate`,
-        nameEn: EN_NAME,
-        musclesPrimary: ["pec_major_sternal"],
-      },
-    });
-
-    await upload(yamlFor(EN_NAME, `          video: "${YT}"`));
-
-    const winner = await prisma.exercise.findUnique({ where: { id: seededId } });
-    const loser = await prisma.exercise.findUnique({ where: { id: second.id } });
-    expect(winner!.videoUrl).toBe(YT);
-    expect(loser!.videoUrl).toBe("");
-
-    await prisma.programExercise.deleteMany({ where: { exerciseId: second.id } });
-    await prisma.exercise.delete({ where: { id: second.id } });
+  // The deterministic tie-break this used to need is gone with the ambiguity
+  // it protected against: `(userId, name)` is unique, so there is never more
+  // than one row to choose between.
+  it("cannot end up with two rows of the same name to choose between", async () => {
+    await expect(
+      prisma.exercise.create({
+        data: {
+          userId: 1,
+          name: NAME,
+          musclesPrimary: ["pec_major_sternal"],
+        },
+      }),
+    ).rejects.toThrow();
   });
 });

@@ -352,7 +352,7 @@ export default function ProfileView({
           {allPrograms.map((p) => {
             const isActive = p.id === program.id;
             const isDeleting = deletingId === p.id;
-            const name = locale === "fa" ? p.nameFa : p.nameEn;
+            const name = p.name;
             return (
               <div
                 key={p.id}

@@ -37,8 +37,7 @@ beforeAll(async () => {
   const bench = await prisma.exercise.create({
     data: {
       userId,
-      nameFa: `پرس سینه ${TAG}`,
-      nameEn: `Bench Press ${TAG}`,
+      name: `Bench Press ${TAG}`,
       musclesPrimary: ["pec_major_sternal"],
       musclesSecondary: ["triceps_brachii"],
     },
@@ -46,8 +45,7 @@ beforeAll(async () => {
   const row = await prisma.exercise.create({
     data: {
       userId,
-      nameFa: `زیربغل ${TAG}`,
-      nameEn: `Barbell Row ${TAG}`,
+      name: `Barbell Row ${TAG}`,
       musclesPrimary: ["lats"],
     },
   });
@@ -57,10 +55,9 @@ beforeAll(async () => {
   const program = await prisma.program.create({
     data: {
       userId,
-      nameFa: `برنامه ${TAG}`,
-      nameEn: `Program ${TAG}`,
+      name: `Program ${TAG}`,
       yamlContent: "",
-      days: { create: [{ dayNumber: 1, nameFa: "Push", nameEn: "Push" }] },
+      days: { create: [{ dayNumber: 1, name: "Push" }] },
     },
     include: { days: true },
   });

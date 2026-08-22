@@ -38,8 +38,7 @@ describe("decimal weights survive save and reload", () => {
     const exercise = await prisma.exercise.create({
       data: {
         userId: 1,
-        nameFa: `تست وزن اعشاری ${Date.now()}`,
-        nameEn: `Decimal Weight Exercise ${Date.now()}`,
+        name: `Decimal Weight Exercise ${Date.now()}`,
         musclesPrimary: ["pec_major_sternal"],
       },
     });
@@ -48,11 +47,10 @@ describe("decimal weights survive save and reload", () => {
     const program = await prisma.program.create({
       data: {
         userId: 1,
-        nameFa: PROGRAM_NAME,
-        nameEn: PROGRAM_NAME,
+        name: PROGRAM_NAME,
         yamlContent: "",
         isActive: true,
-        days: { create: [{ dayNumber: 1, nameFa: "Day 1", nameEn: "Day 1" }] },
+        days: { create: [{ dayNumber: 1, name: "Day 1" }] },
       },
       include: { days: true },
     });

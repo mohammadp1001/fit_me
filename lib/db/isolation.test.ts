@@ -3,7 +3,6 @@
  */
 import { PrismaClient } from "@prisma/client";
 import {
-  AmbiguousExerciseError,
   ExerciseNotFoundError,
   findExerciseByName,
   getExercise,
@@ -34,8 +33,7 @@ import {
 const prisma = new PrismaClient();
 
 const TAG = `iso-${Date.now()}`;
-const SHARED_FA = `پرس مشترک ${TAG}`;
-const SHARED_EN = `Shared Bench ${TAG}`;
+const SHARED_NAME = `Shared Bench ${TAG}`;
 
 let alice: number;
 let bob: number;
@@ -56,12 +54,11 @@ beforeAll(async () => {
   bob = second.id;
 
   // Deliberately the same names for both accounts: this is what the old
-  // globally-unique `nameFa` made impossible.
+  // globally-unique `name` made impossible.
   const a = await prisma.exercise.create({
     data: {
       userId: alice,
-      nameFa: SHARED_FA,
-      nameEn: SHARED_EN,
+      name: SHARED_NAME,
       musclesPrimary: ["pec_major_sternal"],
     },
   });
@@ -70,8 +67,7 @@ beforeAll(async () => {
   const b = await prisma.exercise.create({
     data: {
       userId: bob,
-      nameFa: SHARED_FA,
-      nameEn: SHARED_EN,
+      name: SHARED_NAME,
       musclesPrimary: ["lats"],
     },
   });
@@ -91,42 +87,21 @@ afterAll(async () => {
 });
 
 describe("the exercise library is per user", () => {
-  it("lets two accounts own the same Persian name", async () => {
-    // The whole reason `nameFa @unique` became `@@unique([userId, nameFa])`.
-    const both = await prisma.exercise.findMany({ where: { nameFa: SHARED_FA } });
+  it("lets two accounts own the same exercise name", async () => {
+    // The whole reason `name @unique` became `@@unique([userId, name])`.
+    const both = await prisma.exercise.findMany({ where: { name: SHARED_NAME } });
 
     expect(both).toHaveLength(2);
     expect(new Set(both.map((e) => e.userId))).toEqual(new Set([alice, bob]));
   });
 
-  it("still refuses a duplicate name within one account", async () => {
-    await expect(
-      prisma.exercise.create({
-        data: {
-          userId: alice,
-          nameFa: SHARED_FA,
-          nameEn: "Duplicate",
-          musclesPrimary: ["lats"],
-        },
-      }),
-    ).rejects.toThrow();
-  });
-
   it("resolves each account to its own row for the same name", async () => {
-    const forAlice = await resolveExerciseStrict(alice, SHARED_FA);
-    const forBob = await resolveExerciseStrict(bob, SHARED_FA);
+    const forAlice = await resolveExerciseStrict(alice, SHARED_NAME);
+    const forBob = await resolveExerciseStrict(bob, SHARED_NAME);
 
     expect(forAlice.id).toBe(aliceExercise);
     expect(forBob.id).toBe(bobExercise);
     expect(forAlice.id).not.toBe(forBob.id);
-  });
-
-  it("resolves the English name per account too", async () => {
-    // `nameEn` is not unique, so this is the path that would silently return
-    // the lowest id across the whole table if the owner were dropped.
-    const forBob = await resolveExerciseStrict(bob, SHARED_EN);
-
-    expect(forBob.id).toBe(bobExercise);
   });
 
   it("does not see another account's exercise at all", async () => {
@@ -134,8 +109,7 @@ describe("the exercise library is per user", () => {
     const created = await prisma.exercise.create({
       data: {
         userId: bob,
-        nameFa: onlyBobHas,
-        nameEn: onlyBobHas,
+        name: onlyBobHas,
         musclesPrimary: ["lats"],
       },
     });
@@ -157,8 +131,7 @@ describe("the exercise library is per user", () => {
     const created = await prisma.exercise.create({
       data: {
         userId: bob,
-        nameFa: bobOnly,
-        nameEn: bobOnly,
+        name: bobOnly,
         musclesPrimary: ["lats"],
       },
     });
@@ -183,40 +156,33 @@ describe("the exercise library is per user", () => {
     }
   });
 
-  it("only counts ambiguity within one account", async () => {
-    // Two rows sharing a nameEn across *different* accounts is normal, not
-    // ambiguous - each owner has exactly one.
-    await expect(resolveExerciseStrict(alice, SHARED_EN)).resolves.toMatchObject(
+  it("scopes the name constraint to one account, not the table", async () => {
+    // Two rows sharing a name across *different* accounts is normal. A second
+    // row with that name inside *one* account is what the constraint refuses -
+    // which is also why the resolver no longer needs an ambiguity case.
+    await expect(resolveExerciseStrict(alice, SHARED_NAME)).resolves.toMatchObject(
       { id: aliceExercise },
     );
+    await expect(resolveExerciseStrict(bob, SHARED_NAME)).resolves.toMatchObject(
+      { id: bobExercise },
+    );
 
-    const dup = await prisma.exercise.create({
-      data: {
-        userId: alice,
-        nameFa: `دوگانه ${TAG}`,
-        nameEn: SHARED_EN,
-        musclesPrimary: ["lats"],
-      },
-    });
-
-    try {
-      // Now Alice really does have two, so it becomes ambiguous for her only.
-      await expect(resolveExerciseStrict(alice, SHARED_EN)).rejects.toThrow(
-        AmbiguousExerciseError,
-      );
-      await expect(resolveExerciseStrict(bob, SHARED_EN)).resolves.toMatchObject(
-        { id: bobExercise },
-      );
-    } finally {
-      await prisma.exercise.delete({ where: { id: dup.id } });
-    }
+    await expect(
+      prisma.exercise.create({
+        data: {
+          userId: alice,
+          name: SHARED_NAME,
+          musclesPrimary: ["lats"],
+        },
+      }),
+    ).rejects.toThrow();
   });
 
   it("lists only the caller's library", async () => {
     const forAlice = await listExercises(alice, { limit: 500 });
     const forBob = await listExercises(bob, { limit: 500 });
 
-    expect(forAlice.some((e) => e.nameFa === SHARED_FA)).toBe(true);
+    expect(forAlice.some((e) => e.name === SHARED_NAME)).toBe(true);
     expect(forBob).toHaveLength(1);
     expect(forBob[0].musclesPrimary).toEqual(["lats"]);
   });
@@ -231,7 +197,7 @@ describe("reading and editing another account's exercise by id", () => {
   it("cannot be edited", async () => {
     // Ownership is part of the update, not a check the route has to remember.
     const result = await updateExercise(alice, bobExercise, {
-      nameEn: "Hijacked",
+      name: "Hijacked",
     });
 
     expect(result).toBeNull();
@@ -239,7 +205,7 @@ describe("reading and editing another account's exercise by id", () => {
     const untouched = await prisma.exercise.findUnique({
       where: { id: bobExercise },
     });
-    expect(untouched!.nameEn).toBe(SHARED_EN);
+    expect(untouched!.name).toBe(SHARED_NAME);
   });
 });
 

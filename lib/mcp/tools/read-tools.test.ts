@@ -16,9 +16,7 @@ import {
   LIMITS,
 } from "./read-tools";
 import {
-  AmbiguousExerciseError,
   ExerciseNotFoundError,
-  findExerciseByName,
   resolveExerciseStrict,
 } from "@/lib/db/exercises";
 
@@ -66,8 +64,7 @@ beforeAll(async () => {
   const bench = await prisma.exercise.create({
     data: {
       userId: 1,
-      nameFa: `پرس سینه ${TAG}`,
-      nameEn: `Bench Press ${TAG}`,
+      name: `Bench Press ${TAG}`,
       musclesPrimary: ["pec_major_sternal"],
       musclesSecondary: ["triceps_brachii"],
     },
@@ -77,8 +74,7 @@ beforeAll(async () => {
   const squat = await prisma.exercise.create({
     data: {
       userId: 1,
-      nameFa: `اسکوات ${TAG}`,
-      nameEn: `Squat ${TAG}`,
+      name: `Squat ${TAG}`,
       musclesPrimary: ["quadriceps"],
       musclesSecondary: ["glute_max"],
     },
@@ -88,12 +84,11 @@ beforeAll(async () => {
   const program = await prisma.program.create({
     data: {
       userId: 1,
-      nameFa: `برنامه ${TAG}`,
-      nameEn: `Program ${TAG}`,
+      name: `Program ${TAG}`,
       yamlContent: "",
       isActive: true,
       days: {
-        create: [{ dayNumber: 1, nameFa: "روز ۱", nameEn: "Day 1" }],
+        create: [{ dayNumber: 1, name: "Day 1" }],
       },
     },
     include: { days: true },
@@ -185,11 +180,6 @@ afterAll(async () => {
 });
 
 describe("exercise name resolution", () => {
-  it("resolves by Persian name", async () => {
-    const found = await resolveExerciseStrict(1, `پرس سینه ${TAG}`);
-    expect(found.id).toBe(benchId);
-  });
-
   it("resolves by English name", async () => {
     const found = await resolveExerciseStrict(1, `Bench Press ${TAG}`);
     expect(found.id).toBe(benchId);
@@ -218,57 +208,33 @@ describe("exercise name resolution", () => {
     );
   });
 
-  it("refuses an ambiguous English name rather than guessing", async () => {
-    // `nameEn` is not unique. Silently returning the lowest id would report
-    // another lift's numbers as this one's.
-    const dupA = await prisma.exercise.create({
-      data: {
-        userId: 1,
-        nameFa: `ابهام الف ${TAG}`,
-        nameEn: `Ambiguous ${TAG}`,
-        musclesPrimary: ["lats"],
-      },
-    });
-    const dupB = await prisma.exercise.create({
-      data: {
-        userId: 1,
-        nameFa: `ابهام ب ${TAG}`,
-        nameEn: `Ambiguous ${TAG}`,
-        musclesPrimary: ["lats"],
-      },
-    });
-
-    try {
-      await expect(resolveExerciseStrict(1, `Ambiguous ${TAG}`)).rejects.toThrow(
-        AmbiguousExerciseError,
-      );
-
-      // The lenient lookup still resolves, because an upload rebinding an
-      // existing program needs a deterministic answer. The two behaviours are
-      // different on purpose.
-      const lenient = await findExerciseByName(1, `Ambiguous ${TAG}`);
-      expect(lenient?.id).toBe(dupA.id);
-    } finally {
-      await prisma.exercise.deleteMany({ where: { id: { in: [dupA.id, dupB.id] } } });
-    }
-  });
-
-  it("prefers an exact Persian hit over an ambiguous English one", async () => {
+  // A name matches at most one row now that `(userId, name)` is unique, so the
+  // ambiguity the strict resolver used to refuse cannot arise. The constraint
+  // is the thing worth asserting.
+  it("cannot hold two exercises with the same name for one account", async () => {
     const dup = await prisma.exercise.create({
       data: {
         userId: 1,
-        nameFa: `یکتا ${TAG}`,
-        nameEn: `Bench Press ${TAG}`,
+        name: `Ambiguous ${TAG}`,
         musclesPrimary: ["lats"],
       },
     });
 
     try {
-      // `Bench Press ${TAG}` is now ambiguous, but the Persian name is unique.
-      const found = await resolveExerciseStrict(1, `یکتا ${TAG}`);
+      await expect(
+        prisma.exercise.create({
+          data: {
+            userId: 1,
+            name: `Ambiguous ${TAG}`,
+            musclesPrimary: ["lats"],
+          },
+        }),
+      ).rejects.toThrow();
+
+      const found = await resolveExerciseStrict(1, `Ambiguous ${TAG}`);
       expect(found.id).toBe(dup.id);
     } finally {
-      await prisma.exercise.delete({ where: { id: dup.id } });
+      await prisma.exercise.deleteMany({ where: { id: dup.id } });
     }
   });
 });
@@ -283,7 +249,7 @@ describe("getProgressSummary", () => {
 
   it("summarises a progressing lift", async () => {
     const summary = await getProgressSummary({ userId: 1, weeks: 8, now: NOW });
-    const bench = summary.exercises.find((e) => e.nameEn === `Bench Press ${TAG}`);
+    const bench = summary.exercises.find((e) => e.name === `Bench Press ${TAG}`);
 
     expect(bench).toBeDefined();
     expect(bench!.sessions).toBe(4);
@@ -295,7 +261,7 @@ describe("getProgressSummary", () => {
 
   it("flags a stalled lift", async () => {
     const summary = await getProgressSummary({ userId: 1, weeks: 8, now: NOW });
-    const squat = summary.exercises.find((e) => e.nameEn === `Squat ${TAG}`);
+    const squat = summary.exercises.find((e) => e.name === `Squat ${TAG}`);
 
     expect(squat!.stalled).toBe(true);
     expect(squat!.oneRepMaxChange).toBe(0);
@@ -305,8 +271,8 @@ describe("getProgressSummary", () => {
     const summary = await getProgressSummary({ userId: 1, weeks: 8, now: NOW });
 
     for (const exercise of summary.exercises) {
-      expect(exercise.nameFa).toEqual(expect.any(String));
-      expect(exercise.nameEn).toEqual(expect.any(String));
+      expect(exercise.name).toEqual(expect.any(String));
+      expect(exercise.name).toEqual(expect.any(String));
     }
   });
 
@@ -323,7 +289,7 @@ describe("getProgressSummary", () => {
 
   it("excludes sessions outside the window", async () => {
     const narrow = await getProgressSummary({ userId: 1, weeks: 2, now: NOW });
-    const bench = narrow.exercises.find((e) => e.nameEn === `Bench Press ${TAG}`);
+    const bench = narrow.exercises.find((e) => e.name === `Bench Press ${TAG}`);
 
     // Only the 7-day-ago session falls inside a 2-week window ending today.
     expect(bench!.sessions).toBe(2);
@@ -351,7 +317,7 @@ describe("getExerciseHistory", () => {
   it("returns raw sets newest first", async () => {
     const history = await getExerciseHistory({ userId: 1, name: `Bench Press ${TAG}` });
 
-    expect(history.exercise.nameEn).toBe(`Bench Press ${TAG}`);
+    expect(history.exercise.name).toBe(`Bench Press ${TAG}`);
     expect(history.returned).toBe(4);
     expect(history.sessions[0].date).toBe(daysAgo(7).toISOString().slice(0, 10));
     expect(history.sessions[0].sets).toEqual([
@@ -457,7 +423,7 @@ describe("getCoachMemory", () => {
     const memory = await getCoachMemory({ userId: 1 });
 
     expect(memory.global).toBe("Prefers 6-10 reps.");
-    const bench = memory.exercises.find((e) => e.nameEn === `Bench Press ${TAG}`);
+    const bench = memory.exercises.find((e) => e.name === `Bench Press ${TAG}`);
     expect(bench?.notes).toBe("Stalls around week three.");
   });
 
@@ -465,7 +431,7 @@ describe("getCoachMemory", () => {
     const memory = await getCoachMemory({ userId: 1, name: `Bench Press ${TAG}` });
 
     expect(memory.exercises).toHaveLength(1);
-    expect(memory.exercises[0].nameFa).toBe(`پرس سینه ${TAG}`);
+    expect(memory.exercises[0].name).toBe(`Bench Press ${TAG}`);
   });
 
   it("reports null rather than failing for an exercise with no notes", async () => {
@@ -506,7 +472,7 @@ describe("listExercises", () => {
   it("filters case-insensitively on either name", async () => {
     const result = await listExercises({ userId: 1, search: `bench press ${TAG}`.toUpperCase() });
 
-    expect(result.exercises.some((e) => e.nameEn === `Bench Press ${TAG}`)).toBe(true);
+    expect(result.exercises.some((e) => e.name === `Bench Press ${TAG}`)).toBe(true);
   });
 
   it("caps the limit", async () => {

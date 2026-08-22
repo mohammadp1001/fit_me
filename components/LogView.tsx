@@ -9,17 +9,15 @@ type LogEntry = {
   date: string;
   sets: Array<{ weight: number | null; reps: number | null }>;
   programExercise: {
-    exercise: { nameFa: string; nameEn: string };
-    day: { dayNumber: number; nameFa: string; nameEn: string };
+    exercise: { name: string };
+    day: { dayNumber: number; name: string };
   };
 };
 
 type GroupedExercise = {
-  nameFa: string;
-  nameEn: string;
+  name: string;
   dayNumber: number;
-  dayNameFa: string;
-  dayNameEn: string;
+  dayName: string;
   sessions: Array<{ date: string; sets: LogEntry["sets"] }>;
 };
 
@@ -38,14 +36,12 @@ export default function LogView({ locale }: { locale: string }) {
 
         const map = new Map<string, GroupedExercise>();
         for (const log of logs) {
-          const key = log.programExercise.exercise.nameFa;
+          const key = log.programExercise.exercise.name;
           if (!map.has(key)) {
             map.set(key, {
-              nameFa: log.programExercise.exercise.nameFa,
-              nameEn: log.programExercise.exercise.nameEn,
+              name: log.programExercise.exercise.name,
               dayNumber: log.programExercise.day.dayNumber,
-              dayNameFa: log.programExercise.day.nameFa,
-              dayNameEn: log.programExercise.day.nameEn,
+              dayName: log.programExercise.day.name,
               sessions: [],
             });
           }
@@ -93,12 +89,12 @@ export default function LogView({ locale }: { locale: string }) {
         <div className="flex flex-col gap-3">
           {grouped.map((ex) => {
             const color = DAY_COLORS[ex.dayNumber] || "#888";
-            const name = locale === "fa" ? ex.nameFa : ex.nameEn;
-            const dayName = locale === "fa" ? ex.dayNameFa : ex.dayNameEn;
+            const name = ex.name;
+            const dayName = locale === "fa" ? ex.dayName : ex.dayName;
 
             return (
               <div
-                key={ex.nameFa}
+                key={ex.name}
                 className="rounded-2xl p-4"
                 style={{
                   background: "var(--surface)",

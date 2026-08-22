@@ -374,7 +374,7 @@ export default function ProgressView({
           <option value="">{t("progress.selectExercise")}</option>
           {allExercises.map((pe) => (
             <option key={pe.exercise.id} value={pe.exercise.id}>
-              {locale === "fa" ? pe.exercise.nameFa : pe.exercise.nameEn}
+              {pe.exercise.name}
             </option>
           ))}
         </select>

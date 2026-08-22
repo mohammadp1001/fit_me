@@ -33,7 +33,7 @@ import {
  *
  * Plain async functions, deliberately not coupled to the MCP SDK: the logic is
  * tested directly against Postgres, and `lib/mcp/server.ts` only registers
- * them. Every response carries both `nameFa` and `nameEn` so the model never
+ * them. Every response carries both `name` and `name` so the model never
  * has to guess which language it is looking at.
  *
  * All database access goes through `lib/db/*`, which is where the `userId`
@@ -103,8 +103,7 @@ export async function getProgressSummary({
         entries.map((log) => ({ date: log.date, sets: toLoggedSets(log.sets) })),
       );
       return {
-        nameFa: exercise.nameFa,
-        nameEn: exercise.nameEn,
+        name: exercise.name,
         musclesPrimary: exercise.musclesPrimary,
         musclesSecondary: exercise.musclesSecondary,
         ...summary,
@@ -174,8 +173,7 @@ export async function getExerciseHistory({
 
   return {
     exercise: {
-      nameFa: exercise.nameFa,
-      nameEn: exercise.nameEn,
+      name: exercise.name,
       musclesPrimary: exercise.musclesPrimary,
       musclesSecondary: exercise.musclesSecondary,
     },
@@ -285,8 +283,7 @@ export async function getCoachMemory({
       global: global?.notes ?? null,
       exercises: [
         {
-          nameFa: exercise.nameFa,
-          nameEn: exercise.nameEn,
+          name: exercise.name,
           notes: memory?.notes ?? null,
         },
       ],
@@ -298,8 +295,7 @@ export async function getCoachMemory({
   return {
     global: global?.notes ?? null,
     exercises: memories.map((m) => ({
-      nameFa: m.exercise.nameFa,
-      nameEn: m.exercise.nameEn,
+      name: m.exercise.name,
       notes: m.notes,
     })),
   };
@@ -313,8 +309,7 @@ export async function listPrograms({ userId }: { userId: number }) {
   return {
     programs: programs.map((p) => ({
       id: p.id,
-      nameFa: p.nameFa,
-      nameEn: p.nameEn,
+      name: p.name,
       isActive: p.isActive,
       days: p._count.days,
     })),
@@ -340,16 +335,13 @@ export async function getProgram({
 
   return {
     id: program.id,
-    nameFa: program.nameFa,
-    nameEn: program.nameEn,
+    name: program.name,
     isActive: program.isActive,
     days: program.days.map((day) => ({
       dayNumber: day.dayNumber,
-      nameFa: day.nameFa,
-      nameEn: day.nameEn,
+      name: day.name,
       exercises: day.exercises.map((slot) => ({
-        nameFa: slot.exercise.nameFa,
-        nameEn: slot.exercise.nameEn,
+        name: slot.exercise.name,
         sets: slot.setsCount,
         reps: slot.reps,
         musclesPrimary: slot.exercise.musclesPrimary,
@@ -406,10 +398,9 @@ export async function validateProgramYaml({ yaml }: { yaml: string }) {
     return {
       valid: true as const,
       program: {
-        nameFa: program.name,
-        nameEn: program.name_en ?? program.name,
+        name: program.name_en ?? program.name,
         days: program.days.map((day) => ({
-          nameFa: day.name,
+          name: day.name,
           exercises: day.exercises.length,
         })),
         totalExercises: program.days.reduce((n, d) => n + d.exercises.length, 0),
