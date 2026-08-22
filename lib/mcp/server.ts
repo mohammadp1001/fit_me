@@ -14,6 +14,11 @@ import {
   LIMITS,
 } from "./tools/read-tools";
 import { saveSuggestions } from "./tools/save-suggestions";
+import {
+  getSessionDetail,
+  listSessionsSummary,
+  SESSION_LIMITS,
+} from "./tools/session-tools";
 
 /**
  * Builds the FitMe MCP server.
@@ -99,6 +104,12 @@ export function buildMcpServer(userId: number): McpServer {
         "invented muscle names are rejected by the parser. " +
         "Exercises are addressed by name; if a name is not found the error " +
         "lists near-matches, and list_exercises shows the whole library. " +
+        "To review a workout, skim list_sessions first and open only the " +
+        "sessions you need with get_session - the index already carries the " +
+        "muscle groups each session trained, so you rarely need to open more " +
+        "than one or two. A session carries the user's own notes; read them " +
+        "before judging the numbers, because they explain what the numbers " +
+        "cannot. " +
         "When coaching a session: read get_coach_memory first so you continue " +
         "from what was already learned, then propose sets, show them to the " +
         "user with your reasoning, and only then call save_suggestions. What " +
@@ -196,13 +207,90 @@ export function buildMcpServer(userId: number): McpServer {
     {
       title: "Get weekly volume",
       description:
-        "Hard sets per muscle group over the trailing 7 days, with a low / " +
-        "adequate / high verdict against the 10 and 20 set landmarks.",
+        "Hard sets per muscle group, with a low / adequate / high verdict " +
+        "against the 10 and 20 set weekly landmarks. Defaults to the trailing " +
+        "7 days; widen it with `weeks` to judge a whole training block, since " +
+        "one week is far too short to tell whether a split needs changing.",
+      inputSchema: {
+        weeks: z
+          .number()
+          .int()
+          .min(1)
+          .max(26)
+          .optional()
+          .describe("Weeks to look back over. Defaults to 1, max 26."),
+      },
       annotations: READ_ONLY,
     },
-    async () => {
+    async ({ weeks }) => {
       try {
-        return asText(await getVolume({ userId }));
+        return asText(await getVolume({ userId, weeks }));
+      } catch (err) {
+        return asError(err);
+      }
+    },
+  );
+
+  server.registerTool(
+    "list_sessions",
+    {
+      title: "List workout sessions",
+      description:
+        "A skimmable index of recent workouts, newest first: local date and " +
+        "time, how long it ran, how many exercises, how many carried a note " +
+        "from the user, and hard sets per muscle group. Start here, then open " +
+        "only the sessions you actually need with get_session.",
+      inputSchema: {
+        limit: z
+          .number()
+          .int()
+          .min(1)
+          .max(SESSION_LIMITS.list)
+          .optional()
+          .describe(
+            `Sessions to return. Defaults to ${SESSION_LIMITS.defaultList}, max ${SESSION_LIMITS.list}.`,
+          ),
+      },
+      annotations: READ_ONLY,
+    },
+    async ({ limit }) => {
+      try {
+        return asText(await listSessionsSummary({ userId, limit }));
+      } catch (err) {
+        return asError(err);
+      }
+    },
+  );
+
+  server.registerTool(
+    "get_session",
+    {
+      title: "Get one workout session",
+      description:
+        "Everything logged in one workout, in the order it was performed: " +
+        "each exercise with its own timestamp, actual against planned sets " +
+        "and reps, whether the work was completed, and the user's note to " +
+        "you. Call with no arguments for the most recent session.",
+      inputSchema: {
+        id: z
+          .number()
+          .int()
+          .optional()
+          .describe("Session id, as returned by list_sessions."),
+        date: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .optional()
+          .describe(
+            "Local date, YYYY-MM-DD. If the user trained twice that day, " +
+              "returns the later session.",
+          ),
+      },
+      annotations: READ_ONLY,
+    },
+    async ({ id, date }) => {
+      try {
+        return asText(await getSessionDetail({ userId, id, date }));
       } catch (err) {
         return asError(err);
       }

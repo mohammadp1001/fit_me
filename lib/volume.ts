@@ -95,11 +95,25 @@ export function volumeByGroup(
   now: Date | string = new Date(),
   windowDays: number = VOLUME_WINDOW_DAYS
 ): Record<MuscleGroup, number> {
+  return volumeForEntries(
+    entries.filter((entry) => isWithinWindow(entry.date, now, windowDays))
+  );
+}
+
+/**
+ * The same per-group weighting, over exactly the entries given.
+ *
+ * Split out from `volumeByGroup` so a caller that has already chosen its
+ * entries - one workout session, say - can weigh them without inventing a date
+ * window wide enough to let them through. The weighting rules above are subtle
+ * enough that a second implementation of them would drift.
+ */
+export function volumeForEntries(
+  entries: VolumeEntry[]
+): Record<MuscleGroup, number> {
   const totals = emptyTotals();
 
   for (const entry of entries) {
-    if (!isWithinWindow(entry.date, now, windowDays)) continue;
-
     const hardSets = countHardSets(entry.sets);
     if (hardSets === 0) continue;
 

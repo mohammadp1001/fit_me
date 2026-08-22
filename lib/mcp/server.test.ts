@@ -65,9 +65,11 @@ describe("MCP server wiring", () => {
       "get_program",
       "get_program_schema",
       "get_progress_summary",
+      "get_session",
       "get_volume",
       "list_exercises",
       "list_programs",
+      "list_sessions",
       "save_suggestions",
       "validate_program_yaml",
     ]);

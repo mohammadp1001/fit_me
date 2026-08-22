@@ -191,22 +191,37 @@ export async function getExerciseHistory({
 // --- get_volume -------------------------------------------------------------
 
 /** Trailing 7-day hard-set volume per muscle group, with the 10/20 verdicts. */
+/** Longest window `get_volume` will look back over, in weeks. */
+const MAX_VOLUME_WEEKS = 26;
+
 export async function getVolume({
   userId,
+  weeks = 1,
   now = new Date(),
-}: { userId: number; now?: Date }) {
-  const volume = await computeGroupVolume(userId, now);
+}: { userId: number; weeks?: number; now?: Date }) {
+  const cappedWeeks = Math.min(Math.max(1, weeks), MAX_VOLUME_WEEKS);
+  const windowDays = cappedWeeks * 7;
+  const volume = await computeGroupVolume(userId, now, windowDays);
 
   return {
-    windowDays: 7,
+    windowDays,
+    // The landmarks are per week, so a longer window must be read against a
+    // longer target. Reporting raw totals against weekly landmarks would call
+    // a perfectly normal month "high" every time.
+    weeks: cappedWeeks,
+    setsPerWeek: true,
     landmarks: { low: WEEKLY_SET_FLOOR, high: WEEKLY_SET_CEILING },
-    byGroup: Object.entries(volume).map(([group, sets]) => ({
-      group,
-      labelEn: MUSCLE_GROUP_LABEL[group as keyof typeof MUSCLE_GROUP_LABEL].en,
-      labelFa: MUSCLE_GROUP_LABEL[group as keyof typeof MUSCLE_GROUP_LABEL].fa,
-      sets,
-      verdict: verdictForVolume(sets),
-    })),
+    byGroup: Object.entries(volume).map(([group, sets]) => {
+      const perWeek = sets / cappedWeeks;
+      return {
+        group,
+        labelEn: MUSCLE_GROUP_LABEL[group as keyof typeof MUSCLE_GROUP_LABEL].en,
+        labelFa: MUSCLE_GROUP_LABEL[group as keyof typeof MUSCLE_GROUP_LABEL].fa,
+        sets,
+        setsPerWeek: Math.round(perWeek * 10) / 10,
+        verdict: verdictForVolume(perWeek),
+      };
+    }),
   };
 }
 
