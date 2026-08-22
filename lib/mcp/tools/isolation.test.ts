@@ -35,8 +35,7 @@ const prisma = new PrismaClient();
 
 const TAG = `mcp-iso-${Date.now()}`;
 /** Deliberately the same in both libraries. */
-const SHARED_FA = `پرس سینه ${TAG}`;
-const SHARED_EN = `Bench Press ${TAG}`;
+const SHARED_NAME = `Bench Press ${TAG}`;
 
 const NOW = new Date("2026-08-19T10:00:00.000Z");
 const TOMORROW = "2026-08-20";
@@ -63,8 +62,7 @@ async function makeAccount(label: string, weight: number) {
   const exercise = await prisma.exercise.create({
     data: {
       userId: user.id,
-      nameFa: SHARED_FA,
-      nameEn: SHARED_EN,
+      name: SHARED_NAME,
       musclesPrimary: ["pec_major_sternal"],
     },
   });
@@ -72,11 +70,10 @@ async function makeAccount(label: string, weight: number) {
   const program = await prisma.program.create({
     data: {
       userId: user.id,
-      nameFa: `برنامه ${label}`,
-      nameEn: `${label} Program`,
+      name: `${label} Program`,
       yamlContent: "",
       isActive: true,
-      days: { create: [{ dayNumber: 1, nameFa: "روز ۱", nameEn: "Day 1" }] },
+      days: { create: [{ dayNumber: 1, name: "Day 1" }] },
     },
     include: { days: true },
   });
@@ -176,16 +173,10 @@ describe("get_exercise_history", () => {
   it("resolves a shared name to the caller's own exercise", async () => {
     // The realistic leak: both libraries hold "Bench Press", seeded from the
     // same template. Resolving without an owner returns whichever row is first.
-    const forAlice = await getExerciseHistory({ userId: alice, name: SHARED_EN });
-    const forBob = await getExerciseHistory({ userId: bob, name: SHARED_EN });
+    const forAlice = await getExerciseHistory({ userId: alice, name: SHARED_NAME });
+    const forBob = await getExerciseHistory({ userId: bob, name: SHARED_NAME });
 
     expect(forAlice.sessions.every((s) => s.sets[0].weight === 60)).toBe(true);
-    expect(forBob.sessions.every((s) => s.sets[0].weight === 100)).toBe(true);
-  });
-
-  it("resolves a shared Persian name to the caller's own exercise", async () => {
-    const forBob = await getExerciseHistory({ userId: bob, name: SHARED_FA });
-
     expect(forBob.sessions.every((s) => s.sets[0].weight === 100)).toBe(true);
   });
 
@@ -194,8 +185,7 @@ describe("get_exercise_history", () => {
     const created = await prisma.exercise.create({
       data: {
         userId: bob,
-        nameFa: bobOnly,
-        nameEn: bobOnly,
+        name: bobOnly,
         musclesPrimary: ["lats"],
       },
     });
@@ -247,7 +237,7 @@ describe("get_coach_memory", () => {
   });
 
   it("resolves a shared exercise name to the caller's own note", async () => {
-    const forAlice = await getCoachMemory({ userId: alice, name: SHARED_EN });
+    const forAlice = await getCoachMemory({ userId: alice, name: SHARED_NAME });
 
     expect(forAlice.exercises[0].notes).toBe("Alice note");
   });
@@ -258,15 +248,15 @@ describe("list_programs and get_program", () => {
     const forAlice = await listPrograms({ userId: alice });
     const forBob = await listPrograms({ userId: bob });
 
-    expect(forAlice.programs.map((p) => p.nameEn)).toEqual(["Alice Program"]);
-    expect(forBob.programs.map((p) => p.nameEn)).toEqual(["Bob Program"]);
+    expect(forAlice.programs.map((p) => p.name)).toEqual(["Alice Program"]);
+    expect(forBob.programs.map((p) => p.name)).toEqual(["Bob Program"]);
   });
 
   it("returns the caller's own active program", async () => {
     // Both accounts have an active program - "the active one" is only
     // meaningful per user.
-    expect((await getProgram({ userId: alice })).nameEn).toBe("Alice Program");
-    expect((await getProgram({ userId: bob })).nameEn).toBe("Bob Program");
+    expect((await getProgram({ userId: alice })).name).toBe("Alice Program");
+    expect((await getProgram({ userId: bob })).name).toBe("Bob Program");
   });
 
   it("refuses another account's program by id", async () => {
@@ -286,8 +276,8 @@ describe("list_exercises", () => {
     expect(forAlice.returned).toBe(1);
     expect(forBob.returned).toBe(1);
     // Same name, and that is fine - they are different rows with one owner each.
-    expect(forAlice.exercises[0].nameEn).toBe(SHARED_EN);
-    expect(forBob.exercises[0].nameEn).toBe(SHARED_EN);
+    expect(forAlice.exercises[0].name).toBe(SHARED_NAME);
+    expect(forBob.exercises[0].name).toBe(SHARED_NAME);
   });
 
   it("does not surface another account's exercise through search", async () => {
@@ -295,8 +285,7 @@ describe("list_exercises", () => {
     const created = await prisma.exercise.create({
       data: {
         userId: bob,
-        nameFa: bobOnly,
-        nameEn: bobOnly,
+        name: bobOnly,
         musclesPrimary: ["lats"],
       },
     });
@@ -323,7 +312,7 @@ describe("save_suggestions", () => {
       date: TOMORROW,
       items: [
         {
-          exercise: SHARED_EN,
+          exercise: SHARED_NAME,
           sets: [{ weightKg: 62.5, reps: 8 }],
           why: "progressing",
         },
@@ -344,7 +333,7 @@ describe("save_suggestions", () => {
       date: TOMORROW,
       items: [
         {
-          exercise: SHARED_EN,
+          exercise: SHARED_NAME,
           sets: [{ weightKg: 105, reps: 8 }],
           why: "progressing",
         },
@@ -364,8 +353,7 @@ describe("save_suggestions", () => {
     const created = await prisma.exercise.create({
       data: {
         userId: bob,
-        nameFa: bobOnly,
-        nameEn: bobOnly,
+        name: bobOnly,
         musclesPrimary: ["lats"],
       },
     });
@@ -404,7 +392,7 @@ describe("save_suggestions", () => {
         userId: alice,
         date: NOW.toISOString().slice(0, 10),
         items: [
-          { exercise: SHARED_EN, sets: [{ weightKg: 62.5, reps: 8 }], why: "x" },
+          { exercise: SHARED_NAME, sets: [{ weightKg: 62.5, reps: 8 }], why: "x" },
         ],
         now: NOW,
       });
@@ -417,7 +405,7 @@ describe("save_suggestions", () => {
           userId: bob,
           date: NOW.toISOString().slice(0, 10),
           items: [
-            { exercise: SHARED_EN, sets: [{ weightKg: 105, reps: 8 }], why: "x" },
+            { exercise: SHARED_NAME, sets: [{ weightKg: 105, reps: 8 }], why: "x" },
           ],
           now: NOW,
         }),
@@ -432,9 +420,9 @@ describe("save_suggestions", () => {
       userId: alice,
       date: TOMORROW,
       items: [
-        { exercise: SHARED_EN, sets: [{ weightKg: 62.5, reps: 8 }], why: "x" },
+        { exercise: SHARED_NAME, sets: [{ weightKg: 62.5, reps: 8 }], why: "x" },
       ],
-      exerciseNotes: [{ exercise: SHARED_EN, note: "Alice learned something" }],
+      exerciseNotes: [{ exercise: SHARED_NAME, note: "Alice learned something" }],
       globalNote: "Alice global learning",
       now: NOW,
     });

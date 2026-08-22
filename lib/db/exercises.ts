@@ -28,8 +28,7 @@ import { prisma } from "@/lib/prisma";
 /** The fields every caller needs; keeps the return type stable across callers. */
 const SELECT = {
   id: true,
-  nameFa: true,
-  nameEn: true,
+  name: true,
   musclesPrimary: true,
   musclesSecondary: true,
 } satisfies Prisma.ExerciseSelect;
@@ -37,32 +36,21 @@ const SELECT = {
 export type ExerciseRef = Prisma.ExerciseGetPayload<{ select: typeof SELECT }>;
 
 /**
- * Finds a library exercise by either of its names, or null.
+ * Finds a library exercise by name, or null.
  *
- * **The order is load-bearing and is the fix for #45.** `nameFa` is `@unique`
- * and canonical, so it is tried first with `findUnique`. `nameEn` is *not*
- * unique, so the fallback pins `orderBy: { id: "asc" }` - without that
- * tie-break, which of several same-`nameEn` rows you get is undefined, and a
- * program can silently rebind to a different exercise between uploads.
- *
- * Matching either name is what stops an English-named YAML minting duplicates
- * of the Persian-named seed rows.
+ * A single `findUnique`, because `(userId, name)` is unique. This used to be a
+ * two-step dance - `nameFa` by unique key, then `nameEn` with an explicit
+ * `orderBy: { id: "asc" }` tie-break, because `nameEn` was not unique and
+ * without the tie-break a program could silently rebind to a different exercise
+ * between uploads (#45). Collapsing to one name removes the ambiguity that bug
+ * lived in, so the tie-break has nothing left to protect.
  */
 export async function findExerciseByName(
   userId: number,
   name: string,
 ): Promise<ExerciseRef | null> {
-  const byFa = await prisma.exercise.findUnique({
-    where: { userId_nameFa: { userId, nameFa: name } },
-    select: SELECT,
-  });
-  if (byFa) {
-    return byFa;
-  }
-
-  return prisma.exercise.findFirst({
-    where: { userId, nameEn: name },
-    orderBy: { id: "asc" },
+  return prisma.exercise.findUnique({
+    where: { userId_name: { userId, name: name.trim() } },
     select: SELECT,
   });
 }
@@ -73,40 +61,23 @@ export class ExerciseNotFoundError extends Error {
     readonly suggestions: ExerciseRef[],
   ) {
     const hint = suggestions.length
-      ? ` Did you mean: ${suggestions.map((s) => `"${s.nameEn}"`).join(", ")}?`
+      ? ` Did you mean: ${suggestions.map((s) => `"${s.name}"`).join(", ")}?`
       : " Call list_exercises to see the available names.";
     super(`No exercise named "${name}" exists in the library.${hint}`);
     this.name = "ExerciseNotFoundError";
   }
 }
 
-export class AmbiguousExerciseError extends Error {
-  constructor(
-    readonly requested: string,
-    readonly matches: ExerciseRef[],
-  ) {
-    super(
-      `"${requested}" matches ${matches.length} library exercises ` +
-        `(ids ${matches.map((m) => m.id).join(", ")}). ` +
-        `Use the Persian name to disambiguate: ` +
-        `${matches.map((m) => `"${m.nameFa}"`).join(", ")}.`,
-    );
-    this.name = "AmbiguousExerciseError";
-  }
-}
-
 /**
  * Resolves a name for a caller that must not create anything.
  *
- * Fails loudly in both directions rather than guessing:
+ * An unknown name fails with `ExerciseNotFoundError`, carrying near-matches so
+ * a model can correct itself in one turn instead of retrying blindly.
  *
- * - **Unknown name** -> `ExerciseNotFoundError`, carrying near-matches so the
- *   model can correct itself in one turn instead of retrying blindly.
- * - **Ambiguous `nameEn`** -> `AmbiguousExerciseError`. `findExerciseByName`
- *   would quietly return the lowest id here, which is the right default for an
- *   upload rebinding an existing program but the wrong one for a chatbot
- *   reading history: silently reporting the wrong lift's numbers is worse than
- *   refusing.
+ * There is deliberately no ambiguity case any more. While an exercise had two
+ * names, a non-unique `nameEn` could match several rows, and this had to refuse
+ * rather than quietly report the wrong lift's numbers. One name under a unique
+ * constraint matches at most one row, so the situation cannot arise.
  */
 export async function resolveExerciseStrict(
   userId: number,
@@ -114,26 +85,9 @@ export async function resolveExerciseStrict(
 ): Promise<ExerciseRef> {
   const trimmed = name.trim();
 
-  const byFa = await prisma.exercise.findUnique({
-    where: { userId_nameFa: { userId, nameFa: trimmed } },
-    select: SELECT,
-  });
-  if (byFa) {
-    // An exact `nameFa` hit is unique by construction, so it is never ambiguous
-    // even when other rows share its `nameEn`.
-    return byFa;
-  }
-
-  const byEn = await prisma.exercise.findMany({
-    where: { userId, nameEn: trimmed },
-    orderBy: { id: "asc" },
-    select: SELECT,
-  });
-  if (byEn.length === 1) {
-    return byEn[0];
-  }
-  if (byEn.length > 1) {
-    throw new AmbiguousExerciseError(trimmed, byEn);
+  const found = await findExerciseByName(userId, trimmed);
+  if (found) {
+    return found;
   }
 
   throw new ExerciseNotFoundError(trimmed, await suggestExercises(userId, trimmed));
@@ -160,8 +114,8 @@ export async function suggestExercises(
     where: {
       userId,
       OR: [
-        { nameEn: { contains: needle, mode: "insensitive" } },
-        { nameFa: { contains: needle, mode: "insensitive" } },
+        { name: { contains: needle, mode: "insensitive" } },
+        { name: { contains: needle, mode: "insensitive" } },
       ],
     },
     orderBy: { id: "asc" },
@@ -185,8 +139,8 @@ export async function suggestExercises(
     where: {
       userId,
       OR: [
-        { nameEn: { contains: longestWord, mode: "insensitive" } },
-        { nameFa: { contains: longestWord, mode: "insensitive" } },
+        { name: { contains: longestWord, mode: "insensitive" } },
+        { name: { contains: longestWord, mode: "insensitive" } },
       ],
     },
     orderBy: { id: "asc" },
@@ -239,8 +193,8 @@ export async function listExercises(
       ...(search
         ? {
             OR: [
-              { nameEn: { contains: search, mode: "insensitive" } },
-              { nameFa: { contains: search, mode: "insensitive" } },
+              { name: { contains: search, mode: "insensitive" } },
+              { name: { contains: search, mode: "insensitive" } },
             ],
           }
         : {}),
@@ -248,8 +202,7 @@ export async function listExercises(
     orderBy: { id: "asc" },
     take: limit,
     select: {
-      nameFa: true,
-      nameEn: true,
+      name: true,
       musclesPrimary: true,
       musclesSecondary: true,
     },

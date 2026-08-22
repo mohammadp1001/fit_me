@@ -29,7 +29,7 @@ export default function ExerciseDetail({
   const t = useTranslations();
   const [tab, setTab] = useState<Tab>("info");
   const ex = programExercise.exercise;
-  const name = locale === "fa" ? ex.nameFa : ex.nameEn;
+  const name = ex.name;
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "info", label: t("exercise.guide") },
@@ -123,7 +123,7 @@ export default function ExerciseDetail({
         style={{ background: "var(--surface)" }}
       >
         {tab === "info" && (
-          <InfoPanel locale={locale} exercise={ex} dayColor={dayColor} />
+          <InfoPanel exercise={ex} dayColor={dayColor} />
         )}
         {tab === "log" && (
           <LogPanel
@@ -138,18 +138,16 @@ export default function ExerciseDetail({
 }
 
 function InfoPanel({
-  locale,
   exercise,
   dayColor,
 }: {
-  locale: string;
   exercise: ProgramExerciseData["exercise"];
   dayColor: string;
 }) {
   const t = useTranslations();
-  const description = locale === "fa" ? exercise.descriptionFa : exercise.descriptionEn;
-  const tips = locale === "fa" ? exercise.tipsFa : exercise.tipsEn;
-  const mistakes = locale === "fa" ? exercise.mistakesFa : exercise.mistakesEn;
+  // Exercise content is English-only now, so there is no longer a language to
+  // pick between here. The surrounding UI chrome stays bilingual via `t`.
+  const { description, tips, mistakes } = exercise;
 
   return (
     <div className="flex flex-col gap-5">

@@ -48,8 +48,7 @@ export async function listPrograms(userId: number) {
     orderBy: { id: "desc" },
     select: {
       id: true,
-      nameFa: true,
-      nameEn: true,
+      name: true,
       startDate: true,
       isActive: true,
     },
@@ -138,7 +137,7 @@ export async function findActiveSlotFor(userId: number, exerciseId: number) {
  * `app/api/setup` unchanged. Every rule it encodes was paid for by a bug:
  *
  * - exercises are matched by **either** name and created only on a real miss
- *   (#45 - matching `nameFa` alone minted a duplicate on every upload)
+ *   (#45 - matching `name` alone minted a duplicate on every upload)
  * - `muscles` and `video` are **overwritten** whenever the upload supplies
  *   them (#44 - backfill-only meant a stale MuscleWiki link could never be
  *   corrected through the app)
@@ -159,15 +158,13 @@ export async function installProgram(
   const newProgram = await prisma.program.create({
     data: {
       userId,
-      nameFa: program.name,
-      nameEn: program.name_en ?? program.name,
+      name: program.name_en ?? program.name,
       yamlContent,
       isActive: true,
       days: {
         create: program.days.map((day, dayIdx) => ({
           dayNumber: dayIdx + 1,
-          nameFa: day.name,
-          nameEn: day.name_en ?? day.name,
+          name: day.name_en ?? day.name,
         })),
       },
     },
@@ -196,17 +193,16 @@ export async function installProgram(
         dbExercise = await prisma.exercise.create({
           data: {
             userId,
-            nameFa: ex.name,
-            nameEn: ex.name,
+            // The YAML has only ever had one `name` per exercise, so there is
+            // nothing to choose between. Prose still prefers `_en` below; #77
+            // removes those keys from the format entirely.
+            name: ex.name,
             musclesPrimary: ex.musclesPrimary,
             musclesSecondary: ex.musclesSecondary,
             videoUrl: ex.video ?? "",
-            descriptionFa: ex.description ?? "",
-            descriptionEn: ex.description_en ?? ex.description ?? "",
-            tipsFa: ex.tips ?? [],
-            tipsEn: ex.tips_en ?? ex.tips ?? [],
-            mistakesFa: ex.mistakes ?? [],
-            mistakesEn: ex.mistakes_en ?? ex.mistakes ?? [],
+            description: ex.description_en ?? ex.description ?? "",
+            tips: ex.tips_en ?? ex.tips ?? [],
+            mistakes: ex.mistakes_en ?? ex.mistakes ?? [],
           },
         });
       } else {
@@ -222,15 +218,15 @@ export async function installProgram(
           musclesSecondary: ex.musclesSecondary,
         };
         const descEn = ex.description_en ?? ex.description;
-        const tipsEn = ex.tips_en ?? ex.tips;
-        const mistakesEn = ex.mistakes_en ?? ex.mistakes;
+        const tips = ex.tips_en ?? ex.tips;
+        const mistakes = ex.mistakes_en ?? ex.mistakes;
         if (ex.video) patch.videoUrl = ex.video;
-        if (ex.description && !dbExercise.descriptionFa) patch.descriptionFa = ex.description;
-        if (descEn && !dbExercise.descriptionEn) patch.descriptionEn = descEn;
-        if (ex.tips?.length && dbExercise.tipsFa.length === 0) patch.tipsFa = ex.tips;
-        if (tipsEn?.length && dbExercise.tipsEn.length === 0) patch.tipsEn = tipsEn;
-        if (ex.mistakes?.length && dbExercise.mistakesFa.length === 0) patch.mistakesFa = ex.mistakes;
-        if (mistakesEn?.length && dbExercise.mistakesEn.length === 0) patch.mistakesEn = mistakesEn;
+        if (ex.description && !dbExercise.description) patch.description = ex.description;
+        if (descEn && !dbExercise.description) patch.description = descEn;
+        if (ex.tips?.length && dbExercise.tips.length === 0) patch.tips = ex.tips;
+        if (tips?.length && dbExercise.tips.length === 0) patch.tips = tips;
+        if (ex.mistakes?.length && dbExercise.mistakes.length === 0) patch.mistakes = ex.mistakes;
+        if (mistakes?.length && dbExercise.mistakes.length === 0) patch.mistakes = mistakes;
         if (Object.keys(patch).length > 0) {
           dbExercise = await prisma.exercise.update({
             where: { id: dbExercise.id },

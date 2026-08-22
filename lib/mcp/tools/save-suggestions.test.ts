@@ -49,8 +49,7 @@ beforeAll(async () => {
   const bench = await prisma.exercise.create({
     data: {
       userId: 1,
-      nameFa: `پرس سینه ${TAG}`,
-      nameEn: `Bench ${TAG}`,
+      name: `Bench ${TAG}`,
       musclesPrimary: ["pec_major_sternal"],
     },
   });
@@ -59,8 +58,7 @@ beforeAll(async () => {
   const squat = await prisma.exercise.create({
     data: {
       userId: 1,
-      nameFa: `اسکوات ${TAG}`,
-      nameEn: `Squat ${TAG}`,
+      name: `Squat ${TAG}`,
       musclesPrimary: ["quadriceps"],
     },
   });
@@ -70,8 +68,7 @@ beforeAll(async () => {
   const orphan = await prisma.exercise.create({
     data: {
       userId: 1,
-      nameFa: `یتیم ${TAG}`,
-      nameEn: `Orphan ${TAG}`,
+      name: `Orphan ${TAG}`,
       musclesPrimary: ["lats"],
     },
   });
@@ -80,11 +77,10 @@ beforeAll(async () => {
   const program = await prisma.program.create({
     data: {
       userId: 1,
-      nameFa: `برنامه ${TAG}`,
-      nameEn: `Program ${TAG}`,
+      name: `Program ${TAG}`,
       yamlContent: "",
       isActive: true,
-      days: { create: [{ dayNumber: 1, nameFa: "روز ۱", nameEn: "Day 1" }] },
+      days: { create: [{ dayNumber: 1, name: "Day 1" }] },
     },
     include: { days: true },
   });
@@ -160,7 +156,7 @@ describe("saving suggestions", () => {
     });
 
     expect(result.saved).toEqual([
-      { nameFa: `پرس سینه ${TAG}`, nameEn: `Bench ${TAG}`, sets: 2 },
+      { name: `Bench ${TAG}`, sets: 2 },
     ]);
 
     const row = await prisma.suggestion.findUnique({
@@ -202,15 +198,15 @@ describe("saving suggestions", () => {
     expect(result.date).toBe(TODAY);
   });
 
-  it("resolves an exercise by its Persian name", async () => {
+  it("resolves an exercise by name", async () => {
     const result = await saveSuggestions({
       userId: 1,
       date: TOMORROW,
-      items: [item(`اسکوات ${TAG}`, 100)],
+      items: [item(`Squat ${TAG}`, 100)],
       now: NOW,
     });
 
-    expect(result.saved[0].nameEn).toBe(`Squat ${TAG}`);
+    expect(result.saved[0].name).toBe(`Squat ${TAG}`);
   });
 
   it("stores null weight for bodyweight work", async () => {

@@ -178,16 +178,22 @@ model ExerciseCatalog {
 model Exercise {
   id               Int               @id @default(autoincrement())
   userId           Int
-  nameFa           String
-  nameEn           String
+  /// English only.
+  ///
+  /// Was a `nameFa`/`nameEn` pair, along with paired description, tips and
+  /// mistakes. The catalog makes the pairing redundant and expensive: every one
+  /// of its 649 entries would need both languages written and maintained by
+  /// hand, and the upstream source has only English.
+  ///
+  /// The app's *interface* stays bilingual - buttons, labels and screens still
+  /// switch to Persian from `messages/`, and Persian is still the default
+  /// locale. Only exercise content is English.
+  name             String
   musclesPrimary   Muscle[]
   musclesSecondary Muscle[]
-  descriptionFa    String            @default("")
-  descriptionEn    String            @default("")
-  tipsFa           String[]          @default([])
-  tipsEn           String[]          @default([])
-  mistakesFa       String[]          @default([])
-  mistakesEn       String[]          @default([])
+  description      String            @default("")
+  tips             String[]          @default([])
+  mistakes         String[]          @default([])
   wikiUrl          String            @default("")
   videoUrl         String            @default("")
   user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -196,22 +202,21 @@ model Exercise {
   suggestions      Suggestion[]
   memory           ExerciseMemory?
 
-  // `nameFa` was globally `@unique`. Scoping it per user is what lets two
-  // people both own a row called "پرس سینه دستگاه".
+  // Scoped per user, so two people can both own a row of the same name.
   //
   // `Suggestion` (@@unique([exerciseId, date])) and `ExerciseMemory`
   // (exerciseId @unique) need no change of their own: both hang off an
   // exercise, so once an exercise has exactly one owner their constraints are
   // correct again.
-  @@unique([userId, nameFa])
+  @@unique([userId, name])
   @@index([userId])
 }
 
 model Program {
   id          Int          @id @default(autoincrement())
   userId      Int
-  nameFa      String
-  nameEn      String
+  /// English only, like exercise content - see `Exercise.name`.
+  name        String
   startDate   DateTime     @default(now()) @db.Date
   isActive    Boolean      @default(true)
   yamlContent String
@@ -223,8 +228,7 @@ model ProgramDay {
   id        Int               @id @default(autoincrement())
   programId Int
   dayNumber Int
-  nameFa    String
-  nameEn    String
+  name      String
   program   Program           @relation(fields: [programId], references: [id], onDelete: Cascade)
   exercises ProgramExercise[]
 }

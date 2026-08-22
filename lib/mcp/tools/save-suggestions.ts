@@ -70,7 +70,7 @@ async function findActiveSlot(userId: number, exercise: ExerciseRef) {
 
   if (!slot) {
     throw new SuggestionRejected(
-      `"${exercise.nameEn}" is not in the active program, so a suggestion for ` +
+      `"${exercise.name}" is not in the active program, so a suggestion for ` +
         `it would never be shown. Call get_program to see what is scheduled.`,
     );
   }
@@ -80,7 +80,7 @@ async function findActiveSlot(userId: number, exercise: ExerciseRef) {
 
 export interface SaveSuggestionsResult {
   date: string;
-  saved: Array<{ nameFa: string; nameEn: string; sets: number }>;
+  saved: Array<{ name: string; sets: number }>;
   exerciseNotesUpdated: string[];
   globalNoteUpdated: boolean;
 }
@@ -151,7 +151,7 @@ export async function saveSuggestions({
     const logged = await hasLogOn(userId, exercise.id, target);
     if (logged) {
       throw new SuggestionRejected(
-        `"${exercise.nameEn}" was already logged on ${date}. ` +
+        `"${exercise.name}" was already logged on ${date}. ` +
           `A suggestion for a session that has happened cannot be changed.`,
       );
     }
@@ -178,8 +178,7 @@ export async function saveSuggestions({
     });
 
     saved.push({
-      nameFa: exercise.nameFa,
-      nameEn: exercise.nameEn,
+      name: exercise.name,
       sets: sets.length,
     });
   }
@@ -195,7 +194,7 @@ export async function saveSuggestions({
     const notes = appendNote(existing?.notes, note, noteDate);
     await setExerciseMemory(exercise.id, notes);
 
-    exerciseNotesUpdated.push(exercise.nameEn);
+    exerciseNotesUpdated.push(exercise.name);
   }
 
   let globalNoteUpdated = false;

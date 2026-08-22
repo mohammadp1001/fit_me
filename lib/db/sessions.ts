@@ -20,8 +20,7 @@ const SESSION_LOG_INCLUDE = {
       exercise: {
         select: {
           id: true,
-          nameFa: true,
-          nameEn: true,
+          name: true,
           musclesPrimary: true,
           musclesSecondary: true,
         },

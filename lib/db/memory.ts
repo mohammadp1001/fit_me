@@ -36,7 +36,7 @@ export async function setExerciseMemory(exerciseId: number, notes: string) {
 export async function listExerciseMemory(userId: number) {
   return prisma.exerciseMemory.findMany({
     where: { exercise: { userId } },
-    include: { exercise: { select: { nameFa: true, nameEn: true } } },
+    include: { exercise: { select: { name: true } } },
     orderBy: { exerciseId: "asc" },
   });
 }

@@ -45,7 +45,7 @@ export default function ProgramView({
             className="text-xs font-semibold"
             style={{ color: "var(--muted)" }}
           >
-            {locale === "fa" ? program.nameFa : program.nameEn}
+            {program.name}
           </span>
           <span
             className="text-lg font-black"
@@ -72,7 +72,7 @@ export default function ProgramView({
                   fontFamily: "inherit",
                 }}
               >
-                {locale === "fa" ? d.nameFa.split("—")[0]?.trim() || d.nameFa : d.nameEn.split("—")[0]?.trim() || d.nameEn}
+                {locale === "fa" ? d.name.split("—")[0]?.trim() || d.name : d.name.split("—")[0]?.trim() || d.name}
               </button>
             );
           })}
@@ -87,7 +87,7 @@ export default function ProgramView({
               className="text-sm font-bold mb-3"
               style={{ color }}
             >
-              {locale === "fa" ? day.nameFa : day.nameEn}
+              {day.name}
             </div>
             <ExerciseList
               locale={locale}
@@ -149,7 +149,7 @@ function ExerciseList({
             const borderColor = group.group ? "#f59e0b" : dayColor;
             const repsLabel = ex.reps.join(locale === "fa" ? "، " : ", ");
             const name =
-              locale === "fa" ? ex.exercise.nameFa : ex.exercise.nameEn;
+              ex.exercise.name;
             // Primaries only: this row already carries three lines of small
             // muted text, and appending secondaries buries the signal.
             const muscles = ex.exercise.musclesPrimary

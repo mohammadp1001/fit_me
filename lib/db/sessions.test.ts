@@ -37,16 +37,14 @@ beforeAll(async () => {
   const a = await prisma.exercise.create({
     data: {
       userId,
-      nameFa: `تست جلسه الف ${TAG}`,
-      nameEn: `Session Exercise A ${TAG}`,
+      name: `Session Exercise A ${TAG}`,
       musclesPrimary: ["pec_major_sternal"],
     },
   });
   const b = await prisma.exercise.create({
     data: {
       userId,
-      nameFa: `تست جلسه ب ${TAG}`,
-      nameEn: `Session Exercise B ${TAG}`,
+      name: `Session Exercise B ${TAG}`,
       musclesPrimary: ["triceps_brachii"],
     },
   });
@@ -56,10 +54,9 @@ beforeAll(async () => {
   const program = await prisma.program.create({
     data: {
       userId,
-      nameFa: `برنامه جلسه ${TAG}`,
-      nameEn: `Session Program ${TAG}`,
+      name: `Session Program ${TAG}`,
       yamlContent: "",
-      days: { create: [{ dayNumber: 1, nameFa: "Day 1", nameEn: "Day 1" }] },
+      days: { create: [{ dayNumber: 1, name: "Day 1" }] },
     },
     include: { days: true },
   });

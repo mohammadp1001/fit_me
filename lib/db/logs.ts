@@ -199,8 +199,7 @@ export async function listLogsSince(userId: number, from: Date) {
       exercise: {
         select: {
           id: true,
-          nameFa: true,
-          nameEn: true,
+          name: true,
           musclesPrimary: true,
           musclesSecondary: true,
         },

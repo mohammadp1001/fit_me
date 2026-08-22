@@ -20,8 +20,7 @@ const DAY_COLORS: Record<number, string> = {
 
 export type ProgramData = {
   id: number;
-  nameFa: string;
-  nameEn: string;
+  name: string;
   startDate: string;
   days: DayData[];
 };
@@ -29,8 +28,7 @@ export type ProgramData = {
 export type DayData = {
   id: number;
   dayNumber: number;
-  nameFa: string;
-  nameEn: string;
+  name: string;
   exercises: ProgramExerciseData[];
 };
 
@@ -45,16 +43,12 @@ export type ProgramExerciseData = {
 
 export type ExerciseData = {
   id: number;
-  nameFa: string;
-  nameEn: string;
+  name: string;
   musclesPrimary: Muscle[];
   musclesSecondary: Muscle[];
-  descriptionFa: string;
-  descriptionEn: string;
-  tipsFa: string[];
-  tipsEn: string[];
-  mistakesFa: string[];
-  mistakesEn: string[];
+  description: string;
+  tips: string[];
+  mistakes: string[];
   wikiUrl: string;
   videoUrl: string;
 };
@@ -74,8 +68,7 @@ export type UserData = {
 
 export type ProgramSummary = {
   id: number;
-  nameFa: string;
-  nameEn: string;
+  name: string;
   startDate: string;
   isActive: boolean;
 };

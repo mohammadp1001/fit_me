@@ -34,17 +34,17 @@ describe("Suggestion & coach-memory models", () => {
     }
 
     const exercise = await prisma.exercise.create({
-      data: { userId, nameFa: `Test Exercise FA ${Date.now()}`, nameEn: "Test Exercise", musclesPrimary: ["pec_major_sternal"] },
+      data: { userId, name: `Test Exercise ${Date.now()}`, musclesPrimary: ["pec_major_sternal"] },
     });
     exerciseId = exercise.id;
 
     const program = await prisma.program.create({
-      data: { userId, nameFa: "Test Program FA", nameEn: "Test Program", yamlContent: "" },
+      data: { userId, name: "Test Program", yamlContent: "" },
     });
     programId = program.id;
 
     const day = await prisma.programDay.create({
-      data: { programId: program.id, dayNumber: 1, nameFa: "Day 1 FA", nameEn: "Day 1" },
+      data: { programId: program.id, dayNumber: 1, name: "Day 1" },
     });
     dayId = day.id;
 

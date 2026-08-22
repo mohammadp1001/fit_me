@@ -131,8 +131,7 @@ export async function getSessionDetail({
   return {
     ...summarise(session, timeZone),
     exercises: session.logs.map((log) => ({
-      name: log.exercise?.nameEn ?? "(deleted exercise)",
-      nameFa: log.exercise?.nameFa ?? null,
+      name: log.exercise?.name ?? "(deleted exercise)",
       // Each exercise carries its own time, so the coach can see the order and
       // the pacing of the workout, not just its contents.
       at: localTime(log.loggedAt, timeZone),

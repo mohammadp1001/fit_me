@@ -11,15 +11,12 @@ import { Muscle } from "@prisma/client";
 const MuscleSchema = z.nativeEnum(Muscle);
 
 const updateSchema = z.object({
-  nameEn: z.string().optional(),
+  name: z.string().optional(),
   musclesPrimary: z.array(MuscleSchema).min(1).optional(),
   musclesSecondary: z.array(MuscleSchema).optional(),
-  descriptionFa: z.string().optional(),
-  descriptionEn: z.string().optional(),
-  tipsFa: z.array(z.string()).optional(),
-  tipsEn: z.array(z.string()).optional(),
-  mistakesFa: z.array(z.string()).optional(),
-  mistakesEn: z.array(z.string()).optional(),
+  description: z.string().optional(),
+  tips: z.array(z.string()).optional(),
+  mistakes: z.array(z.string()).optional(),
   wikiUrl: z.string().optional(),
   videoUrl: z.string().optional(),
 }).refine(

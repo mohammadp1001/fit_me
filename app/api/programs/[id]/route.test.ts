@@ -22,11 +22,10 @@ async function makeProgram(isActive: boolean, exerciseId: number) {
   const program = await prisma.program.create({
     data: {
       userId: 1,
-      nameFa: PROGRAM_NAME,
-      nameEn: PROGRAM_NAME,
+      name: PROGRAM_NAME,
       yamlContent: "",
       isActive,
-      days: { create: [{ dayNumber: 1, nameFa: "Day 1", nameEn: "Day 1" }] },
+      days: { create: [{ dayNumber: 1, name: "Day 1" }] },
     },
     include: { days: true },
   });
@@ -85,8 +84,7 @@ describe("workout history outlives the program it was logged under", () => {
     const exercise = await prisma.exercise.create({
       data: {
         userId: 1,
-        nameFa: `تست حرکت ${Date.now()}`,
-        nameEn: `Progress Ownership Exercise ${Date.now()}`,
+        name: `Progress Ownership Exercise ${Date.now()}`,
         musclesPrimary: ["pec_major_sternal"],
       },
     });
@@ -96,7 +94,7 @@ describe("workout history outlives the program it was logged under", () => {
   afterEach(async () => {
     await prisma.workoutLog.deleteMany({ where: { exerciseId } });
     const programs = await prisma.program.findMany({
-      where: { nameFa: PROGRAM_NAME },
+      where: { name: PROGRAM_NAME },
       select: { id: true },
     });
     for (const p of programs) {
