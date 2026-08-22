@@ -3,9 +3,11 @@ import { isAuthenticated } from "@/lib/session";
 import { currentUserId } from "@/lib/db/current-user";
 import {
   exerciseIdForSlot,
+  expandPlannedReps,
   listActiveProgramLogs,
   listExerciseHistory,
   listLogsForExercise,
+  slotTarget,
   upsertLog,
 } from "@/lib/db/logs";
 import { z } from "zod";
@@ -37,19 +39,23 @@ export async function POST(request: NextRequest) {
   // The client still posts the program slot it was logged from - that is what
   // the UI has to hand. The log is keyed on the *exercise* it trains, so that
   // it outlives the program.
-  const exerciseId = await exerciseIdForSlot(programExerciseId);
-  if (exerciseId === null) {
+  const slot = await slotTarget(programExerciseId);
+  if (slot === null) {
     return NextResponse.json(
       { error: "Unknown programExerciseId" },
       { status: 400 }
     );
   }
 
+  // Read from the slot, never from the request: the target is a fact about the
+  // program, and a client that could name its own target could log a session
+  // that met a goal nobody set.
   const log = await upsertLog(await currentUserId(), {
-    exerciseId,
+    exerciseId: slot.exerciseId,
     programExerciseId,
     date: new Date(date),
     sets,
+    plannedReps: expandPlannedReps(slot.setsCount, slot.reps),
   });
 
   return NextResponse.json({ log });
