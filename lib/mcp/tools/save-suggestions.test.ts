@@ -2,6 +2,7 @@
  * @jest-environment node
  */
 import { PrismaClient } from "@prisma/client";
+import { createLogFixture } from "@/lib/db/test-fixtures";
 import { saveSuggestions, SuggestionRejected } from "./save-suggestions";
 import { ExerciseNotFoundError } from "@/lib/db/exercises";
 import { parseNote } from "@/lib/coach-notes";
@@ -258,13 +259,11 @@ describe("guards that survive an always-allow client", () => {
   it("refuses to overwrite a day that was already logged", async () => {
     // Once sets are logged the suggestion is history. Replacing it would
     // rewrite what the user was told at the time.
-    await prisma.workoutLog.create({
-      data: {
-        userId: 1,
-        exerciseId: benchId,
-        date: dayOnly(TODAY),
-        sets: [{ weight: 60, reps: 8 }],
-      },
+    await createLogFixture(prisma, {
+      userId: 1,
+      exerciseId: benchId,
+      date: dayOnly(TODAY),
+      sets: [{ weight: 60, reps: 8 }],
     });
 
     await expect(

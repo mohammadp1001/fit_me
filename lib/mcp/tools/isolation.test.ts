@@ -2,6 +2,7 @@
  * @jest-environment node
  */
 import { PrismaClient } from "@prisma/client";
+import { createLogFixture } from "@/lib/db/test-fixtures";
 import {
   getBodyWeight,
   getCoachMemory,
@@ -94,13 +95,11 @@ async function makeAccount(label: string, weight: number) {
   // The last session is 3 days back so it falls inside the trailing 7-day
   // volume window, which is inclusive of today (today - 6 days).
   for (const ago of [21, 14, 3]) {
-    await prisma.workoutLog.create({
-      data: {
-        userId: user.id,
-        exerciseId: exercise.id,
-        date: daysAgo(ago),
-        sets: [{ weight, reps: 8 }],
-      },
+    await createLogFixture(prisma, {
+      userId: user.id,
+      exerciseId: exercise.id,
+      date: daysAgo(ago),
+      sets: [{ weight, reps: 8 }],
     });
   }
 
@@ -393,13 +392,11 @@ describe("save_suggestions", () => {
     // Bob trained today; Alice did not. A guard that ignored the owner would
     // refuse Alice's suggestion because of Bob's session.
     const today = new Date(NOW.toISOString().slice(0, 10));
-    const bobLog = await prisma.workoutLog.create({
-      data: {
-        userId: bob,
-        exerciseId: bobExercise,
-        date: today,
-        sets: [{ weight: 100, reps: 8 }],
-      },
+    const bobLog = await createLogFixture(prisma, {
+      userId: bob,
+      exerciseId: bobExercise,
+      date: today,
+      sets: [{ weight: 100, reps: 8 }],
     });
 
     try {

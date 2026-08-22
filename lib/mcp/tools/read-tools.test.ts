@@ -2,6 +2,7 @@
  * @jest-environment node
  */
 import { PrismaClient } from "@prisma/client";
+import { createLogFixture } from "@/lib/db/test-fixtures";
 import {
   getBodyWeight,
   getCoachMemory,
@@ -128,28 +129,24 @@ beforeAll(async () => {
     [7, 65],
   ];
   for (const [ago, weight] of benchSessions) {
-    await prisma.workoutLog.create({
-      data: {
-        userId: 1,
-        exerciseId: benchId,
-        date: daysAgo(ago),
-        sets: [
-          { weight, reps: 8 },
-          { weight, reps: 8 },
-        ],
-      },
+    await createLogFixture(prisma, {
+      userId: 1,
+      exerciseId: benchId,
+      date: daysAgo(ago),
+      sets: [
+        { weight, reps: 8 },
+        { weight, reps: 8 },
+      ],
     });
   }
 
   // Squat is flat: the last three sessions beat nothing earlier.
   for (const ago of [28, 21, 14, 3]) {
-    await prisma.workoutLog.create({
-      data: {
-        userId: 1,
-        exerciseId: squatId,
-        date: daysAgo(ago),
-        sets: [{ weight: 100, reps: 5 }],
-      },
+    await createLogFixture(prisma, {
+      userId: 1,
+      exerciseId: squatId,
+      date: daysAgo(ago),
+      sets: [{ weight: 100, reps: 5 }],
     });
   }
 
@@ -398,13 +395,11 @@ describe("getVolume", () => {
 
     const before = await totals();
 
-    const log = await prisma.workoutLog.create({
-      data: {
-        userId: 1,
-        exerciseId: squatId,
-        date: daysAgo(1),
-        sets: [{ weight: 100, reps: 5 }],
-      },
+    const log = await createLogFixture(prisma, {
+      userId: 1,
+      exerciseId: squatId,
+      date: daysAgo(1),
+      sets: [{ weight: 100, reps: 5 }],
     });
 
     try {
