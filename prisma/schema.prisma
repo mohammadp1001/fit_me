@@ -222,6 +222,23 @@ model WorkoutLog {
   programExerciseId Int?
   date              DateTime         @db.Date
   sets              Json
+  /// What the program asked for, copied in at save time - one entry per
+  /// planned set, index-aligned with `sets`.
+  ///
+  /// The target used to live only on `ProgramExercise`, and those rows are
+  /// remade from scratch by every upload and detached entirely when a program
+  /// is deleted. So "did I hit my reps?" quietly became unanswerable as
+  /// programs came and went. A copy makes the row readable on its own, forever,
+  /// for the same reason `exerciseId` is here rather than only the slot.
+  ///
+  /// Stored expanded rather than as the slot's raw `reps`, which may be shorter
+  /// than `setsCount` and relies on a repeat-the-last-value rule at read time.
+  /// Expanding once at write removes the rule, and makes the planned set count
+  /// simply the array's length.
+  ///
+  /// Written on create and never on update: a later edit must not re-snapshot
+  /// against whatever program happens to be active by then.
+  plannedReps       Int[]            @default([])
   user              User             @relation(fields: [userId], references: [id])
   exercise          Exercise?        @relation(fields: [exerciseId], references: [id])
   programExercise   ProgramExercise? @relation(fields: [programExerciseId], references: [id], onDelete: SetNull)
