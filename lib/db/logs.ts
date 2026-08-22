@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
+import { joinsSession } from "@/lib/sessions";
 
 /**
  * Workout logs.
@@ -44,6 +45,18 @@ export function expandPlannedReps(setsCount: number, reps: number[]): number[] {
   return Array.from({ length: setsCount }, (_, i) => reps[i] ?? last);
 }
 
+/**
+ * Saves a logged exercise, placing it in a workout session.
+ *
+ * One transaction, because the session a log lands in is decided by reading the
+ * user's most recent session: two exercises saved seconds apart must not each
+ * conclude there is no session to join and create one.
+ *
+ * An edit to an existing log touches only its sets. It keeps the session, the
+ * `loggedAt` and the `plannedReps` it was first written with - a correction
+ * made days later must not move a workout's boundaries or re-measure it against
+ * a program that did not exist at the time.
+ */
 export async function upsertLog(
   userId: number,
   {
@@ -52,23 +65,83 @@ export async function upsertLog(
     date,
     sets,
     plannedReps,
+    at = new Date(),
   }: {
     exerciseId: number;
     programExerciseId: number;
     date: Date;
     sets: Prisma.InputJsonValue;
     plannedReps: number[];
+    /** The instant of this save. Injectable so tests can place logs in time. */
+    at?: Date;
   },
 ) {
-  return prisma.workoutLog.upsert({
-    where: { userId_exerciseId_date: { userId, exerciseId, date } },
-    // `plannedReps` is deliberately absent from the update. It records what was
-    // asked for when the session was first logged; re-snapshotting on a later
-    // edit would measure that session against whatever program is active by
-    // then, which is exactly the drift the column exists to prevent.
-    update: { sets, programExerciseId },
-    create: { userId, exerciseId, programExerciseId, date, sets, plannedReps },
+  return prisma.$transaction(async (tx) => {
+    const existing = await tx.workoutLog.findUnique({
+      where: { userId_exerciseId_date: { userId, exerciseId, date } },
+      select: { id: true },
+    });
+
+    if (existing) {
+      return tx.workoutLog.update({
+        where: { id: existing.id },
+        data: { sets, programExerciseId },
+      });
+    }
+
+    const sessionId = await sessionFor(tx, userId, at);
+
+    return tx.workoutLog.create({
+      data: {
+        userId,
+        exerciseId,
+        programExerciseId,
+        date,
+        sets,
+        plannedReps,
+        loggedAt: at,
+        sessionId,
+      },
+    });
   });
+}
+
+/**
+ * The session a log made at `at` belongs to, opening one if needed.
+ *
+ * Joining widens the session to contain the new instant. `startedAt` is only
+ * ever pulled earlier and `endedAt` only ever pushed later, so a log that
+ * arrives slightly out of order cannot shrink a workout.
+ */
+async function sessionFor(
+  tx: Prisma.TransactionClient,
+  userId: number,
+  at: Date,
+): Promise<number> {
+  const latest = await tx.workoutSession.findFirst({
+    where: { userId },
+    orderBy: { endedAt: "desc" },
+    select: { id: true, startedAt: true, endedAt: true },
+  });
+
+  if (latest && joinsSession(latest.endedAt, at)) {
+    if (at > latest.endedAt || at < latest.startedAt) {
+      await tx.workoutSession.update({
+        where: { id: latest.id },
+        data: {
+          startedAt: at < latest.startedAt ? at : latest.startedAt,
+          endedAt: at > latest.endedAt ? at : latest.endedAt,
+        },
+      });
+    }
+    return latest.id;
+  }
+
+  const created = await tx.workoutSession.create({
+    data: { userId, startedAt: at, endedAt: at },
+    select: { id: true },
+  });
+  return created.id;
 }
 
 /** Newest first. Used by the exercise-detail history list. */

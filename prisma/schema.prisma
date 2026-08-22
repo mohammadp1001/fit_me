@@ -39,6 +39,7 @@ model User {
   programs     Program[]
   bodyWeights  BodyWeight[]
   workoutLogs  WorkoutLog[]
+  sessions     WorkoutSession[]
   exercises    Exercise[]
   globalMemory GlobalMemory?
   invitesSent  Invite[]      @relation("InviteCreator")
@@ -239,11 +240,53 @@ model WorkoutLog {
   /// Written on create and never on update: a later edit must not re-snapshot
   /// against whatever program happens to be active by then.
   plannedReps       Int[]            @default([])
+  /// When Save was first pressed for this exercise. Never touched by a later
+  /// edit - that is what `updatedAt` is for.
+  ///
+  /// The distinction is what keeps session boundaries honest: a session's start
+  /// and end are the earliest and latest `loggedAt` it contains, so fixing a
+  /// typo in Monday's bench on Thursday must not stretch Monday's session to
+  /// three days long.
+  loggedAt          DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  /// The workout this was logged during. Required: sessions are assigned on
+  /// write, and a log with no session is a log nothing can group.
+  sessionId         Int
+  session           WorkoutSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   user              User             @relation(fields: [userId], references: [id])
   exercise          Exercise?        @relation(fields: [exerciseId], references: [id])
   programExercise   ProgramExercise? @relation(fields: [programExerciseId], references: [id], onDelete: SetNull)
 
   @@unique([userId, exerciseId, date])
+  @@index([sessionId])
+}
+
+/// One workout: the exercises logged near each other in time.
+///
+/// Nothing used to group logs at all - a "session" was only ever inferred from
+/// rows that happened to share a calendar date, which merged a morning leg
+/// workout and an evening arm workout into one and gave neither a time.
+///
+/// There is no start or finish button, on purpose. A derived boundary cannot
+/// be forgotten, and a forgotten Finish leaves worse data than no button at
+/// all. A log joins the most recent session if that session's last `loggedAt`
+/// is within `SESSION_GAP_MS` (see `lib/sessions.ts`), and otherwise opens a
+/// new one.
+///
+/// `startedAt` and `endedAt` are the earliest and latest `loggedAt` of the logs
+/// inside, maintained on write so reads never have to aggregate. Which local
+/// day a session belongs to is derived from `startedAt` and the user's
+/// timezone - it is not stored, because storing it would let the two disagree.
+model WorkoutSession {
+  id        Int          @id @default(autoincrement())
+  userId    Int
+  startedAt DateTime
+  endedAt   DateTime
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs      WorkoutLog[]
+
+  @@index([userId, startedAt])
+  @@index([userId, endedAt])
 }
 
 model Suggestion {
