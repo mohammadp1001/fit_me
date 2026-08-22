@@ -135,6 +135,8 @@ export default function OnboardingForm({ locale }: { locale: string }) {
                   </label>
                   <input
                     type="number"
+                    step="any"
+                    min="0"
                     value={weight}
                     onChange={(e) => setWeight(e.target.value)}
                     placeholder="70"
@@ -163,6 +165,8 @@ export default function OnboardingForm({ locale }: { locale: string }) {
                   </label>
                   <input
                     type="number"
+                    step="any"
+                    min="0"
                     value={height}
                     onChange={(e) => setHeight(e.target.value)}
                     placeholder="175"

@@ -221,6 +221,8 @@ export default function ProfileView({
             <div className="flex gap-3">
               <input
                 type="number"
+                step="any"
+                min="0"
                 value={weight}
                 onChange={(e) => setWeight(e.target.value)}
                 placeholder={t("profile.weight")}
@@ -233,6 +235,8 @@ export default function ProfileView({
               />
               <input
                 type="number"
+                step="any"
+                min="0"
                 value={height}
                 onChange={(e) => setHeight(e.target.value)}
                 placeholder={t("profile.height")}
