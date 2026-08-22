@@ -42,7 +42,10 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # 22+ is required for `--experimental-strip-types`, which the seed
+          # scripts run on. The repo already assumed it (`db:seed` uses the same
+          # flag); CI simply never executed one of those scripts until now.
+          node-version: 22
           cache: npm
 
       # Use `npm install` rather than `npm ci`: the committed lockfile is
