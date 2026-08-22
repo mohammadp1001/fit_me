@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 import type { ParsedProgram } from "@/lib/yaml-parser";
-import { findExerciseByName } from "./exercises";
+import { exerciseIdFor, findExerciseByName } from "./exercises";
+import { addPersonal, entryForRow } from "./library";
 
 /**
  * Programs, days and slots.
@@ -21,17 +23,45 @@ const FULL_PROGRAM = {
     include: {
       exercises: {
         orderBy: { displayOrder: "asc" as const },
-        include: { exercise: true },
+        // The catalog comes along because an inherited row carries no values of
+        // its own - see `entryForRow`.
+        include: { exercise: { include: { catalog: true } } },
       },
     },
   },
 };
 
+type RawProgram = Prisma.ProgramGetPayload<{ include: typeof FULL_PROGRAM }>;
+
+/**
+ * Folds each slot's exercise into its resolved library entry.
+ *
+ * Screens read `exercise.name`, and on an inherited row that column is null -
+ * the values live in the catalog. Resolving here means no caller has to know
+ * the rule, and none of them can forget it.
+ */
+function withResolvedExercises(program: RawProgram) {
+  return {
+    ...program,
+    days: program.days.map((day) => ({
+      ...day,
+      exercises: day.exercises.map((slot) => ({
+        ...slot,
+        exercise: {
+          ...entryForRow(slot.exercise),
+          id: slot.exercise.id,
+        },
+      })),
+    })),
+  };
+}
+
 export async function getActiveProgram(userId: number) {
-  return prisma.program.findFirst({
+  const program = await prisma.program.findFirst({
     where: { userId, isActive: true },
     include: FULL_PROGRAM,
   });
+  return program && withResolvedExercises(program);
 }
 
 export async function getProgramById(userId: number, id: number) {
@@ -181,58 +211,39 @@ export async function installProgram(
     for (let exIdx = 0; exIdx < day.exercises.length; exIdx++) {
       const ex = day.exercises[exIdx];
 
-      // Creating on a miss is this path's own behaviour: a YAML naming a new
-      // movement should add it. The MCP tools must never create - see
+      // Resolve against the user's library - the shared catalog plus their
+      // own additions. Creating on a miss is this path's own behaviour: a YAML
+      // naming a movement the catalog does not have should add it as a
+      // personal exercise. The MCP tools must never create - see
       // `resolveExerciseStrict` in `lib/db/exercises.ts`.
       const found = await findExerciseByName(userId, ex.name);
-      let dbExercise = found
-        ? await prisma.exercise.findUnique({ where: { id: found.id } })
-        : null;
 
-      if (!dbExercise) {
-        dbExercise = await prisma.exercise.create({
-          data: {
-            userId,
-            // The YAML has only ever had one `name` per exercise, so there is
-            // nothing to choose between. Prose still prefers `_en` below; #77
-            // removes those keys from the format entirely.
+      // Materialise even for a catalog hit: a program slot points at
+      // `Exercise.id`, so the row has to exist before it can be referenced.
+      const exerciseId = found
+        ? await exerciseIdFor(userId, found)
+        : await addPersonal(userId, {
             name: ex.name,
             musclesPrimary: ex.musclesPrimary,
             musclesSecondary: ex.musclesSecondary,
-            videoUrl: ex.video ?? "",
             description: ex.description_en ?? ex.description ?? "",
-            tips: ex.tips_en ?? ex.tips ?? [],
-            mistakes: ex.mistakes_en ?? ex.mistakes ?? [],
-          },
-        });
-      } else {
-        // Muscles and the video URL are overwritten; prose is backfill-only.
-        // Muscles come from a closed enum where every value is valid, and a
-        // video URL is a single pointer that is either right or wrong - there
-        // is nothing to protect, and overwriting is the only way a user can
-        // ever correct a mis-tagged exercise or a stale link. `ex.video` is
-        // still guarded, so an upload that omits `video:` leaves the stored
-        // URL alone rather than blanking it.
+            videoUrl: ex.video ?? "",
+          });
+
+      // A catalog exercise the user has not overridden keeps inheriting, so an
+      // upload no longer rewrites anatomy. That was the whole reason a sloppy
+      // YAML could corrupt the volume chart. Only a personal exercise - one
+      // this account owns outright - can be updated from a file.
+      if (found?.source === "personal" && found.exerciseId !== null) {
         const patch: Record<string, unknown> = {
           musclesPrimary: ex.musclesPrimary,
           musclesSecondary: ex.musclesSecondary,
         };
-        const descEn = ex.description_en ?? ex.description;
-        const tips = ex.tips_en ?? ex.tips;
-        const mistakes = ex.mistakes_en ?? ex.mistakes;
         if (ex.video) patch.videoUrl = ex.video;
-        if (ex.description && !dbExercise.description) patch.description = ex.description;
-        if (descEn && !dbExercise.description) patch.description = descEn;
-        if (ex.tips?.length && dbExercise.tips.length === 0) patch.tips = ex.tips;
-        if (tips?.length && dbExercise.tips.length === 0) patch.tips = tips;
-        if (ex.mistakes?.length && dbExercise.mistakes.length === 0) patch.mistakes = ex.mistakes;
-        if (mistakes?.length && dbExercise.mistakes.length === 0) patch.mistakes = mistakes;
-        if (Object.keys(patch).length > 0) {
-          dbExercise = await prisma.exercise.update({
-            where: { id: dbExercise.id },
-            data: patch,
-          });
-        }
+        await prisma.exercise.update({
+          where: { id: found.exerciseId },
+          data: patch,
+        });
       }
 
       let supersetGroup: string | null = null;
@@ -248,7 +259,7 @@ export async function installProgram(
       await prisma.programExercise.create({
         data: {
           dayId: dbDay.id,
-          exerciseId: dbExercise.id,
+          exerciseId,
           setsCount: ex.sets,
           reps: Array.isArray(ex.reps) ? ex.reps : [ex.reps],
           displayOrder: exIdx,

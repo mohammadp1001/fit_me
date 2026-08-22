@@ -1,7 +1,6 @@
 import { randomBytes, createHash } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
-import { seedExerciseLibrary } from "./exercise-template";
 import { DEFAULT_TIME_ZONE } from "@/lib/time";
 
 /**
@@ -108,11 +107,11 @@ export type SignupResult =
  * a `redeemedAt: null` guard, so two people racing the same link cannot both
  * get an account from it.
  *
- * The new account gets its own copy of the template exercise library - see
- * `seedExerciseLibrary`. That happens outside the transaction on purpose: it is
- * ~30 inserts, and holding a transaction open for it would serialise signups
- * for no benefit. A failure there leaves a usable account with an empty
- * library, which the next YAML upload fills in anyway.
+ * The account starts with a full library and no exercise rows at all: a
+ * library is the shared catalog plus whatever the account adds, so there is
+ * nothing to seed. This used to copy ~30 template rows per signup, which with
+ * a 676-entry catalog would mean hundreds of duplicated rows per account that
+ * went stale the moment a catalog entry was corrected.
  */
 export async function redeemInvite(
   token: string,
@@ -179,8 +178,6 @@ export async function redeemInvite(
     }
     throw err;
   }
-
-  await seedExerciseLibrary(userId);
 
   return { ok: true, userId };
 }
@@ -346,8 +343,6 @@ export async function claimLegacyAccount({
     }
     throw err;
   }
-
-  await seedExerciseLibrary(userId);
 
   return { ok: true, userId };
 }

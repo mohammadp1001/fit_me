@@ -182,12 +182,12 @@ afterAll(async () => {
 describe("exercise name resolution", () => {
   it("resolves by English name", async () => {
     const found = await resolveExerciseStrict(1, `Bench Press ${TAG}`);
-    expect(found.id).toBe(benchId);
+    expect(found.exerciseId).toBe(benchId);
   });
 
   it("trims surrounding whitespace", async () => {
     const found = await resolveExerciseStrict(1, `  Bench Press ${TAG}  `);
-    expect(found.id).toBe(benchId);
+    expect(found.exerciseId).toBe(benchId);
   });
 
   it("refuses an unknown name and creates nothing", async () => {
@@ -232,7 +232,7 @@ describe("exercise name resolution", () => {
       ).rejects.toThrow();
 
       const found = await resolveExerciseStrict(1, `Ambiguous ${TAG}`);
-      expect(found.id).toBe(dup.id);
+      expect(found.exerciseId).toBe(dup.id);
     } finally {
       await prisma.exercise.deleteMany({ where: { id: dup.id } });
     }

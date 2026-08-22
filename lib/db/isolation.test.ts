@@ -99,9 +99,9 @@ describe("the exercise library is per user", () => {
     const forAlice = await resolveExerciseStrict(alice, SHARED_NAME);
     const forBob = await resolveExerciseStrict(bob, SHARED_NAME);
 
-    expect(forAlice.id).toBe(aliceExercise);
-    expect(forBob.id).toBe(bobExercise);
-    expect(forAlice.id).not.toBe(forBob.id);
+    expect(forAlice.exerciseId).toBe(aliceExercise);
+    expect(forBob.exerciseId).toBe(bobExercise);
+    expect(forAlice.exerciseId).not.toBe(forBob.exerciseId);
   });
 
   it("does not see another account's exercise at all", async () => {
@@ -150,7 +150,7 @@ describe("the exercise library is per user", () => {
       // must not appear is Bob's row - neither its name in the text nor its id
       // in the suggestions.
       expect(error!.message).not.toContain(bobOnly);
-      expect(error!.suggestions.every((s) => s.id !== created.id)).toBe(true);
+      expect(error!.suggestions.every((s) => s.exerciseId !== created.id)).toBe(true);
     } finally {
       await prisma.exercise.delete({ where: { id: created.id } });
     }
@@ -161,10 +161,10 @@ describe("the exercise library is per user", () => {
     // row with that name inside *one* account is what the constraint refuses -
     // which is also why the resolver no longer needs an ambiguity case.
     await expect(resolveExerciseStrict(alice, SHARED_NAME)).resolves.toMatchObject(
-      { id: aliceExercise },
+      { exerciseId: aliceExercise },
     );
     await expect(resolveExerciseStrict(bob, SHARED_NAME)).resolves.toMatchObject(
-      { id: bobExercise },
+      { exerciseId: bobExercise },
     );
 
     await expect(
@@ -178,13 +178,28 @@ describe("the exercise library is per user", () => {
     ).rejects.toThrow();
   });
 
-  it("lists only the caller's library", async () => {
-    const forAlice = await listExercises(alice, { limit: 500 });
-    const forBob = await listExercises(bob, { limit: 500 });
+  // A library is the shared catalog plus the account's own additions, so both
+  // accounts legitimately see the same hundreds of catalog exercises. What must
+  // never cross is a personal one.
+  it("shows each account its own additions and never the other's", async () => {
+    const aliceOnly = `Alice Only ${TAG}`;
+    const created = await prisma.exercise.create({
+      data: { userId: alice, name: aliceOnly, musclesPrimary: ["lats"] },
+    });
 
-    expect(forAlice.some((e) => e.name === SHARED_NAME)).toBe(true);
-    expect(forBob).toHaveLength(1);
-    expect(forBob[0].musclesPrimary).toEqual(["lats"]);
+    try {
+      const forAlice = await listExercises(alice, { limit: 5000 });
+      const forBob = await listExercises(bob, { limit: 5000 });
+
+      expect(forAlice.some((e) => e.name === aliceOnly)).toBe(true);
+      expect(forBob.some((e) => e.name === aliceOnly)).toBe(false);
+
+      // Both still see the shared catalog, which is the point of having one.
+      expect(forAlice.length).toBeGreaterThan(100);
+      expect(forBob.length).toBeGreaterThan(100);
+    } finally {
+      await prisma.exercise.delete({ where: { id: created.id } });
+    }
   });
 });
 

@@ -29,6 +29,10 @@ export interface CatalogEntry {
   level: string;
   mechanic: string;
   force: string;
+  tips?: string[];
+  mistakes?: string[];
+  videoUrl?: string;
+  wikiUrl?: string;
 }
 
 const CATALOG_PATH = join(process.cwd(), "prisma", "catalog", "exercises.json");
@@ -93,13 +97,19 @@ export async function seedCatalog(
       mechanic: entry.mechanic,
       force: entry.force,
     };
+    // Curated fields are written only when the source file actually carries
+    // them. Entries imported from upstream leave them alone, so hand-curation
+    // done directly in the database survives a re-seed.
+    const curated = {
+      ...(entry.tips?.length ? { tips: entry.tips } : {}),
+      ...(entry.mistakes?.length ? { mistakes: entry.mistakes } : {}),
+      ...(entry.videoUrl ? { videoUrl: entry.videoUrl } : {}),
+      ...(entry.wikiUrl ? { wikiUrl: entry.wikiUrl } : {}),
+    };
     await prisma.exerciseCatalog.upsert({
       where: { slug: entry.slug },
-      // `tips`, `mistakes` and `videoUrl` are deliberately absent from the
-      // update: they are empty in the import and exist to be curated by hand.
-      // Re-seeding must not wipe curation.
-      update: data,
-      create: { slug: entry.slug, ...data },
+      update: { ...data, ...curated },
+      create: { slug: entry.slug, ...data, ...curated },
     });
   }
   return { written: entries.length };

@@ -11,7 +11,7 @@
  * Source: https://github.com/yuhonas/free-exercise-db (Unlicense, public
  * domain, no attribution required).
  */
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 
 const SOURCE =
   "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json";
@@ -138,6 +138,21 @@ for (const entry of source) {
   });
 }
 
+// Hand-curated entries, merged on top of the import.
+//
+// These came from the seed library the app shipped before the catalog existed:
+// gym-machine movements the upstream source does not carry, with tips, common
+// mistakes and video links nobody generated - they were written by hand. They
+// live in their own checked-in file so regenerating from upstream cannot
+// silently drop them.
+const curated = JSON.parse(readFileSync("prisma/catalog/curated.json", "utf8"));
+let curatedAdded = 0;
+for (const entry of curated) {
+  if (bySlug.has(entry.slug)) continue;
+  bySlug.set(entry.slug, entry);
+  curatedAdded++;
+}
+
 const catalog = [...bySlug.values()].sort((a, b) => a.slug.localeCompare(b.slug));
 
 writeFileSync(
@@ -151,4 +166,5 @@ console.log(`dropped category  ${droppedCategory}`);
 console.log(`dropped neck      ${droppedNeck}`);
 console.log(`dropped no muscle ${droppedNoMuscle}`);
 console.log(`dropped duplicate ${droppedDuplicate}`);
+console.log(`curated added     ${curatedAdded}`);
 console.log(`written           ${catalog.length}`);

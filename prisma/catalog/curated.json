@@ -1,0 +1,661 @@
+[
+  {
+    "slug": "cable_lower_chest_press",
+    "name": "Cable Lower Chest Press",
+    "musclesPrimary": [
+      "pec_major_sternal"
+    ],
+    "musclesSecondary": [
+      "triceps_brachii"
+    ],
+    "description": "Grab the handles from high pulleys. Lean slightly forward. Push hands downward and inward. Hands meet below the chest at the bottom.",
+    "equipment": "",
+    "level": "",
+    "mechanic": "",
+    "force": "",
+    "tips": [
+      "Keep torso stable",
+      "Movement only from the shoulder joint"
+    ],
+    "mistakes": [
+      "Excessive trunk lean",
+      "Pulling handles with bent elbows"
+    ],
+    "videoUrl": "https://media.musclewiki.com/media/uploads/videos/branded/male-Cables-cable-pec-fly-side.mp4",
+    "wikiUrl": "https://musclewiki.com/exercise/cable-pec-fly"
+  },
+  {
+    "slug": "cable_pull_through_romanian_deadlift",
+    "name": "Cable Pull-Through (Romanian Deadlift)",
+    "musclesPrimary": [
+      "hamstrings",
+      "glute_max"
+    ],
+    "musclesSecondary": [
+      "erector_spinae"
+    ],
+    "description": "Stand facing away from the low cable. Hold the rope with both hands. Keep back straight. Hip hinge back until you feel hamstring stretch. Return up.",
+    "equipment": "",
+    "level": "",
+    "mechanic": "",
+    "force": "",
+    "tips": [
+      "Keep back completely straight throughout",
+      "Movement initiates from the hip, not the lower back"
+    ],
+    "mistakes": [
+      "Rounding the lower back",
+      "Too much knee bend"
+    ],
+    "videoUrl": "https://media.musclewiki.com/media/uploads/videos/branded/male-Cables-cable-pull-through-side.mp4",
+    "wikiUrl": "https://musclewiki.com/exercises/hamstrings"
+  },
+  {
+    "slug": "cable_reverse_bicep_curl",
+    "name": "Cable Reverse Bicep Curl",
+    "musclesPrimary": [
+      "brachioradialis"
+    ],
+    "musclesSecondary": [
+      "forearm_extensors",
+      "biceps_brachii"
+    ],
+    "description": "Like a cable curl but grip with palms facing down (pronated). Works more forearm.",
+    "equipment": "",
+    "level": "",
+    "mechanic": "",
+    "force": "",
+    "tips": [
+      "Use lighter weight than regular curls"
+    ],
+    "mistakes": [
+      "Bending the wrist during the movement"
+    ],
+    "videoUrl": "https://media.musclewiki.com/media/uploads/videos/branded/male-Cables-cable-reverse-bicep-curl-side.mp4",
+    "wikiUrl": "https://musclewiki.com/exercises/biceps"
+  },
+  {
+    "slug": "cable_rope_pushdown",
+    "name": "Cable Rope Pushdown",
+    "musclesPrimary": [
+      "triceps_brachii"
+    ],
+    "musclesSecondary": [],
+    "description": "Attach a rope handle to the high cable. Push forearms down and spread the rope apart at the bottom (V-shape).",
+    "equipment": "",
+    "level": "",
+    "mechanic": "",
+    "force": "",
+    "tips": [
+      "Spreading the rope at the bottom = more pressure on the lateral head"
+    ],
+    "mistakes": [
+      "Elbows swinging forward",
+      "Body swinging"
+    ],
+    "videoUrl": "https://media.musclewiki.com/media/uploads/videos/branded/male-Cables-cable-rope-pushdown-side.mp4",
+    "wikiUrl": "https://musclewiki.com/exercise/machine-tricep-pushdown"
+  },
+  {
+    "slug": "cable_tricep_pushdown",
+    "name": "Cable Tricep Pushdown",
+    "musclesPrimary": [
+      "triceps_brachii"
+    ],
+    "musclesSecondary": [],
+    "description": "Stand facing the machine. Keep elbows fixed at your sides. Push forearms down until fully extended.",
+    "equipment": "",
+    "level": "",
+    "mechanic": "",
+    "force": "",
+    "tips": [
+      "Elbows must not move — only the forearm moves"
+    ],
+    "mistakes": [
+      "Elbows swinging forward",
+      "Body swinging"
+    ],
+    "videoUrl": "https://media.musclewiki.com/media/uploads/videos/branded/male-Cables-cable-tricep-pushdown-side.mp4",
+    "wikiUrl": "https://musclewiki.com/exercise/machine-tricep-pushdown"
+  },
+  {
+    "slug": "close_grip_cable_bicep_curl",
+    "name": "Close-Grip Cable Bicep Curl",
+    "musclesPrimary": [
+      "biceps_brachii"
+    ],
+    "musclesSecondary": [
+      "brachialis"
+    ],
+    "description": "Attach a short bar to the low cable. Grip with both hands close together. Curl up until arms are fully contracted.",
+    "equipment": "",
+    "level": "",
+    "mechanic": "",
+    "force": "",
+    "tips": [
+      "Constant cable tension = more pressure throughout range of motion"
+    ],
+    "mistakes": [
+      "Leaning body back for assistance"
+    ],
+    "videoUrl": "https://media.musclewiki.com/media/uploads/videos/branded/male-Cables-cable-bar-curl-side.mp4",
+    "wikiUrl": "https://musclewiki.com/exercise/cable-bar-curl"
+  },
+  {
+    "slug": "dumbbell_incline_press",
+    "name": "Dumbbell Incline Press",
+    "musclesPrimary": [
+      "pec_major_clavicular"
+    ],
+    "musclesSecondary": [
+      "front_delt",
+      "triceps_brachii"
+    ],
+    "description": "Set bench to 30-45 degrees. Hold dumbbells at upper chest level. Press up and bring dumbbells slightly together at the top.",
+    "equipment": "",
+    "level": "",
+    "mechanic": "",
+    "force": "",
+    "tips": [
+      "Don't exceed 45-degree angle",
+      "Pause one second at the top",
+      "Keep your back flat against the bench"
+    ],
+    "mistakes": [
+      "Too steep an angle (becomes a shoulder press)",
+      "Dropping the dumbbells at the bottom"
+    ],
+    "videoUrl": "https://media.musclewiki.com/media/uploads/videos/branded/male-Dumbbells-dumbbell-incline-press-side.mp4",
+    "wikiUrl": "https://musclewiki.com/dumbbells/male/chest"
+  },
+  {
+    "slug": "dumbbell_lateral_raise",
+    "name": "Dumbbell Lateral Raise",
+    "musclesPrimary": [
+      "side_delt"
+    ],
+    "musclesSecondary": [],
+    "description": "Stand upright. Light dumbbells at your sides. Elbows slightly bent. Raise dumbbells to the sides until parallel to the floor.",
+    "equipment": "",
+    "level": "",
+    "mechanic": "",
+    "force": "",
+    "tips": [
+      "Pinky finger slightly higher",
+      "Light weight = correct form"
+    ],
+    "mistakes": [
+      "Body swinging",
+      "Raising dumbbells above shoulder level"
+    ],
+    "videoUrl": "https://media.musclewiki.com/media/uploads/videos/branded/male-Dumbbells-dumbbell-lateral-raise-side.mp4",
+    "wikiUrl": "https://musclewiki.com/exercises/front-shoulders"
+  },
+  {
+    "slug": "dumbbell_skull_crusher",
+    "name": "Dumbbell Skull Crusher",
+    "musclesPrimary": [
+      "triceps_brachii"
+    ],
+    "musclesSecondary": [],
+    "description": "Lie flat. Keep elbow fixed next to your head. Lower the dumbbell and return up. Each hand separately.",
+    "equipment": "",
+    "level": "",
+    "mechanic": "",
+    "force": "",
+    "tips": [
+      "The other hand can stabilize the active elbow"
+    ],
+    "mistakes": [
+      "Elbows flaring out"
+    ],
+    "videoUrl": "https://media.musclewiki.com/media/uploads/videos/branded/male-Dumbbells-dumbbell-skull-crusher-side.mp4",
+    "wikiUrl": "https://musclewiki.com/exercises/triceps"
+  },
+  {
+    "slug": "incline_alternating_dumbbell_curl",
+    "name": "Incline Alternating Dumbbell Curl",
+    "musclesPrimary": [
+      "biceps_brachii"
+    ],
+    "musclesSecondary": [
+      "brachialis"
+    ],
+    "description": "Set bench to 60-70 degrees. Curl one arm while the other hangs. Supinate the wrist at the top.",
+    "equipment": "",
+    "level": "",
+    "mechanic": "",
+    "force": "",
+    "tips": [
+      "Keep elbows fixed — only forearm moves",
+      "Pause and squeeze at the top for one second"
+    ],
+    "mistakes": [
+      "Body swinging",
+      "Elbows swinging forward"
+    ],
+    "videoUrl": "https://media.musclewiki.com/media/uploads/videos/branded/male-Dumbbells-dumbbell-incline-bicep-curl-side.mp4",
+    "wikiUrl": "https://musclewiki.com/exercises/biceps"
+  },
+  {
+    "slug": "lying_leg_curl_machine",
+    "name": "Lying Leg Curl Machine",
+    "musclesPrimary": [
+      "hamstrings"
+    ],
+    "musclesSecondary": [
+      "gastrocnemius"
+    ],
+    "description": "Lie face down on the machine. Pad behind the ankles. Curl legs up to 90 degrees. Lower slowly.",
+    "equipment": "",
+    "level": "",
+    "mechanic": "",
+    "force": "",
+    "tips": [
+      "Press hips into the pad to prevent lower back arching"
+    ],
+    "mistakes": [
+      "Hips lifting off the pad",
+      "Lower back arching"
+    ],
+    "videoUrl": "https://media.musclewiki.com/media/uploads/videos/branded/male-Machine-machine-hamstring-curl-side.mp4",
+    "wikiUrl": "https://musclewiki.com/exercise/machine-hamstring-curl"
+  },
+  {
+    "slug": "machine_chest_press",
+    "name": "Machine Chest Press",
+    "musclesPrimary": [
+      "pec_major_sternal"
+    ],
+    "musclesSecondary": [
+      "triceps_brachii",
+      "front_delt"
+    ],
+    "description": "Sit on the machine seat. Keep your back fully against the pad. Grip the handles at mid-chest level. Press forward until elbows are nearly straight — don't lock out. Return under control.",
+    "equipment": "",
+    "level": "",
+    "mechanic": "",
+    "force": "",
+    "tips": [
+      "Adjust the seat so handles are at mid-chest level",
+      "Keep your back against the pad throughout",
+      "Controlled lowering = more tension"
+    ],
+    "mistakes": [
+      "Seat too high or too low",
+      "Locking out elbows",
+      "Back coming off the pad"
+    ],
+    "videoUrl": "https://media.musclewiki.com/media/uploads/videos/branded/male-Machine-machine-chest-press-side.mp4",
+    "wikiUrl": "https://musclewiki.com/exercise/machine-chest-press"
+  },
+  {
+    "slug": "machine_chest_supported_row_h_row",
+    "name": "Machine Chest-Supported Row (H-Row)",
+    "musclesPrimary": [
+      "lats"
+    ],
+    "musclesSecondary": [
+      "traps_middle",
+      "rhomboids"
+    ],
+    "description": "Chest against support pad. Pull back with elbows moving along the torso. Squeeze shoulder blades together.",
+    "equipment": "",
+    "level": "",
+    "mechanic": "",
+    "force": "",
+    "tips": [
+      "Keep chest pressed against the support"
+    ],
+    "mistakes": [
+      "Body swinging"
+    ],
+    "videoUrl": "https://media.musclewiki.com/media/uploads/videos/branded/male-Machine-machine-seated-cable-row-side.mp4",
+    "wikiUrl": "https://musclewiki.com/exercise/machine-seated-cable-row"
+  },
+  {
+    "slug": "machine_leg_extension",
+    "name": "Machine Leg Extension",
+    "musclesPrimary": [
+      "quadriceps"
+    ],
+    "musclesSecondary": [],
+    "description": "Sit on the machine. Extend legs until fully straight. Pause for one second at the top. Lower slowly.",
+    "equipment": "",
+    "level": "",
+    "mechanic": "",
+    "force": "",
+    "tips": [
+      "Pull toes toward you at the top",
+      "Slow lowering is important"
+    ],
+    "mistakes": [
+      "Swinging the legs",
+      "Dropping the weight at the bottom"
+    ],
+    "videoUrl": "https://media.musclewiki.com/media/uploads/videos/branded/male-Machine-machine-leg-extension-side.mp4",
+    "wikiUrl": "https://musclewiki.com/machine/male/quads/machine-leg-extension/"
+  },
+  {
+    "slug": "machine_overhead_press",
+    "name": "Machine Overhead Press",
+    "musclesPrimary": [
+      "front_delt",
+      "side_delt"
+    ],
+    "musclesSecondary": [
+      "triceps_brachii"
+    ],
+    "description": "Sit on the overhead press machine. Back fully against the pad. Handles at shoulder level. Press up until elbows nearly extend — don't lock out.",
+    "equipment": "",
+    "level": "",
+    "mechanic": "",
+    "force": "",
+    "tips": [
+      "Adjust seat so handles are at shoulder level",
+      "Keep back against the pad throughout"
+    ],
+    "mistakes": [
+      "Excessive lower back arch",
+      "Locking out elbows"
+    ],
+    "videoUrl": "https://media.musclewiki.com/media/uploads/videos/branded/male-Machine-machine-overhand-overhead-press-side.mp4",
+    "wikiUrl": "https://musclewiki.com/exercise/machine-overhand-overhead-press"
+  },
+  {
+    "slug": "machine_pec_deck",
+    "name": "Machine Pec Deck",
+    "musclesPrimary": [
+      "pec_major_sternal"
+    ],
+    "musclesSecondary": [],
+    "description": "Sit on the machine. Keep your back against the pad. Bring the handles together as if hugging something. Pause for one second at the closed position.",
+    "equipment": "",
+    "level": "",
+    "mechanic": "",
+    "force": "",
+    "tips": [
+      "Elbows should be at shoulder level",
+      "Control the opening phase"
+    ],
+    "mistakes": [
+      "Elbows too extended (joint stress)",
+      "Shrugging the shoulders"
+    ],
+    "videoUrl": "https://media.musclewiki.com/media/uploads/videos/branded/male-Machine-machine-pec-deck-side.mp4",
+    "wikiUrl": "https://musclewiki.com/exercise/machine-chest-press"
+  },
+  {
+    "slug": "machine_preacher_curl",
+    "name": "Machine Preacher Curl",
+    "musclesPrimary": [
+      "biceps_brachii"
+    ],
+    "musclesSecondary": [
+      "brachialis",
+      "brachioradialis"
+    ],
+    "description": "Sit on the machine. Keep elbows fixed on the pad. Curl the handle up until biceps are fully contracted. Lower slowly to feel the stretch.",
+    "equipment": "",
+    "level": "",
+    "mechanic": "",
+    "force": "",
+    "tips": [
+      "Keep elbows fully on the pad",
+      "Slow lowering = more growth",
+      "Pause one second at the top"
+    ],
+    "mistakes": [
+      "Elbows lifting off the pad",
+      "Dropping the weight suddenly",
+      "Shoulder swinging"
+    ],
+    "videoUrl": "https://media.musclewiki.com/media/uploads/videos/branded/male-Machine-machine-seated-plate-loaded-preacher-curl-side.mp4",
+    "wikiUrl": "https://musclewiki.com/exercise/machine-seated-plate-loaded-preacher-curl"
+  },
+  {
+    "slug": "machine_reverse_fly",
+    "name": "Machine Reverse Fly",
+    "musclesPrimary": [
+      "rear_delt"
+    ],
+    "musclesSecondary": [
+      "traps_middle",
+      "rhomboids"
+    ],
+    "description": "Sit on the machine. Open arms backward until level with shoulders. Return slowly.",
+    "equipment": "",
+    "level": "",
+    "mechanic": "",
+    "force": "",
+    "tips": [
+      "Keep elbows slightly bent",
+      "Press chest against the pad"
+    ],
+    "mistakes": [
+      "Pulling arms too far back",
+      "Shrugging the shoulders"
+    ],
+    "videoUrl": "https://media.musclewiki.com/media/uploads/videos/branded/male-Machine-machine-reverse-fly-side.mp4",
+    "wikiUrl": "https://musclewiki.com/exercises/front-shoulders"
+  },
+  {
+    "slug": "machine_tricep_pushdown",
+    "name": "Machine Tricep Pushdown",
+    "musclesPrimary": [
+      "triceps_brachii"
+    ],
+    "musclesSecondary": [],
+    "description": "Sit on the tricep machine. Back flat against the pad. Grab the handles and push forearms down until fully extended. Return under control.",
+    "equipment": "",
+    "level": "",
+    "mechanic": "",
+    "force": "",
+    "tips": [
+      "Keep elbows fixed and at your sides",
+      "Pause one second at full extension"
+    ],
+    "mistakes": [
+      "Elbows flaring out",
+      "Body swinging"
+    ],
+    "videoUrl": "https://media.musclewiki.com/media/uploads/videos/branded/male-Machine-machine-tricep-pushdown-side.mp4",
+    "wikiUrl": "https://musclewiki.com/exercise/machine-tricep-pushdown"
+  },
+  {
+    "slug": "parallel_bar_dips",
+    "name": "Parallel Bar Dips",
+    "musclesPrimary": [
+      "pec_major_sternal",
+      "triceps_brachii"
+    ],
+    "musclesSecondary": [
+      "front_delt"
+    ],
+    "description": "Support yourself between parallel bars. Lean slightly forward. Lower until elbows reach 90 degrees. Push back up without locking elbows.",
+    "equipment": "",
+    "level": "",
+    "mechanic": "",
+    "force": "",
+    "tips": [
+      "Leaning forward = more chest, upright = more triceps",
+      "Cross your feet behind you"
+    ],
+    "mistakes": [
+      "Going too deep",
+      "Swinging the body upward"
+    ],
+    "videoUrl": "https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-dip-side.mp4",
+    "wikiUrl": "https://musclewiki.com/exercises/triceps"
+  },
+  {
+    "slug": "seated_alternating_hammer_front_raise",
+    "name": "Seated Alternating Hammer Front Raise",
+    "musclesPrimary": [
+      "front_delt"
+    ],
+    "musclesSecondary": [],
+    "description": "Sit down. Hold dumbbells with a hammer grip. Raise one at a time to shoulder height.",
+    "equipment": "",
+    "level": "",
+    "mechanic": "",
+    "force": "",
+    "tips": [
+      "Seated position = less body swinging"
+    ],
+    "mistakes": [
+      "Raising dumbbell above shoulder level",
+      "Torso swinging"
+    ],
+    "videoUrl": "https://media.musclewiki.com/media/uploads/videos/branded/male-Dumbbells-dumbbell-front-raise-side.mp4",
+    "wikiUrl": "https://musclewiki.com/exercises/front-shoulders"
+  },
+  {
+    "slug": "seated_calf_raise_machine",
+    "name": "Seated Calf Raise Machine",
+    "musclesPrimary": [
+      "soleus"
+    ],
+    "musclesSecondary": [],
+    "description": "Sit on the machine. Pad rests on your knees. Raise heels until calves are fully extended. Lower slowly.",
+    "equipment": "",
+    "level": "",
+    "mechanic": "",
+    "force": "",
+    "tips": [
+      "Full range of motion is important",
+      "Pause one second at the top"
+    ],
+    "mistakes": [
+      "Partial range of motion"
+    ],
+    "videoUrl": "https://media.musclewiki.com/media/uploads/videos/branded/male-Machine-machine-seated-calf-raise-side.mp4",
+    "wikiUrl": "https://musclewiki.com/exercises/calves"
+  },
+  {
+    "slug": "single_arm_cable_pulldown_arc",
+    "name": "Single-Arm Cable Pulldown (Arc)",
+    "musclesPrimary": [
+      "lats"
+    ],
+    "musclesSecondary": [
+      "serratus_anterior"
+    ],
+    "description": "Grab a single handle from high cable. Pull toward your hip in an arc motion.",
+    "equipment": "",
+    "level": "",
+    "mechanic": "",
+    "force": "",
+    "tips": [
+      "Maintain an arc-shaped path"
+    ],
+    "mistakes": [
+      "Pulling with arm and biceps instead of back"
+    ],
+    "videoUrl": "https://media.musclewiki.com/media/uploads/videos/branded/male-Cables-cable-single-arm-pulldown-side.mp4",
+    "wikiUrl": "https://musclewiki.com/exercise/machine-pulldown"
+  },
+  {
+    "slug": "single_arm_rotating_cable_row",
+    "name": "Single-Arm Rotating Cable Row",
+    "musclesPrimary": [
+      "lats"
+    ],
+    "musclesSecondary": [
+      "traps_middle",
+      "biceps_brachii"
+    ],
+    "description": "Sit on the cable row machine. Use a single handle. Pull toward your abdomen while slightly rotating the torso.",
+    "equipment": "",
+    "level": "",
+    "mechanic": "",
+    "force": "",
+    "tips": [
+      "Feel the pull in your back, not your arm"
+    ],
+    "mistakes": [
+      "Pulling with the arm not the back",
+      "Excessive lower back flexion"
+    ],
+    "videoUrl": "https://media.musclewiki.com/media/uploads/videos/branded/male-Cables-cable-seated-row-side.mp4",
+    "wikiUrl": "https://musclewiki.com/exercise/machine-seated-cable-row"
+  },
+  {
+    "slug": "wide_grip_cable_row",
+    "name": "Wide-Grip Cable Row",
+    "musclesPrimary": [
+      "lats"
+    ],
+    "musclesSecondary": [
+      "traps_middle"
+    ],
+    "description": "Use a wide-grip handle. Pull toward your abdomen. At the end, squeeze shoulder blades together.",
+    "equipment": "",
+    "level": "",
+    "mechanic": "",
+    "force": "",
+    "tips": [
+      "Keep chest up throughout"
+    ],
+    "mistakes": [
+      "Body swinging",
+      "Pulling with arm not back"
+    ],
+    "videoUrl": "https://media.musclewiki.com/media/uploads/videos/branded/male-Cables-cable-seated-row-side.mp4",
+    "wikiUrl": "https://musclewiki.com/exercise/machine-seated-cable-row"
+  },
+  {
+    "slug": "wide_stance_hack_squat",
+    "name": "Wide-Stance Hack Squat",
+    "musclesPrimary": [
+      "quadriceps",
+      "glute_max"
+    ],
+    "musclesSecondary": [
+      "hamstrings",
+      "adductors"
+    ],
+    "description": "Position yourself under the hack squat machine. Feet wider than shoulders. Lower until thighs are parallel to the floor or below.",
+    "equipment": "",
+    "level": "",
+    "mechanic": "",
+    "force": "",
+    "tips": [
+      "Keep gaze forward and slightly up",
+      "Knees should track over toes"
+    ],
+    "mistakes": [
+      "Knees caving inward",
+      "Heels lifting off the platform"
+    ],
+    "videoUrl": "https://media.musclewiki.com/media/uploads/videos/branded/male-Machine-hack-squat-side.mp4",
+    "wikiUrl": "https://musclewiki.com/exercise/machine-leg-press"
+  },
+  {
+    "slug": "wide_stance_leg_press",
+    "name": "Wide-Stance Leg Press",
+    "musclesPrimary": [
+      "quadriceps",
+      "glute_max"
+    ],
+    "musclesSecondary": [
+      "hamstrings",
+      "adductors"
+    ],
+    "description": "Lie on the machine. Place feet wider than shoulder-width apart. Toes slightly out. Bend knees to 90 degrees. Press without locking knees.",
+    "equipment": "",
+    "level": "",
+    "mechanic": "",
+    "force": "",
+    "tips": [
+      "Wide stance = more glutes and inner thigh",
+      "Keep lower back pressed to the seat"
+    ],
+    "mistakes": [
+      "Locking knees at the top",
+      "Hips coming off the seat"
+    ],
+    "videoUrl": "https://media.musclewiki.com/media/uploads/videos/branded/male-Machine-machine-leg-press-side.mp4",
+    "wikiUrl": "https://musclewiki.com/exercise/machine-leg-press"
+  }
+]
