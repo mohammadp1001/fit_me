@@ -65,6 +65,11 @@ jobs:
       - name: Apply migrations
         run: npx prisma migrate deploy
 
+      # The shared exercise catalog is reference data, not schema, so migrating
+      # does not create it. Seeding is idempotent and cheap.
+      - name: Seed exercise catalog
+        run: npm run db:seed-catalog
+
       - name: Test
         run: npm test
 
