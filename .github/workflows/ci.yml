@@ -42,7 +42,10 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # 22+ is required for `--experimental-strip-types`, which the seed
+          # scripts run on. The repo already assumed it (`db:seed` uses the same
+          # flag); CI simply never executed one of those scripts until now.
+          node-version: 22
           cache: npm
 
       # Use `npm install` rather than `npm ci`: the committed lockfile is
@@ -64,6 +67,11 @@ jobs:
       # to write to.
       - name: Apply migrations
         run: npx prisma migrate deploy
+
+      # The shared exercise catalog is reference data, not schema, so migrating
+      # does not create it. Seeding is idempotent and cheap.
+      - name: Seed exercise catalog
+        run: npm run db:seed-catalog
 
       - name: Test
         run: npm test
