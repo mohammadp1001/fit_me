@@ -281,7 +281,9 @@ function LogPanel({
     })
   );
   const [saveMsg, setSaveMsg] = useState("");
-  const [history, setHistory] = useState<Array<{ date: string; sets: SetLog[] }>>([]);
+  const [history, setHistory] = useState<
+    Array<{ date: string; sets: SetLog[]; plannedReps: number[] }>
+  >([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [rationale, setRationale] = useState<string | null>(null);
 
@@ -297,10 +299,13 @@ function LogPanel({
         const data = await res.json();
         if (cancelled) return null;
         setHistory(
-          data.logs.map((l: { date: string; sets: SetLog[] }) => ({
-            date: l.date.split("T")[0],
-            sets: l.sets,
-          }))
+          data.logs.map(
+            (l: { date: string; sets: SetLog[]; plannedReps?: number[] }) => ({
+              date: l.date.split("T")[0],
+              sets: l.sets,
+              plannedReps: l.plannedReps ?? [],
+            })
+          )
         );
         const todayLog = data.logs.find(
           (l: { date: string }) => l.date.split("T")[0] === today
@@ -382,7 +387,19 @@ function LogPanel({
       setTimeout(() => setSaveMsg(""), 2000);
       setHistory((prev) => {
         const filtered = prev.filter((h) => h.date !== today);
-        return [{ date: today, sets }, ...filtered];
+        return [
+          {
+            date: today,
+            sets,
+            plannedReps: Array.from(
+              { length: programExercise.setsCount },
+              (_, i) =>
+                programExercise.reps[i] ??
+                programExercise.reps[programExercise.reps.length - 1]
+            ),
+          },
+          ...filtered,
+        ];
       });
     }
   }
@@ -497,17 +514,37 @@ function LogPanel({
                 {h.date}
               </div>
               <div className="flex flex-wrap gap-2">
-                {h.sets.map((s, i) =>
-                  s.weight ? (
+                {h.sets.map((s, i) => {
+                  if (!s.weight) return null;
+                  const planned = h.plannedReps[i];
+                  const actual = Number(s.reps);
+                  // Only a real shortfall is called out. Matching or beating
+                  // the target needs no decoration - the point is to make a
+                  // missed rep visible, not to grade every set.
+                  const missed =
+                    planned !== undefined &&
+                    Number.isFinite(actual) &&
+                    actual < planned;
+                  return (
                     <span
                       key={i}
                       className="px-2 py-1 rounded-full text-xs font-semibold"
-                      style={{ background: `${dayColor}22`, color: dayColor }}
+                      style={
+                        missed
+                          ? { background: "#3a221c", color: "#e8836a" }
+                          : { background: `${dayColor}22`, color: dayColor }
+                      }
                     >
                       {locale === "fa" ? `ست ${i + 1}` : `S${i + 1}`}: {s.weight}kg × {s.reps}
+                      {missed ? (
+                        <span className="font-normal opacity-80">
+                          {" "}
+                          / {planned}
+                        </span>
+                      ) : null}
                     </span>
-                  ) : null
-                )}
+                  );
+                })}
               </div>
             </div>
           ))}
