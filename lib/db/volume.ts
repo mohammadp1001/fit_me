@@ -21,9 +21,12 @@ export function todayDateOnly(now: Date = new Date()): Date {
 }
 
 /** First day included in the trailing window (inclusive). */
-export function windowStart(now: Date = new Date()): Date {
+export function windowStart(
+  now: Date = new Date(),
+  windowDays: number = VOLUME_WINDOW_DAYS,
+): Date {
   const start = todayDateOnly(now);
-  start.setUTCDate(start.getUTCDate() - (VOLUME_WINDOW_DAYS - 1));
+  start.setUTCDate(start.getUTCDate() - (windowDays - 1));
   return start;
 }
 
@@ -38,8 +41,9 @@ export function windowStart(now: Date = new Date()): Date {
 export async function computeGroupVolume(
   userId: number,
   now: Date = new Date(),
+  windowDays: number = VOLUME_WINDOW_DAYS,
 ): Promise<Record<MuscleGroup, number>> {
-  const logs = await listLogsSince(userId, windowStart(now));
+  const logs = await listLogsSince(userId, windowStart(now, windowDays));
 
   const entries: VolumeEntry[] = logs
     .filter((log) => log.exercise !== null)
@@ -50,5 +54,5 @@ export async function computeGroupVolume(
       musclesSecondary: log.exercise!.musclesSecondary,
     }));
 
-  return volumeByGroup(entries, now);
+  return volumeByGroup(entries, now, windowDays);
 }
