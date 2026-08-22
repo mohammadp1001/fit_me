@@ -64,6 +64,8 @@ export type UserData = {
   name: string;
   weightKg: number;
   heightCm: number;
+  /// IANA name. Decides which local day a workout is filed under.
+  timeZone: string;
   createdAt: string;
   /// Drives whether the profile screen offers invite links. The API enforces
   /// it independently - this only decides what is worth rendering.

@@ -2,6 +2,7 @@ import { randomBytes, createHash } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { seedExerciseLibrary } from "./exercise-template";
+import { DEFAULT_TIME_ZONE } from "@/lib/time";
 
 /**
  * Accounts and invites.
@@ -119,8 +120,15 @@ export async function redeemInvite(
     username,
     password,
     name,
+    timeZone = DEFAULT_TIME_ZONE,
     now = new Date(),
-  }: { username: string; password: string; name: string; now?: Date },
+  }: {
+    username: string;
+    password: string;
+    name: string;
+    timeZone?: string;
+    now?: Date;
+  },
 ): Promise<SignupResult> {
   const tokenHash = hashToken(token);
   const passwordHash = await hashPassword(password);
@@ -145,6 +153,7 @@ export async function redeemInvite(
           username,
           passwordHash,
           name,
+          timeZone,
           // Placeholders. The first YAML upload sets these properly, and it is
           // the same screen that would have asked for them anyway.
           weightKg: 0,

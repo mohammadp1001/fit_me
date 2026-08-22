@@ -24,6 +24,14 @@ model User {
   name         String
   weightKg     Float
   heightCm     Float
+  /// IANA timezone name, e.g. `Asia/Tehran`. Captured from the browser at
+  /// signup and editable in the profile.
+  ///
+  /// An offset would be wrong twice a year, and the app needs the *rule*, not a
+  /// snapshot of it: a workout logged at 9pm local has to read back as 9pm in
+  /// March and in October alike. The server has no other way to know which
+  /// local calendar day a UTC instant belongs to.
+  timeZone     String        @default("UTC")
   /// Only an admin can create invites. Account 1 is the admin.
   isAdmin      Boolean       @default(false)
   createdAt    DateTime      @default(now())
