@@ -30,7 +30,16 @@ export default function JoinPage() {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, username, password, name }),
+        body: JSON.stringify({
+          token,
+          username,
+          password,
+          name,
+          // The browser is the only thing that knows where the user is, and it
+          // knows without being asked. Sending it here is what keeps signup a
+          // four-field form rather than five.
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        }),
       });
       if (res.ok) {
         // Straight to onboarding: a new account has a library but no program.

@@ -1,9 +1,27 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { UserData, ProgramData, ProgramSummary } from "./AppShell";
+
+/**
+ * Every zone this runtime knows, with the user's own guaranteed present.
+ *
+ * Built once at module load rather than per render - it is a few hundred
+ * strings and it never changes. The stored zone is unioned in because a value
+ * saved on another device, or under an older ICU, would otherwise vanish from
+ * the picker and silently reset the moment the user saved anything else.
+ */
+function buildTimeZoneOptions(current: string): string[] {
+  let zones: string[] = [];
+  try {
+    zones = Intl.supportedValuesOf("timeZone");
+  } catch {
+    zones = [];
+  }
+  return Array.from(new Set([current, ...zones])).sort();
+}
 
 export default function ProfileView({
   locale,
@@ -22,6 +40,11 @@ export default function ProfileView({
   const [name, setName] = useState(user.name);
   const [weight, setWeight] = useState(String(user.weightKg));
   const [height, setHeight] = useState(String(user.heightCm));
+  const [timeZone, setTimeZone] = useState(user.timeZone);
+  const timeZoneOptions = useMemo(
+    () => buildTimeZoneOptions(user.timeZone),
+    [user.timeZone],
+  );
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadMsg, setUploadMsg] = useState("");
@@ -44,6 +67,7 @@ export default function ProfileView({
         name,
         weightKg: Number(weight),
         heightCm: Number(height),
+        timeZone,
       }),
     });
     setSaving(false);
@@ -204,6 +228,17 @@ export default function ProfileView({
                 </div>
               </div>
             </div>
+            <div className="mt-3 flex items-baseline justify-between gap-3">
+              <span className="text-xs" style={{ color: "var(--muted)" }}>
+                {t("profile.timeZone")}
+              </span>
+              <span
+                className="text-xs font-semibold"
+                style={{ color: "var(--text)", direction: "ltr" }}
+              >
+                {user.timeZone}
+              </span>
+            </div>
           </>
         ) : (
           <div className="flex flex-col gap-3">
@@ -247,6 +282,29 @@ export default function ProfileView({
                   color: "var(--text)",
                 }}
               />
+            </div>
+            <div className="flex flex-col gap-1">
+              <select
+                value={timeZone}
+                onChange={(e) => setTimeZone(e.target.value)}
+                className="w-full rounded-xl px-4 py-3 text-sm outline-none"
+                style={{
+                  background: "var(--surface2)",
+                  border: "1px solid var(--border)",
+                  color: "var(--text)",
+                  fontFamily: "inherit",
+                  direction: "ltr",
+                }}
+              >
+                {timeZoneOptions.map((zone) => (
+                  <option key={zone} value={zone}>
+                    {zone}
+                  </option>
+                ))}
+              </select>
+              <span className="text-xs" style={{ color: "var(--muted)" }}>
+                {t("profile.timeZoneHint")}
+              </span>
             </div>
             <div className="flex gap-2">
               <button

@@ -110,7 +110,9 @@
     "logout": "Logout",
     "edit": "Edit",
     "save": "Save",
-    "since": "Since"
+    "since": "Since",
+    "timeZone": "Timezone",
+    "timeZoneHint": "Used to file each workout on the right day."
   },
   "common": {
     "loading": "Loading...",

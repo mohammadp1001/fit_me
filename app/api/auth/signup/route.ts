@@ -4,12 +4,16 @@ import { signIn } from "@/lib/session";
 import { redeemInvite } from "@/lib/db/accounts";
 import { checkPasswordStrength, checkUsername } from "@/lib/auth/password";
 import { clientIp, consumeRateLimit } from "@/lib/oauth/rate-limit";
+import { normalizeTimeZone } from "@/lib/time";
 
 const schema = z.object({
   token: z.string().min(1),
   username: z.string().min(1),
   password: z.string().min(1),
   name: z.string().min(1).max(80),
+  // Optional: an old client, or one whose `Intl` returns nothing, still signs
+  // up successfully and lands on the UTC default.
+  timeZone: z.string().max(80).optional(),
 });
 
 /** Guessing a 192-bit token is infeasible; there is still no reason to allow trying. */
@@ -41,6 +45,7 @@ export async function POST(request: NextRequest) {
     username: username.value,
     password: parsed.data.password,
     name: parsed.data.name,
+    timeZone: normalizeTimeZone(parsed.data.timeZone),
   });
 
   if (!result.ok) {
