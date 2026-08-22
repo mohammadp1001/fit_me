@@ -52,10 +52,10 @@ export function expandPlannedReps(setsCount: number, reps: number[]): number[] {
  * user's most recent session: two exercises saved seconds apart must not each
  * conclude there is no session to join and create one.
  *
- * An edit to an existing log touches only its sets. It keeps the session, the
- * `loggedAt` and the `plannedReps` it was first written with - a correction
- * made days later must not move a workout's boundaries or re-measure it against
- * a program that did not exist at the time.
+ * An edit to an existing log touches only its sets and its note. It keeps the
+ * session, the `loggedAt` and the `plannedReps` it was first written with - a
+ * correction made days later must not move a workout's boundaries or re-measure
+ * it against a program that did not exist at the time.
  */
 export async function upsertLog(
   userId: number,
@@ -65,6 +65,7 @@ export async function upsertLog(
     date,
     sets,
     plannedReps,
+    note = "",
     at = new Date(),
   }: {
     exerciseId: number;
@@ -72,6 +73,7 @@ export async function upsertLog(
     date: Date;
     sets: Prisma.InputJsonValue;
     plannedReps: number[];
+    note?: string;
     /** The instant of this save. Injectable so tests can place logs in time. */
     at?: Date;
   },
@@ -85,7 +87,7 @@ export async function upsertLog(
     if (existing) {
       return tx.workoutLog.update({
         where: { id: existing.id },
-        data: { sets, programExerciseId },
+        data: { sets, programExerciseId, note },
       });
     }
 
@@ -99,6 +101,7 @@ export async function upsertLog(
         date,
         sets,
         plannedReps,
+        note,
         loggedAt: at,
         sessionId,
       },

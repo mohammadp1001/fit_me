@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useId, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ProgramExerciseData } from "./AppShell";
 import { computeInitialSets, SetLog, SuggestionSet } from "@/lib/log-prefill";
 import { MUSCLE_LABEL } from "@/lib/muscles";
 import { selectVideoPresentation } from "@/lib/youtube";
+import { NOTE_MAX_LENGTH } from "@/lib/notes";
 
 type Tab = "info" | "log";
 
@@ -280,9 +281,11 @@ function LogPanel({
       todaysLogSets: null,
     })
   );
+  const noteFieldId = useId();
+  const [note, setNote] = useState("");
   const [saveMsg, setSaveMsg] = useState("");
   const [history, setHistory] = useState<
-    Array<{ date: string; sets: SetLog[]; plannedReps: number[] }>
+    Array<{ date: string; sets: SetLog[]; plannedReps: number[]; note: string }>
   >([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [rationale, setRationale] = useState<string | null>(null);
@@ -300,10 +303,16 @@ function LogPanel({
         if (cancelled) return null;
         setHistory(
           data.logs.map(
-            (l: { date: string; sets: SetLog[]; plannedReps?: number[] }) => ({
+            (l: {
+              date: string;
+              sets: SetLog[];
+              plannedReps?: number[];
+              note?: string;
+            }) => ({
               date: l.date.split("T")[0],
               sets: l.sets,
               plannedReps: l.plannedReps ?? [],
+              note: l.note ?? "",
             })
           )
         );
@@ -311,6 +320,7 @@ function LogPanel({
           (l: { date: string }) => l.date.split("T")[0] === today
         );
         if (!todayLog) return null;
+        setNote(todayLog.note ?? "");
         return todayLog.sets.map((s: SetLog) => ({
           weight: String(s.weight ?? ""),
           reps: String(s.reps ?? ""),
@@ -380,6 +390,7 @@ function LogPanel({
         programExerciseId: programExercise.id,
         date: today,
         sets: payload,
+        note,
       }),
     });
     if (res.ok) {
@@ -391,6 +402,7 @@ function LogPanel({
           {
             date: today,
             sets,
+            note,
             plannedReps: Array.from(
               { length: programExercise.setsCount },
               (_, i) =>
@@ -489,6 +501,42 @@ function LogPanel({
         })}
       </div>
 
+      <div className="flex flex-col gap-1 mb-4">
+        <label
+          className="text-xs font-bold"
+          style={{ color: "var(--muted)" }}
+          htmlFor={noteFieldId}
+        >
+          {t("exercise.note")}
+        </label>
+        <textarea
+          id={noteFieldId}
+          value={note}
+          onChange={(e) => setNote(e.target.value.slice(0, NOTE_MAX_LENGTH))}
+          placeholder={t("exercise.notePlaceholder")}
+          rows={3}
+          maxLength={NOTE_MAX_LENGTH}
+          className="w-full rounded-xl px-3 py-2 text-sm outline-none resize-y"
+          style={{
+            background: "#252525",
+            border: "1px solid var(--border)",
+            color: "var(--text)",
+            fontFamily: "inherit",
+            lineHeight: 1.6,
+          }}
+        />
+        {/* Only shown as the limit approaches - a counter on an empty box is
+            noise, and this screen is read between sets. */}
+        {note.length > NOTE_MAX_LENGTH - 100 && (
+          <span
+            className="text-xs self-end"
+            style={{ color: "var(--muted2)", direction: "ltr" }}
+          >
+            {note.length} / {NOTE_MAX_LENGTH}
+          </span>
+        )}
+      </div>
+
       <button
         onClick={handleSave}
         className="w-full py-3 rounded-xl font-bold text-sm text-white"
@@ -550,6 +598,14 @@ function LogPanel({
                   );
                 })}
               </div>
+              {h.note && (
+                <p
+                  className="text-xs mt-2 leading-relaxed"
+                  style={{ color: "var(--muted)", whiteSpace: "pre-wrap" }}
+                >
+                  {h.note}
+                </p>
+              )}
             </div>
           ))}
         </div>
