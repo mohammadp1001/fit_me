@@ -189,6 +189,8 @@ export default function ProgressView({
         <div className="flex gap-2 mb-4 items-center">
           <input
             type="number"
+            step="any"
+            min="0"
             value={newWeight}
             onChange={(e) => setNewWeight(e.target.value)}
             placeholder="70"

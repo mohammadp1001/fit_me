@@ -437,6 +437,8 @@ function LogPanel({
               </span>
               <input
                 type="number"
+                step="any"
+                min="0"
                 value={s.weight}
                 onChange={(e) => updateSet(i, "weight", e.target.value)}
                 placeholder="—"
@@ -451,6 +453,8 @@ function LogPanel({
               />
               <input
                 type="number"
+                step="1"
+                min="0"
                 value={s.reps}
                 onChange={(e) => updateSet(i, "reps", e.target.value)}
                 placeholder={String(planned)}

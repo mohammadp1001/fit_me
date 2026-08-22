@@ -49,3 +49,8 @@ next-env.d.ts
 CLAUDE.md
 AGENTS.md
 HANDOFF.md
+
+# throwaway local dev/test scaffolding - a Postgres data directory must never
+# be committed, and *.local.* files are by convention disposable
+*.local.*
+.pgdata.local/
