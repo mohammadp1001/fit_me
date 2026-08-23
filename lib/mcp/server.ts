@@ -14,6 +14,7 @@ import {
   LIMITS,
 } from "./tools/read-tools";
 import { saveSuggestions } from "./tools/save-suggestions";
+import { addExercise } from "./tools/add-exercise";
 import {
   getSessionDetail,
   listSessionsSummary,
@@ -110,6 +111,10 @@ export function buildMcpServer(userId: number): McpServer {
         "than one or two. A session carries the user's own notes; read them " +
         "before judging the numbers, because they explain what the numbers " +
         "cannot. " +
+        "If a movement you want to prescribe is not in the library, search " +
+        "list_exercises first - the catalog has hundreds of entries and the " +
+        "same movement is often already there under a different name. Only " +
+        "then call add_exercise, which adds it for this user alone. " +
         "When coaching a session: read get_coach_memory first so you continue " +
         "from what was already learned, then propose sets, show them to the " +
         "user with your reasoning, and only then call save_suggestions. What " +
@@ -429,13 +434,58 @@ export function buildMcpServer(userId: number): McpServer {
   );
 
   server.registerTool(
+    "add_exercise",
+    {
+      title: "Add an exercise to this user's library",
+      description:
+        "Creates an exercise the catalog does not carry, in THIS user's " +
+        "library only - the shared catalog is never modified. Returns a slug " +
+        "you can reference from a program file straight away. " +
+        "Search list_exercises first: the catalog has hundreds of entries and " +
+        "the same movement is often already there under a different name. " +
+        "Muscles must come from the fixed vocabulary in get_program_schema.",
+      inputSchema: {
+        name: z
+          .string()
+          .min(1)
+          .max(80)
+          .describe("Display name, in English."),
+        musclesPrimary: z
+          .array(z.string())
+          .min(1)
+          .describe(
+            "The muscles this mainly trains. At least one - an exercise with " +
+              "no primary mover counts toward no volume at all.",
+          ),
+        musclesSecondary: z
+          .array(z.string())
+          .optional()
+          .describe("Muscles it assists. Must not repeat a primary muscle."),
+        description: z
+          .string()
+          .max(2000)
+          .optional()
+          .describe("How to perform it."),
+        videoUrl: z.string().optional().describe("A link demonstrating it."),
+      },
+    },
+    async (args) => {
+      try {
+        return asText(await addExercise({ userId, ...args }));
+      } catch (err) {
+        return asError(err);
+      }
+    },
+  );
+
+  server.registerTool(
     "save_suggestions",
     {
       title: "Save suggested sets",
       description:
         "Saves the sets you propose for an upcoming session, so they appear on " +
         "the log screen at the gym, and appends what you learned to the coach's " +
-        "notes. This is the only tool that writes. " +
+        "notes. " +
         "Show the user what you intend to save and why before calling it - the " +
         "arguments are what they approve. " +
         "Refused if the date is in the past, if that exercise was already logged " +

@@ -14,6 +14,7 @@ jest.mock("@/lib/session", () => ({
 }));
 
 import { POST } from "./route";
+import { addPersonal } from "@/lib/db/library";
 
 const prisma = new PrismaClient();
 
@@ -172,6 +173,48 @@ program:
     // A null name means the row still reads from the catalog, so a later
     // catalog correction reaches this user.
     expect(row.name).toBeNull();
+  });
+});
+
+describe("/api/setup can reference a personal exercise", () => {
+  // A movement the catalog does not carry is added with `add_exercise` and
+  // addressed as `custom:<id>`. If a program could not reference one, the tool
+  // would produce exercises that are unusable.
+  it("installs a program that references a custom: slug", async () => {
+    const id = await addPersonal(1, {
+      name: `Setup Route Custom ${Date.now()}`,
+      musclesPrimary: ["lats"],
+    });
+
+    const res = await upload(yamlFor(`custom:${id}`));
+    expect(res.status).toBe(200);
+
+    const slot = await prisma.programExercise.findFirstOrThrow();
+    expect(slot.exerciseId).toBe(id);
+  });
+
+  it("will not resolve another account's custom slug", async () => {
+    const other = await prisma.user.create({
+      data: {
+        name: "Other",
+        username: `setup-other-${Date.now()}`,
+        passwordHash: "x",
+        weightKg: 70,
+        heightCm: 170,
+      },
+    });
+    try {
+      const id = await addPersonal(other.id, {
+        name: `Other Private ${Date.now()}`,
+        musclesPrimary: ["lats"],
+      });
+
+      // Account 1 is the uploader; the row belongs to someone else.
+      expect((await upload(yamlFor(`custom:${id}`))).status).toBe(400);
+    } finally {
+      await prisma.exercise.deleteMany({ where: { userId: other.id } });
+      await prisma.user.delete({ where: { id: other.id } });
+    }
   });
 });
 
