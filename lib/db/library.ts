@@ -166,6 +166,19 @@ export async function findBySlug(
   userId: number,
   slug: string,
 ): Promise<LibraryEntry | null> {
+  // A personal addition has no catalog entry to borrow an identity from, so it
+  // is addressed as `custom:<id>`. A program file may reference one, which is
+  // why this is resolved here rather than only in the catalog lookup below.
+  const custom = /^custom:(\d+)$/.exec(slug);
+  if (custom) {
+    const own = await prisma.exercise.findFirst({
+      // Scoped by user: an id from elsewhere must not resolve.
+      where: { id: Number(custom[1]), userId, catalogSlug: null },
+      include: { catalog: true },
+    });
+    return own && !own.hidden ? entryForRow(own) : null;
+  }
+
   const row = await prisma.exercise.findUnique({
     where: { userId_catalogSlug: { userId, catalogSlug: slug } },
     include: { catalog: true },
@@ -325,6 +338,11 @@ export async function override(
     select: { id: true },
   });
   return row.id;
+}
+
+/** How many exercises this account has added itself, rather than inherited. */
+export async function countPersonal(userId: number): Promise<number> {
+  return prisma.exercise.count({ where: { userId, catalogSlug: null } });
 }
 
 /** Creates an exercise that exists only in this user's library. */

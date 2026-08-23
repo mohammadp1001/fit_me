@@ -59,6 +59,7 @@ describe("MCP server wiring", () => {
     // Update this list when a tool is added. It is the guard against shipping
     // a tool that exists in `lib/` but was never registered here.
     expect(tools.map((t) => t.name).sort()).toEqual([
+      "add_exercise",
       "get_body_weight",
       "get_coach_memory",
       "get_exercise_history",
@@ -77,16 +78,23 @@ describe("MCP server wiring", () => {
     await close();
   });
 
-  it("declares exactly one writing tool", async () => {
-    // Every other tool must stay read-only. A second writer should be a
-    // deliberate decision, not something that appears by accident.
+  it("declares exactly the writing tools we intend", async () => {
+    // Every other tool must stay read-only. A new writer should be a
+    // deliberate decision, not something that appears by accident - this list
+    // is the decision.
     const { client, close } = await connectedClient();
 
     const { tools } = await client.listTools();
     const writers = tools.filter((t) => t.annotations?.readOnlyHint !== true);
 
-    expect(writers.map((t) => t.name)).toEqual(["save_suggestions"]);
-    expect(writers[0].annotations?.destructiveHint).toBe(false);
+    expect(writers.map((t) => t.name).sort()).toEqual([
+      "add_exercise",
+      "save_suggestions",
+    ]);
+    // Neither destroys anything: one appends a proposal, the other adds a row.
+    for (const writer of writers) {
+      expect(writer.annotations?.destructiveHint).not.toBe(true);
+    }
 
     await close();
   });
