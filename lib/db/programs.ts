@@ -118,13 +118,19 @@ export async function activateProgram(userId: number, programId: number) {
   });
 }
 
-/** The pending proposal, or null. At most one exists at a time. */
+/**
+ * The pending proposal, or null. At most one exists at a time.
+ *
+ * Resolved like `getActiveProgram`, so the approval screen can compare the two
+ * without one side carrying null names.
+ */
 export async function findDraft(userId: number) {
-  return prisma.program.findFirst({
+  const draft = await prisma.program.findFirst({
     where: { userId, isDraft: true },
     orderBy: { id: "desc" },
     include: FULL_PROGRAM,
   });
+  return draft && withResolvedExercises(draft);
 }
 
 /** Throws the proposal away. The active program is untouched either way. */

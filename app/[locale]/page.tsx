@@ -3,6 +3,7 @@ import { isAuthenticated } from "@/lib/session";
 import { currentUserId } from "@/lib/db/current-user";
 import { getUser } from "@/lib/db/user";
 import { getActiveProgram, listPrograms } from "@/lib/db/programs";
+import { getPendingProposal } from "@/lib/db/program-proposal";
 import AppShell from "@/components/AppShell";
 
 export default async function HomePage({
@@ -23,9 +24,12 @@ export default async function HomePage({
     redirect(`/${locale}/onboarding`);
   }
 
-  const [program, allPrograms] = await Promise.all([
+  const [program, allPrograms, proposal] = await Promise.all([
     getActiveProgram(userId),
     listPrograms(userId),
+    // Rendered on the server so the banner is there on first paint rather than
+    // popping in - it is the one thing on this screen that needs an answer.
+    getPendingProposal(userId),
   ]);
 
   if (!program) {
@@ -62,6 +66,7 @@ export default async function HomePage({
       user={serializedUser}
       program={serializedProgram}
       allPrograms={serializedAllPrograms}
+      proposal={proposal}
     />
   );
 }

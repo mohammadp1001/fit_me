@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import type { Muscle } from "@prisma/client";
 import ProgramView from "./ProgramView";
+import ProgramProposal from "./ProgramProposal";
+import type { PendingProposal } from "@/lib/db/program-proposal";
 import LogView from "./LogView";
 import ProgressView from "./ProgressView";
 import ProfileView from "./ProfileView";
@@ -82,11 +84,13 @@ export default function AppShell({
   user,
   program,
   allPrograms,
+  proposal,
 }: {
   locale: string;
   user: UserData;
   program: ProgramData;
   allPrograms: ProgramSummary[];
+  proposal: PendingProposal | null;
 }) {
   const t = useTranslations();
   const [activeTab, setActiveTab] = useState<Tab>("program");
@@ -111,7 +115,12 @@ export default function AppShell({
         style={{ paddingBottom: "calc(5rem + env(safe-area-inset-bottom))" }}
       >
         {activeTab === "program" && (
-          <ProgramView locale={locale} program={program} />
+          <>
+            {/* Above the program itself: a proposal the user never sees is a
+                feature that does nothing. */}
+            <ProgramProposal initial={proposal} />
+            <ProgramView locale={locale} program={program} />
+          </>
         )}
         {activeTab === "log" && <LogView locale={locale} />}
         {activeTab === "progress" && (
