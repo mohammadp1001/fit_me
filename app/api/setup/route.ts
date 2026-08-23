@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { isAuthenticated } from "@/lib/session";
 import { currentUserId } from "@/lib/db/current-user";
 import { upsertUser } from "@/lib/db/user";
-import { installProgram } from "@/lib/db/programs";
+import { installProgram, UnknownExerciseSlugError } from "@/lib/db/programs";
 import { parseWorkoutYaml } from "@/lib/yaml-parser";
 import { z } from "zod";
 
@@ -46,6 +46,13 @@ export async function POST(request: NextRequest) {
     await upsertUser(userId, { name, weightKg, heightCm });
     await installProgram(userId, program, yamlContent);
   } catch (e) {
+    // An unknown slug is the author's mistake, not a server fault, and its
+    // message names the day, the exercise and the near-matches - which is the
+    // only way whoever wrote the file can fix it. Returning 500 would bury
+    // that behind "Database error".
+    if (e instanceof UnknownExerciseSlugError) {
+      return NextResponse.json({ error: e.message }, { status: 400 });
+    }
     console.error("[setup] failed:", e);
     return NextResponse.json(
       { error: "Database error", detail: String(e) },

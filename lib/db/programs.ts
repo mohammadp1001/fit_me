@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import type { ParsedProgram } from "@/lib/yaml-parser";
-import { exerciseIdFor, findExerciseByName } from "./exercises";
-import { addPersonal, entryForRow } from "./library";
+import { exerciseIdFor } from "./exercises";
+import { entryForRow, findBySlug, resolveLibrary } from "./library";
 
 /**
  * Programs, days and slots.
@@ -161,24 +161,64 @@ export async function findActiveSlotFor(userId: number, exerciseId: number) {
 }
 
 /**
+ * A slug in the file that the uploader's library does not contain.
+ *
+ * Carries near-matches, so an author - usually a model - can correct itself in
+ * one turn instead of guessing. The upload fails whole: a program with one
+ * unknown exercise must not install nine tenths of itself.
+ */
+export class UnknownExerciseSlugError extends Error {
+  constructor(
+    readonly slug: string,
+    readonly where: string,
+    readonly suggestions: string[],
+  ) {
+    const hint = suggestions.length
+      ? ` Did you mean: ${suggestions.map((s) => `\`${s}\``).join(", ")}?`
+      : " Call list_exercises to see the available slugs.";
+    super(`${where}: no exercise \`${slug}\` in your library.${hint}`);
+    this.name = "UnknownExerciseSlugError";
+  }
+}
+
+/**
  * Installs a parsed YAML program and makes it the active one.
  *
- * This is the whole upload transaction as one operation, moved out of
- * `app/api/setup` unchanged. Every rule it encodes was paid for by a bug:
+ * A program now says only *which exercise, how many sets, what reps*. Two rules
+ * that every previous upload needed are simply gone with the keys that caused
+ * them: exercises are addressed by slug, so there is no name matching to get
+ * wrong (#45), and the file carries no anatomy, so there is nothing to
+ * overwrite (#44). An upload can no longer change what an exercise *is* - which
+ * is the whole reason those keys were removed.
  *
- * - exercises are matched by **either** name and created only on a real miss
- *   (#45 - matching `name` alone minted a duplicate on every upload)
- * - `muscles` and `video` are **overwritten** whenever the upload supplies
- *   them (#44 - backfill-only meant a stale MuscleWiki link could never be
- *   corrected through the app)
- * - guide prose is **backfill-only**, so a terser YAML cannot blank
- *   hand-written text
+ * Nothing is written until every slug resolves. A file naming one unknown
+ * exercise leaves the previous program active and untouched.
  */
 export async function installProgram(
   userId: number,
   program: ParsedProgram,
   yamlContent: string,
 ) {
+  // Resolve everything first. Installing a program that is missing an exercise
+  // would leave the user with a broken plan and no previous one to fall back
+  // on, since the old program is deactivated as part of the write.
+  const resolved = new Map<string, number>();
+  for (const [dayIdx, day] of program.days.entries()) {
+    for (const [exIdx, ex] of day.exercises.entries()) {
+      if (resolved.has(ex.exercise)) continue;
+
+      const entry = await findBySlug(userId, ex.exercise);
+      if (!entry) {
+        throw new UnknownExerciseSlugError(
+          ex.exercise,
+          `day ${dayIdx + 1}, exercise ${exIdx + 1}`,
+          await suggestSlugs(userId, ex.exercise),
+        );
+      }
+      resolved.set(ex.exercise, await exerciseIdFor(userId, entry));
+    }
+  }
+
   await prisma.program.updateMany({
     where: { userId, isActive: true },
     data: { isActive: false },
@@ -188,13 +228,13 @@ export async function installProgram(
   const newProgram = await prisma.program.create({
     data: {
       userId,
-      name: program.name_en ?? program.name,
+      name: program.name,
       yamlContent,
       isActive: true,
       days: {
         create: program.days.map((day, dayIdx) => ({
           dayNumber: dayIdx + 1,
-          name: day.name_en ?? day.name,
+          name: day.name,
         })),
       },
     },
@@ -211,44 +251,9 @@ export async function installProgram(
     for (let exIdx = 0; exIdx < day.exercises.length; exIdx++) {
       const ex = day.exercises[exIdx];
 
-      // Resolve against the user's library - the shared catalog plus their
-      // own additions. Creating on a miss is this path's own behaviour: a YAML
-      // naming a movement the catalog does not have should add it as a
-      // personal exercise. The MCP tools must never create - see
-      // `resolveExerciseStrict` in `lib/db/exercises.ts`.
-      const found = await findExerciseByName(userId, ex.name);
-
-      // Materialise even for a catalog hit: a program slot points at
-      // `Exercise.id`, so the row has to exist before it can be referenced.
-      const exerciseId = found
-        ? await exerciseIdFor(userId, found)
-        : await addPersonal(userId, {
-            name: ex.name,
-            musclesPrimary: ex.musclesPrimary,
-            musclesSecondary: ex.musclesSecondary,
-            description: ex.description_en ?? ex.description ?? "",
-            videoUrl: ex.video ?? "",
-          });
-
-      // A catalog exercise the user has not overridden keeps inheriting, so an
-      // upload no longer rewrites anatomy. That was the whole reason a sloppy
-      // YAML could corrupt the volume chart. Only a personal exercise - one
-      // this account owns outright - can be updated from a file.
-      if (found?.source === "personal" && found.exerciseId !== null) {
-        const patch: Record<string, unknown> = {
-          musclesPrimary: ex.musclesPrimary,
-          musclesSecondary: ex.musclesSecondary,
-        };
-        if (ex.video) patch.videoUrl = ex.video;
-        await prisma.exercise.update({
-          where: { id: found.exerciseId },
-          data: patch,
-        });
-      }
-
       let supersetGroup: string | null = null;
       if (ex.superset_with) {
-        const key = [ex.name, ex.superset_with].sort().join("|");
+        const key = [ex.exercise, ex.superset_with].sort().join("|");
         if (!supersetMap.has(key)) {
           supersetGroupCounter++;
           supersetMap.set(key, `ss_${supersetGroupCounter}`);
@@ -259,15 +264,42 @@ export async function installProgram(
       await prisma.programExercise.create({
         data: {
           dayId: dbDay.id,
-          exerciseId,
+          exerciseId: resolved.get(ex.exercise)!,
           setsCount: ex.sets,
-          reps: Array.isArray(ex.reps) ? ex.reps : [ex.reps],
+          reps: ex.reps,
           displayOrder: exIdx,
           supersetGroup,
+          note: ex.note?.trim() ?? "",
         },
       });
     }
   }
 
   return newProgram;
+}
+
+/** Slugs that look like what the author meant. */
+async function suggestSlugs(
+  userId: number,
+  slug: string,
+  limit = 5,
+): Promise<string[]> {
+  const library = await resolveLibrary(userId);
+  const needle = slug.replace(/[^a-z0-9]+/g, "");
+  if (!needle) return [];
+
+  const contains = library
+    .filter((e) => e.slug.replace(/[^a-z0-9]+/g, "").includes(needle))
+    .map((e) => e.slug);
+  if (contains.length > 0) return contains.slice(0, limit);
+
+  // Nothing contains the whole slug, so try its longest word - this is what
+  // turns `incline_db_press` into the incline press family.
+  const longest = slug.split("_").sort((a, b) => b.length - a.length)[0];
+  if (!longest || longest.length < 3) return [];
+
+  return library
+    .filter((e) => e.slug.includes(longest))
+    .map((e) => e.slug)
+    .slice(0, limit);
 }

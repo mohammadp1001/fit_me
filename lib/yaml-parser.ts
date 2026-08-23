@@ -1,146 +1,149 @@
 import yaml from "js-yaml";
 import { z } from "zod";
-import { Muscle } from "@prisma/client";
-import { isMuscle, suggestMuscle } from "./muscles";
 
 /**
- * `muscles` is validated outside zod (see `resolveMuscles`) so that failures can
- * name the day, the exercise, the offending value and a suggested correction.
- * zod's own path-based message ("days.0.exercises.2.muscles.primary.1") is not
- * something a user editing a YAML file can act on.
+ * The program format.
+ *
+ * A program says **which exercise, how many sets, what reps** - and nothing
+ * else. Anatomy used to live here too, restated on every upload and written
+ * straight over the stored exercise, which meant one sloppy or hallucinated
+ * file could silently re-tag a lift and corrupt the volume chart. Muscles are a
+ * fact about the exercise, so they live in the catalog now.
+ *
+ * Exercises are addressed by **slug**, not by display name. A model writing
+ * YAML produces "Incline DB Press", "Incline Dumbbell Bench Press" and
+ * "incline db press" on three different days; a slug is a value it can look up
+ * with `list_exercises` and copy exactly. Fuzzy matching was considered and
+ * rejected - it is forgiving right until the day it silently matches the wrong
+ * exercise and the volume chart is wrong with no error anywhere.
  */
-const ExerciseSchema = z.object({
-  name: z.string(),
-  muscles: z.unknown(),
-  sets: z.number().int().positive(),
-  reps: z.union([
-    z.array(z.number().int().positive()),
-    z.number().int().positive().transform((n) => [n]),
-  ]),
-  superset_with: z.string().nullable().optional(),
-  video: z.string().optional(),
-  description: z.string().optional(),
-  description_en: z.string().optional(),
-  tips: z.array(z.string()).optional(),
-  tips_en: z.array(z.string()).optional(),
-  mistakes: z.array(z.string()).optional(),
-  mistakes_en: z.array(z.string()).optional(),
-});
+const ExerciseSchema = z
+  .object({
+    exercise: z
+      .string()
+      .regex(
+        /^[a-z0-9_:]+$/,
+        "must be a slug like `barbell_squat` - lowercase, digits and underscores. Call list_exercises to find it.",
+      ),
+    sets: z.number().int().positive(),
+    reps: z.union([
+      z.array(z.number().int().positive()),
+      z.number().int().positive().transform((n) => [n]),
+    ]),
+    superset_with: z.string().nullable().optional(),
+    /** The coach's reason for this prescription. Shown with the program. */
+    note: z.string().optional(),
+  })
+  .strict();
 
-const DaySchema = z.object({
-  name: z.string(),
-  name_en: z.string().optional(),
-  exercises: z.array(ExerciseSchema),
-});
-
-const ProgramSchema = z.object({
-  program: z.object({
+const DaySchema = z
+  .object({
     name: z.string(),
-    name_en: z.string().optional(),
-    days: z.array(DaySchema),
-  }),
-});
+    exercises: z.array(ExerciseSchema),
+  })
+  .strict();
 
-type RawExercise = z.infer<typeof ExerciseSchema>;
+const ProgramSchema = z
+  .object({
+    program: z
+      .object({
+        name: z.string(),
+        days: z.array(DaySchema),
+      })
+      .strict(),
+  })
+  .strict();
 
-export type ParsedExercise = Omit<RawExercise, "muscles"> & {
-  musclesPrimary: Muscle[];
-  musclesSecondary: Muscle[];
+export type ParsedExercise = z.infer<typeof ExerciseSchema>;
+export type ParsedDay = z.infer<typeof DaySchema>;
+export type ParsedProgram = z.infer<typeof ProgramSchema>["program"];
+
+/**
+ * Keys the old format used, with what to do instead.
+ *
+ * A v1 file is rejected with a specific message rather than a generic schema
+ * error: the whole point of removing these keys is that they were silently
+ * authoritative, so an author who still sends them deserves to be told exactly
+ * why they are gone.
+ */
+const REMOVED_KEYS: Record<string, string> = {
+  muscles:
+    "muscles now live in the exercise catalog, not in the program. Remove the block.",
+  name: "an exercise is addressed by `exercise: <slug>` now. Call list_exercises to find the slug.",
+  description:
+    "descriptions live in the exercise catalog. Use `note:` for your reasoning about this prescription.",
+  description_en: "descriptions live in the exercise catalog.",
+  tips: "tips live in the exercise catalog.",
+  tips_en: "tips live in the exercise catalog.",
+  mistakes: "common mistakes live in the exercise catalog.",
+  mistakes_en: "common mistakes live in the exercise catalog.",
+  video: "video links live in the exercise catalog.",
+  name_en: "programs and days have a single English `name` now.",
 };
 
-export type ParsedDay = Omit<z.infer<typeof DaySchema>, "exercises"> & {
-  exercises: ParsedExercise[];
-};
+function checkRemovedKeys(raw: unknown): void {
+  const program = (raw as { program?: unknown } | null)?.program;
+  if (!program || typeof program !== "object") return;
 
-export type ParsedProgram = Omit<
-  z.infer<typeof ProgramSchema>["program"],
-  "days"
-> & { days: ParsedDay[] };
+  const complain = (where: string, obj: unknown) => {
+    if (!obj || typeof obj !== "object") return;
+    for (const key of Object.keys(obj)) {
+      const advice = REMOVED_KEYS[key];
+      if (advice) {
+        throw new Error(`${where}: \`${key}\` is no longer part of the format - ${advice}`);
+      }
+    }
+  };
 
-function toCanonical(values: unknown, where: string, role: string): Muscle[] {
-  if (!Array.isArray(values)) {
-    throw new Error(`${where}: muscles.${role} must be a list.`);
+  const p = program as { name_en?: unknown; days?: unknown };
+  if (p.name_en !== undefined) {
+    throw new Error(`program: \`name_en\` is no longer part of the format - ${REMOVED_KEYS.name_en}`);
   }
 
-  return values.map((value) => {
-    if (typeof value !== "string") {
-      throw new Error(
-        `${where}: muscles.${role} contains a non-string entry (${JSON.stringify(value)}).`
-      );
+  if (!Array.isArray(p.days)) return;
+  p.days.forEach((day, dayIdx) => {
+    const where = `day ${dayIdx + 1}`;
+    if (day && typeof day === "object" && "name_en" in day) {
+      throw new Error(`${where}: \`name_en\` is no longer part of the format - ${REMOVED_KEYS.name_en}`);
     }
-    if (!isMuscle(value)) {
-      const hint = suggestMuscle(value);
-      throw new Error(
-        `${where}: unknown muscle "${value}"` +
-          (hint ? ` - did you mean "${hint}"?` : "") +
-          ` See examples/TEMPLATE.yaml for the full list.`
-      );
-    }
-    return value;
+    const exercises = (day as { exercises?: unknown })?.exercises;
+    if (!Array.isArray(exercises)) return;
+    exercises.forEach((ex, exIdx) => {
+      complain(`day ${dayIdx + 1}, exercise ${exIdx + 1}`, ex);
+    });
   });
-}
-
-function resolveMuscles(
-  raw: unknown,
-  where: string
-): { musclesPrimary: Muscle[]; musclesSecondary: Muscle[] } {
-  if (raw === undefined || raw === null) {
-    throw new Error(
-      `${where}: missing "muscles". Expected muscles.primary (and optionally muscles.secondary).`
-    );
-  }
-
-  // The pre-taxonomy schema used a flat free-text list. Rejected outright rather
-  // than coerced, so canonical and free-text values can never coexist in the DB.
-  if (Array.isArray(raw)) {
-    throw new Error(
-      `${where}: "muscles" is now an object, not a list. Use ` +
-        `muscles:\n    primary: [...]\n    secondary: [...]`
-    );
-  }
-
-  if (typeof raw !== "object") {
-    throw new Error(`${where}: "muscles" must be an object with a primary list.`);
-  }
-
-  const { primary, secondary } = raw as Record<string, unknown>;
-
-  const musclesPrimary = toCanonical(primary ?? [], where, "primary");
-  if (musclesPrimary.length === 0) {
-    throw new Error(
-      `${where}: muscles.primary must list at least one muscle - an exercise with no primary mover cannot be counted toward any volume.`
-    );
-  }
-
-  const musclesSecondary = toCanonical(secondary ?? [], where, "secondary");
-
-  const overlap = musclesSecondary.filter((m) => musclesPrimary.includes(m));
-  if (overlap.length > 0) {
-    throw new Error(
-      `${where}: ${overlap.join(", ")} listed as both primary and secondary. Pick one role.`
-    );
-  }
-
-  return { musclesPrimary, musclesSecondary };
 }
 
 export function parseWorkoutYaml(content: string): ParsedProgram {
   const raw = yaml.load(content);
+
+  // Checked before zod, so a v1 file gets "muscles now live in the catalog"
+  // rather than an unhelpful list of unrecognised keys.
+  checkRemovedKeys(raw);
+
   const result = ProgramSchema.safeParse(raw);
   if (!result.success) {
-    throw new Error(`Invalid YAML: ${result.error.message}`);
+    const first = result.error.issues[0];
+    const where = first?.path.length
+      ? `${first.path.join(".")}: `
+      : "";
+    throw new Error(`Invalid program YAML: ${where}${first?.message ?? result.error.message}`);
   }
 
   const program = result.data.program;
 
-  return {
-    ...program,
-    days: program.days.map((day, dayIdx) => ({
-      ...day,
-      exercises: day.exercises.map(({ muscles, ...rest }) => {
-        const where = `day ${dayIdx + 1} ("${day.name}"), exercise "${rest.name}"`;
-        return { ...rest, ...resolveMuscles(muscles, where) };
-      }),
-    })),
-  };
+  const seen = new Set<string>();
+  for (const [dayIdx, day] of program.days.entries()) {
+    for (const [exIdx, ex] of day.exercises.entries()) {
+      const key = `${dayIdx}:${ex.exercise}`;
+      if (seen.has(key)) {
+        throw new Error(
+          `day ${dayIdx + 1}, exercise ${exIdx + 1}: \`${ex.exercise}\` appears twice in the same day.`,
+        );
+      }
+      seen.add(key);
+    }
+  }
+
+  return program;
 }

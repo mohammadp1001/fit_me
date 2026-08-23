@@ -407,7 +407,7 @@ export async function validateProgramYaml({ yaml }: { yaml: string }) {
     return {
       valid: true as const,
       program: {
-        name: program.name_en ?? program.name,
+        name: program.name,
         days: program.days.map((day) => ({
           name: day.name,
           exercises: day.exercises.length,

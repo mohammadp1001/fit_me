@@ -1,241 +1,206 @@
-import { parseWorkoutYaml } from './yaml-parser';
+import { parseWorkoutYaml } from "./yaml-parser";
 
-describe('parseWorkoutYaml', () => {
-  it('parses a valid program with fixed reps', () => {
-    const yaml = `
-program:
-  name: "Test Program"
-  name_en: "Test Program EN"
-  days:
-    - name: "Day 1"
-      name_en: "Day 1 EN"
-      exercises:
-        - name: "Exercise A"
-          muscles:
-            primary: [pec_major_sternal]
-          sets: 3
-          reps: 10
-    `;
-    const result = parseWorkoutYaml(yaml);
-    expect(result.name).toBe('Test Program');
-    expect(result.name_en).toBe('Test Program EN');
-    expect(result.days).toHaveLength(1);
-    expect(result.days[0].exercises).toHaveLength(1);
-    expect(result.days[0].exercises[0].reps).toEqual([10]);
+const program = (body: string) => `program:\n  name: "Test"\n  days:\n${body}`;
+
+const oneDay = (exercises: string) =>
+  program(`    - name: "Day 1"\n      exercises:\n${exercises}`);
+
+describe("parseWorkoutYaml", () => {
+  it("parses a program with a single rep target", () => {
+    const parsed = parseWorkoutYaml(
+      oneDay(`        - exercise: barbell_squat\n          sets: 3\n          reps: 10`),
+    );
+
+    expect(parsed.name).toBe("Test");
+    expect(parsed.days).toHaveLength(1);
+    expect(parsed.days[0].name).toBe("Day 1");
+    expect(parsed.days[0].exercises[0]).toMatchObject({
+      exercise: "barbell_squat",
+      sets: 3,
+      // A single integer expands to one target per set, so no reader has to
+      // handle two shapes.
+      reps: [10],
+    });
   });
 
-  it('parses reps as an array', () => {
-    const yaml = `
-program:
-  name: "Test"
-  days:
-    - name: "Day 1"
-      exercises:
-        - name: "Exercise"
-          muscles:
-            primary: [quadriceps]
-          sets: 4
-          reps: [12, 10, 8, 6]
-    `;
-    const result = parseWorkoutYaml(yaml);
-    expect(result.days[0].exercises[0].reps).toEqual([12, 10, 8, 6]);
+  it("parses per-set reps", () => {
+    const parsed = parseWorkoutYaml(
+      oneDay(
+        `        - exercise: barbell_squat\n          sets: 4\n          reps: [12, 10, 8, 8]`,
+      ),
+    );
+
+    expect(parsed.days[0].exercises[0].reps).toEqual([12, 10, 8, 8]);
   });
 
-  it('parses superset links', () => {
-    const yaml = `
-program:
-  name: "Test"
-  days:
-    - name: "Day 1"
-      exercises:
-        - name: "Ex A"
-          muscles:
-            primary: [lats]
-          sets: 3
-          reps: 10
-          superset_with: "Ex B"
-        - name: "Ex B"
-          muscles:
-            primary: [lats]
-          sets: 3
-          reps: 10
-          superset_with: "Ex A"
-    `;
-    const result = parseWorkoutYaml(yaml);
-    expect(result.days[0].exercises[0].superset_with).toBe('Ex B');
-    expect(result.days[0].exercises[1].superset_with).toBe('Ex A');
+  it("parses a superset link and an optional note", () => {
+    const parsed = parseWorkoutYaml(
+      oneDay(
+        `        - exercise: cable_crossover\n          sets: 3\n          reps: 12\n          superset_with: pushups\n          note: "Straight into pushups, no rest."\n` +
+          `        - exercise: pushups\n          sets: 3\n          reps: 15\n          superset_with: cable_crossover`,
+      ),
+    );
+
+    const [a, b] = parsed.days[0].exercises;
+    expect(a.superset_with).toBe("pushups");
+    expect(a.note).toBe("Straight into pushups, no rest.");
+    expect(b.superset_with).toBe("cable_crossover");
+    expect(b.note).toBeUndefined();
   });
 
-  it('throws on invalid YAML structure', () => {
-    const yaml = `
-program:
-  days:
-    - name: "Day 1"
-      exercises:
-        - name: "Ex"
-          sets: invalid
-    `;
-    expect(() => parseWorkoutYaml(yaml)).toThrow();
-  });
-
-  it('throws on missing required fields', () => {
-    const yaml = `
-program:
-  days:
-    - exercises:
-        - name: "Ex"
-          muscles:
-            primary: [lats]
-          sets: 3
-          reps: 10
-    `;
-    expect(() => parseWorkoutYaml(yaml)).toThrow();
-  });
-
-  it('parses optional video and guide fields', () => {
-    const yaml = `
-program:
-  name: "Test"
-  days:
-    - name: "Day 1"
-      exercises:
-        - name: "Ex"
-          muscles:
-            primary: [lats]
-          sets: 3
-          reps: 10
-          video: "https://example.com/ex.mp4"
-          description: "شرح"
-          description_en: "Description"
-          tips: ["نکته"]
-          tips_en: ["Tip one", "Tip two"]
-          mistakes: ["اشتباه"]
-          mistakes_en: ["A mistake"]
-    `;
-    const ex = parseWorkoutYaml(yaml).days[0].exercises[0];
-    expect(ex.video).toBe('https://example.com/ex.mp4');
-    expect(ex.description_en).toBe('Description');
-    expect(ex.tips_en).toEqual(['Tip one', 'Tip two']);
-    expect(ex.mistakes).toEqual(['اشتباه']);
-  });
-
-  it('leaves guide fields undefined when omitted', () => {
-    const yaml = `
-program:
-  name: "Test"
-  days:
-    - name: "Day 1"
-      exercises:
-        - name: "Ex"
-          muscles:
-            primary: [lats]
-          sets: 3
-          reps: 10
-    `;
-    const ex = parseWorkoutYaml(yaml).days[0].exercises[0];
-    expect(ex.video).toBeUndefined();
-    expect(ex.tips).toBeUndefined();
-    expect(ex.mistakes_en).toBeUndefined();
-  });
-
-  it('defaults name_en when missing', () => {
-    const yaml = `
-program:
-  name: "Test"
-  days:
-    - name: "Day 1"
-      exercises:
-        - name: "Ex"
-          muscles:
-            primary: [lats]
-          sets: 3
-          reps: 10
-    `;
-    const result = parseWorkoutYaml(yaml);
-    expect(result.name_en).toBeUndefined();
+  it("parses the shipped template", () => {
+    // The template is what `get_program_schema` hands a chatbot. If it stops
+    // parsing, every program the coach writes is wrong.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { readFileSync } = require("node:fs");
+    const parsed = parseWorkoutYaml(
+      readFileSync("examples/TEMPLATE.yaml", "utf8"),
+    );
+    expect(parsed.days.length).toBeGreaterThan(0);
+    expect(parsed.days[0].exercises[0].exercise).toMatch(/^[a-z0-9_]+$/);
   });
 });
 
-describe('parseWorkoutYaml — muscles', () => {
-  const wrap = (musclesBlock: string) => `
-program:
-  name: "Test"
-  days:
-    - name: "Day 1"
-      exercises:
-        - name: "Lat Pulldown"
-${musclesBlock}
-          sets: 3
-          reps: 10
-  `;
-
-  it('parses primary and secondary into separate lists', () => {
-    const ex = parseWorkoutYaml(
-      wrap(`          muscles:
-            primary: [lats, rhomboids]
-            secondary: [biceps_brachii]`)
-    ).days[0].exercises[0];
-
-    expect(ex.musclesPrimary).toEqual(['lats', 'rhomboids']);
-    expect(ex.musclesSecondary).toEqual(['biceps_brachii']);
-  });
-
-  it('defaults secondary to an empty list', () => {
-    const ex = parseWorkoutYaml(
-      wrap(`          muscles:
-            primary: [lats]`)
-    ).days[0].exercises[0];
-
-    expect(ex.musclesSecondary).toEqual([]);
-  });
-
-  it('rejects the legacy flat free-text list', () => {
-    expect(() =>
-      parseWorkoutYaml(wrap('          muscles: ["Chest", "Triceps"]'))
-    ).toThrow(/"muscles" is now an object, not a list/);
-  });
-
-  it('rejects an unknown muscle and names the exercise', () => {
+describe("parseWorkoutYaml - slugs", () => {
+  it("rejects a display name where a slug belongs", () => {
     expect(() =>
       parseWorkoutYaml(
-        wrap(`          muscles:
-            primary: [latisimus]`)
-      )
-    ).toThrow(/exercise "Lat Pulldown": unknown muscle "latisimus"/);
+        oneDay(
+          `        - exercise: "Barbell Squat"\n          sets: 3\n          reps: 10`,
+        ),
+      ),
+    ).toThrow(/slug/i);
   });
 
-  it('suggests the nearest canonical key for a near miss', () => {
+  it("rejects an empty slug", () => {
     expect(() =>
       parseWorkoutYaml(
-        wrap(`          muscles:
-            primary: [latts]`)
-      )
-    ).toThrow(/did you mean "lats"\?/);
+        oneDay(`        - exercise: ""\n          sets: 3\n          reps: 10`),
+      ),
+    ).toThrow();
   });
 
-  it('rejects an empty primary list', () => {
+  // Two slots for the same lift on one day would make "which slot is this log
+  // for?" ambiguous, and the suggestion writer picks the lowest displayOrder.
+  it("rejects the same exercise twice in one day", () => {
     expect(() =>
       parseWorkoutYaml(
-        wrap(`          muscles:
-            primary: []
-            secondary: [lats]`)
-      )
-    ).toThrow(/muscles\.primary must list at least one muscle/);
+        oneDay(
+          `        - exercise: barbell_squat\n          sets: 3\n          reps: 10\n` +
+            `        - exercise: barbell_squat\n          sets: 2\n          reps: 5`,
+        ),
+      ),
+    ).toThrow(/appears twice/i);
   });
 
-  it('rejects a muscle listed as both primary and secondary', () => {
-    expect(() =>
-      parseWorkoutYaml(
-        wrap(`          muscles:
-            primary: [lats]
-            secondary: [lats]`)
-      )
-    ).toThrow(/listed as both primary and secondary/);
-  });
-
-  it('rejects a missing muscles block', () => {
-    expect(() => parseWorkoutYaml(wrap('          video: "x.mp4"'))).toThrow(
-      /missing "muscles"/
+  it("allows the same exercise on different days", () => {
+    const parsed = parseWorkoutYaml(
+      program(
+        `    - name: "Day 1"\n      exercises:\n        - exercise: barbell_squat\n          sets: 3\n          reps: 10\n` +
+          `    - name: "Day 2"\n      exercises:\n        - exercise: barbell_squat\n          sets: 5\n          reps: 5`,
+      ),
     );
+    expect(parsed.days).toHaveLength(2);
+  });
+});
+
+describe("parseWorkoutYaml - structure", () => {
+  it("rejects a document with no top-level program object", () => {
+    expect(() => parseWorkoutYaml(`name: "Test"\ndays: []`)).toThrow(
+      /Invalid program YAML/,
+    );
+  });
+
+  it("rejects a missing required field", () => {
+    expect(() =>
+      parseWorkoutYaml(
+        oneDay(`        - exercise: barbell_squat\n          sets: 3`),
+      ),
+    ).toThrow(/Invalid program YAML/);
+  });
+
+  it("rejects a non-positive set count", () => {
+    expect(() =>
+      parseWorkoutYaml(
+        oneDay(
+          `        - exercise: barbell_squat\n          sets: 0\n          reps: 10`,
+        ),
+      ),
+    ).toThrow();
+  });
+
+  // An invented key must fail loudly. Silently dropping it is how a program
+  // ends up meaning something other than what its author wrote.
+  it("rejects a key that is not in the schema", () => {
+    expect(() =>
+      parseWorkoutYaml(
+        oneDay(
+          `        - exercise: barbell_squat\n          sets: 3\n          reps: 10\n          tempo: "3-1-1"`,
+        ),
+      ),
+    ).toThrow();
+  });
+});
+
+describe("parseWorkoutYaml - the removed v1 keys", () => {
+  // These keys were silently authoritative: a program file could re-tag an
+  // exercise's muscles and corrupt the volume chart. Whoever still sends them
+  // deserves to be told exactly why they are gone, not handed a generic
+  // "unrecognised key".
+  const withKey = (line: string) =>
+    oneDay(
+      `        - exercise: barbell_squat\n          sets: 3\n          reps: 10\n${line}`,
+    );
+
+  it("explains that muscles now live in the catalog", () => {
+    expect(() =>
+      parseWorkoutYaml(withKey(`          muscles:\n            primary: [quadriceps]`)),
+    ).toThrow(/muscles now live in the exercise catalog/);
+  });
+
+  it("explains that an exercise is addressed by slug", () => {
+    expect(() => parseWorkoutYaml(withKey(`          name: "Barbell Squat"`))).toThrow(
+      /addressed by .exercise: <slug>./,
+    );
+  });
+
+  it("explains where descriptions, tips, mistakes and video went", () => {
+    expect(() => parseWorkoutYaml(withKey(`          description: "x"`))).toThrow(
+      /descriptions live in the exercise catalog/,
+    );
+    expect(() => parseWorkoutYaml(withKey(`          tips: ["x"]`))).toThrow(
+      /tips live in the exercise catalog/,
+    );
+    expect(() => parseWorkoutYaml(withKey(`          mistakes: ["x"]`))).toThrow(
+      /mistakes live in the exercise catalog/,
+    );
+    expect(() => parseWorkoutYaml(withKey(`          video: "http://x"`))).toThrow(
+      /video links live in the exercise catalog/,
+    );
+  });
+
+  it("explains that programs and days have a single name", () => {
+    expect(() =>
+      parseWorkoutYaml(
+        `program:\n  name: "Test"\n  name_en: "Test"\n  days:\n    - name: "Day 1"\n      exercises:\n        - exercise: barbell_squat\n          sets: 3\n          reps: 10`,
+      ),
+    ).toThrow(/single English .name./);
+
+    expect(() =>
+      parseWorkoutYaml(
+        `program:\n  name: "Test"\n  days:\n    - name: "Day 1"\n      name_en: "Day 1"\n      exercises:\n        - exercise: barbell_squat\n          sets: 3\n          reps: 10`,
+      ),
+    ).toThrow(/single English .name./);
+  });
+
+  it("names the day and exercise so the author can find it", () => {
+    expect(() =>
+      parseWorkoutYaml(
+        program(
+          `    - name: "Day 1"\n      exercises:\n        - exercise: barbell_squat\n          sets: 3\n          reps: 10\n` +
+            `    - name: "Day 2"\n      exercises:\n        - exercise: bench_press\n          sets: 3\n          reps: 10\n          muscles:\n            primary: [pec_major_sternal]`,
+        ),
+      ),
+    ).toThrow(/day 2, exercise 1/);
   });
 });

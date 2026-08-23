@@ -251,6 +251,12 @@ model ProgramExercise {
   reps          Int[]
   displayOrder  Int
   supersetGroup String?
+  /// The coach's reasoning for this prescription, carried in the program file.
+  ///
+  /// Distinct from `WorkoutLog.note`, which is the user writing back about a
+  /// session. This one is written once, by whoever authored the program, and
+  /// explains why these sets and reps.
+  note          String       @default("")
   day           ProgramDay   @relation(fields: [dayId], references: [id], onDelete: Cascade)
   exercise      Exercise     @relation(fields: [exerciseId], references: [id])
   workoutLogs   WorkoutLog[]

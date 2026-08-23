@@ -1,122 +1,81 @@
 # ============================================================================
 # FitMe program schema — annotated template
 # ----------------------------------------------------------------------------
-# Feed this file (or one shaped like it) to the app's Profile → "Upload new
-# program" button. Everything the parser understands is documented below.
-# Fields NOT listed here are ignored, so don't invent new ones.
+# Feed this file (or one shaped like it) to Profile → "Upload new program".
+# Everything the parser understands is documented below. Any key not listed
+# here is REJECTED, so the file cannot quietly carry something ignored.
+#
+# A program says which exercise, how many sets, and what reps. Nothing else.
+#
+# What an exercise IS — its muscles, description, tips, common mistakes and
+# video — lives in the shared exercise catalog, not in this file. That is
+# deliberate: those values used to be restated on every upload and written
+# straight over the stored exercise, so one sloppy file could silently re-tag a
+# lift and corrupt the weekly volume numbers.
 #
 # Quick rules:
 #   • The whole file is a single top-level `program:` object.
-#   • Bilingual convention: the base field holds the primary text (Persian);
-#     an optional `*_en` variant holds English. If `*_en` is omitted, the base
-#     text is reused for both languages. This applies to `name`/`name_en`,
-#     `description`/`description_en`, `tips`/`tips_en`, `mistakes`/`mistakes_en`.
-#   • `muscles` is an OBJECT with `primary` (required, at least one) and
-#     `secondary` (optional). Values must come from the canonical list in
-#     MUSCLES.md — free text is rejected at upload. Display names are localised
-#     by the app, so you never write Persian or English muscle names here.
+#   • Names are English. The app's interface is still bilingual, but exercise
+#     and program content is not.
+#   • `exercise:` is a SLUG, not a display name — lowercase, digits and
+#     underscores, e.g. `barbell_squat`. Call `list_exercises` (or look in the
+#     app's library) to find the right one. An unknown slug fails the upload
+#     and the error lists near-matches; nothing is guessed.
 #   • `sets` is a positive integer.
 #   • `reps` is EITHER one integer (same target for every set)
-#            OR a list of integers, one per set (length should equal `sets`).
-#   • `superset_with` links two exercises; put the partner's exact `name`
-#     on BOTH exercises so the app pairs them.
-#   • `video` is a direct video URL (e.g. an .mp4) or a YouTube link. It shows
-#     as a link at the bottom of the exercise's Guide tab. Optional.
-#   • `description`, `tips`, `mistakes` (and their `*_en` variants) populate
-#     the exercise's Guide tab. All optional.
+#            OR a list of integers, one per set.
+#   • `superset_with` links two exercises: put the partner's exact slug on
+#     BOTH exercises so the app pairs them.
+#   • `note` is optional — your reasoning for this prescription. It is shown
+#     with the program. It is NOT the user's note; that one is written at the
+#     gym, per session, on the log screen.
 #
 # ----------------------------------------------------------------------------
-# → The full list of allowed muscle values, with their Persian/English display
-#   names, is in MUSCLES.md next to this file. That file is generated from the
-#   code, so it is always the authoritative list; this template deliberately
-#   does not repeat it.
-#
-# Muscles roll up into these groups, and it is the GROUP (not the individual
-# muscle) that weekly volume is counted against on the Progress tab:
+# Weekly volume is counted per muscle GROUP, from the catalog's tags:
 #
 #   chest · back · shoulders · arms · forearms
 #   quads · hamstrings · glutes · adductors · calves · core
 #
-# Primary vs secondary: a logged set counts fully toward every `primary`
-# muscle's group and half toward every `secondary` one. Tag the movers the
-# exercise actually trains — over-tagging inflates your volume numbers.
-# A muscle may not appear in both lists.
+# A logged set counts fully toward every primary muscle's group and half toward
+# every secondary one. You do not tag anything here — the catalog already has.
 #
-# Note on the exercise library: exercises are keyed by `name`. Guide/video
-# content is written to a shared library the first time a name is seen, and
-# backfilled onto an existing entry only where that entry is still empty.
-# Muscles are the exception — they are overwritten on every upload, so
-# re-uploading a corrected file is how you fix a mis-tagged exercise.
+# To add an exercise the catalog does not carry, use the `add_exercise` tool.
+# It lands in your own library only, and gets a slug you can reference here.
 # ============================================================================
 
 program:
-  name: "برنامه نمونه"                    # required — Persian program name
-  name_en: "Sample Program"               # optional — English program name
+  name: "Sample Program"                  # required
 
   days:                                   # required — one or more training days
     # ────────────────────────────────────────────────────────────────
-    - name: "روز اول — سینه"              # required — Persian day name
-      name_en: "Day 1 — Chest"            # optional — English day name
+    - name: "Day 1 — Chest"               # required
       exercises:                          # required — one or more exercises
 
-        # Minimal exercise: single rep target for all sets, just a video.
-        - name: "Machine Chest Press"     # required — exercise name (unique key)
-          muscles:
-            primary: [pec_major_sternal]  # required — at least one
-            secondary: [triceps_brachii, front_delt]
-          sets: 4                         # required — positive integer
-          reps: 10                        # one number → 10 reps every set
-          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Machine-machine-chest-press-side.mp4"
+        # Minimal exercise: one rep target for every set.
+        - exercise: machine_chest_press    # required — catalog slug
+          sets: 4                          # required — positive integer
+          reps: 10                         # one number → 10 reps every set
 
-        # Fully-featured exercise: per-set reps, video, and a bilingual Guide.
-        - name: "Dumbbell Incline Press"
-          muscles:
-            primary: [pec_major_clavicular]
-            secondary: [front_delt, triceps_brachii]
+        # Per-set reps, plus the coach's reasoning.
+        - exercise: incline_dumbbell_press
           sets: 4
-          reps: [12, 10, 8, 8]            # one entry per set (pyramid)
-          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Dumbbells-dumbbell-incline-press-side.mp4"
-          description: "تمرکز روی سینه بالایی با زاویه ۳۰ درجه."
-          description_en: "Targets the upper chest with the bench set to ~30°."
-          tips:                           # Persian tips (Guide tab, ✓ list)
-            - "کف پا را روی زمین ثابت نگه دار."
-            - "دمبل‌ها را در مسیر قوسی پایین بیاور."
-          tips_en:                        # English tips (falls back to `tips` if omitted)
-            - "Keep your feet planted and core braced."
-            - "Lower the dumbbells along a slight arc."
-          mistakes:                       # Persian common mistakes (✕ list)
-            - "قوس بیش از حد کمر."
-          mistakes_en:
-            - "Over-arching the lower back."
+          reps: [12, 10, 8, 8]             # one entry per set (pyramid)
+          note: "Pyramid up. Stop one rep short of failure on the last set."
 
-        # A superset pair — BOTH exercises reference each other by name.
-        - name: "Cable Pec Fly"
-          muscles:
-            primary: [pec_major_sternal]  # `secondary` may be omitted entirely
+        # A superset pair — BOTH exercises reference each other by slug.
+        - exercise: cable_crossover
           sets: 3
           reps: [12, 12, 10]
-          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Cables-cable-pec-fly-side.mp4"
-          superset_with: "Push Up"        # partner's exact name
-        - name: "Push Up"
-          muscles:
-            primary: [pec_major_sternal]
-            secondary: [triceps_brachii, front_delt, rectus_abdominis]
+          superset_with: pushups
+        - exercise: pushups
           sets: 3
           reps: 15
-          superset_with: "Cable Pec Fly"  # points back to its partner
+          superset_with: cable_crossover
 
     # ────────────────────────────────────────────────────────────────
-    - name: "روز دوم — پشت"
-      name_en: "Day 2 — Back"
+    - name: "Day 2 — Back"
       exercises:
-        - name: "Lat Pulldown"
-          muscles:
-            primary: [lats]
-            secondary: [traps_lower, biceps_brachii, rear_delt]
+        - exercise: wide_grip_lat_pulldown
           sets: 4
           reps: [12, 10, 10, 8]
-          video: "https://media.musclewiki.com/media/uploads/videos/branded/male-Machine-machine-pulldown-side.mp4"
-          # English-only Guide is fine — it fills both languages via fallback.
-          description_en: "Pull the bar to your upper chest, driving elbows down."
-          tips_en:
-            - "Lead with the elbows, not the hands."
+          note: "Lead with the elbows. Add weight when all four sets hit the target."

@@ -491,10 +491,7 @@ program:
   days:
     - name: Day 1
       exercises:
-        - name: Bench Press
-          muscles:
-            primary: [pec_major_sternal]
-            secondary: [triceps_brachii]
+        - exercise: barbell_squat
           sets: 3
           reps: 8
 `;
@@ -516,15 +513,27 @@ program:
     expect(result.program.days).toHaveLength(1);
   });
 
-  it("reports an invented muscle name instead of throwing", async () => {
-    // This is the failure the tool exists to catch before the user hits upload.
+  // The failure this tool exists to catch before the user hits upload. A
+  // program carries no anatomy now, so the v1 keys are the thing a model is
+  // most likely to reach for out of habit.
+  it("reports a removed v1 key instead of throwing", async () => {
     const result = await validateProgramYaml({
-      yaml: VALID.replace("pec_major_sternal", "pecs"),
+      yaml: `${VALID}          muscles:
+            primary: [quadriceps]
+`,
     });
 
     expect(result.valid).toBe(false);
     if (result.valid) throw new Error("expected invalid");
-    expect(result.error).toEqual(expect.any(String));
+    expect(result.error).toMatch(/catalog/);
+  });
+
+  it("reports a display name used where a slug belongs", async () => {
+    const result = await validateProgramYaml({
+      yaml: VALID.replace("exercise: barbell_squat", 'exercise: "Barbell Squat"'),
+    });
+
+    expect(result.valid).toBe(false);
   });
 
   it("reports malformed YAML instead of throwing", async () => {
