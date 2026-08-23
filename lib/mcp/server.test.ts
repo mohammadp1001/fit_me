@@ -71,6 +71,7 @@ describe("MCP server wiring", () => {
       "list_exercises",
       "list_programs",
       "list_sessions",
+      "save_program_draft",
       "save_suggestions",
       "validate_program_yaml",
     ]);
@@ -89,6 +90,7 @@ describe("MCP server wiring", () => {
 
     expect(writers.map((t) => t.name).sort()).toEqual([
       "add_exercise",
+      "save_program_draft",
       "save_suggestions",
     ]);
     // Neither destroys anything: one appends a proposal, the other adds a row.

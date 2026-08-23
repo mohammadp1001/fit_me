@@ -71,10 +71,16 @@ export async function getProgramById(userId: number, id: number) {
   });
 }
 
-/** Summary rows for the program switcher. */
+/**
+ * Summary rows for the program switcher.
+ *
+ * Drafts are excluded: a proposal is not something to switch to until it has
+ * been approved, and showing it here would be a second, unguarded way to
+ * activate it.
+ */
 export async function listPrograms(userId: number) {
   return prisma.program.findMany({
-    where: { userId },
+    where: { userId, isDraft: false },
     orderBy: { id: "desc" },
     select: {
       id: true,
@@ -88,7 +94,7 @@ export async function listPrograms(userId: number) {
 /** Programs with a day count, for the MCP `list_programs` tool. */
 export async function listProgramsWithDayCount(userId: number) {
   return prisma.program.findMany({
-    where: { userId },
+    where: { userId, isDraft: false },
     orderBy: { id: "asc" },
     include: { _count: { select: { days: true } } },
   });
@@ -104,10 +110,29 @@ export async function activateProgram(userId: number, programId: number) {
     where: { userId },
     data: { isActive: false },
   });
+  // Approving a draft is what makes it an ordinary program: it stops being a
+  // proposal the moment the user accepts it.
   return prisma.program.update({
     where: { id: programId },
-    data: { isActive: true },
+    data: { isActive: true, isDraft: false },
   });
+}
+
+/** The pending proposal, or null. At most one exists at a time. */
+export async function findDraft(userId: number) {
+  return prisma.program.findFirst({
+    where: { userId, isDraft: true },
+    orderBy: { id: "desc" },
+    include: FULL_PROGRAM,
+  });
+}
+
+/** Throws the proposal away. The active program is untouched either way. */
+export async function discardDraft(userId: number, programId: number) {
+  const { count } = await prisma.program.deleteMany({
+    where: { id: programId, userId, isDraft: true },
+  });
+  return count > 0;
 }
 
 export type DeleteProgramResult =
@@ -193,11 +218,17 @@ export class UnknownExerciseSlugError extends Error {
  *
  * Nothing is written until every slug resolves. A file naming one unknown
  * exercise leaves the previous program active and untouched.
+ *
+ * `draft` installs the program without activating it. The rows are identical -
+ * a draft is a real program with its days and slots, so the approval screen can
+ * diff it against the active one and activating it is a flag flip rather than a
+ * second parse.
  */
 export async function installProgram(
   userId: number,
   program: ParsedProgram,
   yamlContent: string,
+  { draft = false, rationale = "" }: { draft?: boolean; rationale?: string } = {},
 ) {
   // Resolve everything first. Installing a program that is missing an exercise
   // would leave the user with a broken plan and no previous one to fall back
@@ -219,10 +250,13 @@ export async function installProgram(
     }
   }
 
-  await prisma.program.updateMany({
-    where: { userId, isActive: true },
-    data: { isActive: false },
-  });
+  // A draft must not disturb what the user is currently following.
+  if (!draft) {
+    await prisma.program.updateMany({
+      where: { userId, isActive: true },
+      data: { isActive: false },
+    });
+  }
 
   // Days are created in a nested write - a single round-trip.
   const newProgram = await prisma.program.create({
@@ -230,7 +264,9 @@ export async function installProgram(
       userId,
       name: program.name,
       yamlContent,
-      isActive: true,
+      isActive: !draft,
+      isDraft: draft,
+      rationale,
       days: {
         create: program.days.map((day, dayIdx) => ({
           dayNumber: dayIdx + 1,
