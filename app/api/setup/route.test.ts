@@ -4,10 +4,10 @@
 import { NextRequest } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
-// The route gates on the session cookie; these tests are about the library
-// upsert rules underneath it, so authentication is stubbed as always-passing.
-// `currentUserId()` reads the session, so stubbing "logged in" now means
-// stubbing *who*. Account 1 is the one the fixtures below create.
+// The route gates on the session cookie; these tests are about what an upload
+// does to the library underneath it, so authentication is stubbed as
+// always-passing. `currentUserId()` reads the session, so stubbing "logged in"
+// means stubbing *who*. Account 1 is the one the fixtures below create.
 jest.mock("@/lib/session", () => ({
   isAuthenticated: jest.fn(async () => true),
   sessionUserId: jest.fn(async () => 1),
@@ -17,31 +17,23 @@ import { POST } from "./route";
 
 const prisma = new PrismaClient();
 
-const MP4 =
-  "https://media.musclewiki.com/media/uploads/videos/branded/male-Machine-machine-chest-press-side.mp4";
-const YT = "https://www.youtube.com/watch?v=YXjhMV7uz4c";
+const PROGRAM_NAME = `Setup Route Test Program ${Date.now()}`;
 
-/** Unique per run so parallel/repeat runs never collide on the name key. */
-const EX_NAME = `Setup Route Test Press ${Date.now()}`;
+/** A slug that really is in the shipped catalog. */
+const SLUG = "barbell_squat";
 
-function yamlFor(exerciseName: string, fields: string): string {
+function yamlFor(slug: string, extra = ""): string {
   return `
 program:
-  name: "Setup Route Test Program"
+  name: "${PROGRAM_NAME}"
   days:
     - name: "Day 1"
       exercises:
-        - name: "${exerciseName}"
-          muscles:
-            primary: [pec_major_sternal]
+        - exercise: ${slug}
           sets: 3
           reps: 10
-${fields}
+${extra}
 `;
-}
-
-function yamlWith(fields: string): string {
-  return yamlFor(EX_NAME, fields);
 }
 
 async function upload(yamlContent: string) {
@@ -55,159 +47,172 @@ async function upload(yamlContent: string) {
       yamlContent,
     }),
   });
-  const res = await POST(request);
-  expect(res.status).toBe(200);
+  return POST(request);
 }
 
-async function libraryRow() {
-  const row = await prisma.exercise.findFirst({ where: { name: EX_NAME } });
-  if (!row) throw new Error(`library row ${EX_NAME} not found`);
-  return row;
-}
-
-describe("/api/setup library upsert", () => {
-  const createdProgramIds: number[] = [];
-
-  afterEach(async () => {
-    // Every upload creates a fresh Program; collect and drop them all so the
-    // suite leaves no active program behind for other DB tests.
-    const programs = await prisma.program.findMany({
-      where: { name: "Setup Route Test Program" },
-      select: { id: true },
-    });
-    createdProgramIds.push(...programs.map((p) => p.id));
+beforeAll(async () => {
+  await prisma.user.upsert({
+    where: { id: 1 },
+    update: {},
+    create: { id: 1, name: "Test User", weightKg: 80, heightCm: 180 },
   });
 
-  afterAll(async () => {
-    const ids = [...new Set(createdProgramIds)];
-    const days = await prisma.programDay.findMany({
-      where: { programId: { in: ids } },
-      select: { id: true },
+  if ((await prisma.exerciseCatalog.count()) === 0) {
+    throw new Error("Catalog is empty - run `npm run db:seed-catalog` first.");
+  }
+});
+
+afterEach(async () => {
+  const programs = await prisma.program.findMany({
+    where: { name: { startsWith: "Setup Route Test Program" } },
+    select: { id: true },
+  });
+  const ids = programs.map((p) => p.id);
+  const days = await prisma.programDay.findMany({
+    where: { programId: { in: ids } },
+    select: { id: true },
+  });
+  await prisma.programExercise.deleteMany({
+    where: { dayId: { in: days.map((d) => d.id) } },
+  });
+  await prisma.programDay.deleteMany({ where: { programId: { in: ids } } });
+  await prisma.program.deleteMany({ where: { id: { in: ids } } });
+  await prisma.exercise.deleteMany({ where: { userId: 1 } });
+});
+
+afterAll(async () => {
+  await prisma.$disconnect();
+});
+
+describe("/api/setup resolves exercises by slug", () => {
+  it("installs a program that references a catalog exercise", async () => {
+    expect((await upload(yamlFor(SLUG))).status).toBe(200);
+
+    const slots = await prisma.programExercise.findMany({
+      include: { exercise: { include: { catalog: true } } },
     });
-    await prisma.programExercise.deleteMany({
-      where: { dayId: { in: days.map((d) => d.id) } },
-    });
-    await prisma.programDay.deleteMany({ where: { programId: { in: ids } } });
-    await prisma.program.deleteMany({ where: { id: { in: ids } } });
-    await prisma.exercise.deleteMany({ where: { name: EX_NAME } });
-    await prisma.$disconnect();
+    expect(slots).toHaveLength(1);
+    expect(slots[0].exercise.catalogSlug).toBe(SLUG);
+    expect(slots[0].setsCount).toBe(3);
+    // A single integer stays a single entry. Readers repeat the last value,
+    // and `expandPlannedReps` applies exactly that rule when snapshotting.
+    expect(slots[0].reps).toEqual([10]);
   });
 
-  it("stores the video URL when the exercise is new to the library", async () => {
-    await upload(yamlWith(`          video: "${YT}"`));
-    expect((await libraryRow()).videoUrl).toBe(YT);
+  it("materialises exactly one row per referenced exercise", async () => {
+    await upload(yamlFor(SLUG));
+    await upload(yamlFor(SLUG));
+
+    // Re-uploading binds to the same row rather than minting a second. Under
+    // the old name matching this was the bug that took a 29-row library to 55
+    // in a single upload (#45); addressing by slug removes the guesswork.
+    expect(await prisma.exercise.count({ where: { userId: 1 } })).toBe(1);
   });
 
-  // The bug this file exists for. A library row created by an earlier upload
-  // (or the MuscleWiki seed) already had a videoUrl, and the backfill-only
-  // rule meant a newer YAML's `video:` was silently discarded — so the Guide
-  // tab kept linking to MuscleWiki no matter what the user re-uploaded.
-  it("overwrites a stale video URL on re-upload", async () => {
-    const row = await libraryRow();
-    await prisma.exercise.update({
-      where: { id: row.id },
-      data: { videoUrl: MP4 },
-    });
+  it("carries the coach's note onto the slot", async () => {
+    await upload(`
+program:
+  name: "${PROGRAM_NAME}"
+  days:
+    - name: "Day 1"
+      exercises:
+        - exercise: ${SLUG}
+          sets: 3
+          reps: 10
+          note: "Add 2.5kg when all three sets hit 10."
+`);
 
-    await upload(yamlWith(`          video: "${YT}"`));
-
-    expect((await libraryRow()).videoUrl).toBe(YT);
-  });
-
-  it("leaves the stored video URL alone when the upload omits `video:`", async () => {
-    const row = await libraryRow();
-    await prisma.exercise.update({
-      where: { id: row.id },
-      data: { videoUrl: MP4 },
-    });
-
-    await upload(yamlWith(`          description: "no video field here"`));
-
-    expect((await libraryRow()).videoUrl).toBe(MP4);
-  });
-
-  // Guards the rule that was deliberately *kept*: prose is still backfill-only,
-  // so a terser re-upload cannot blank hand-written guide content.
-  it("does not overwrite existing prose on re-upload", async () => {
-    const row = await libraryRow();
-    await prisma.exercise.update({
-      where: { id: row.id },
-      data: { description: "hand-written original" },
-    });
-
-    await upload(yamlWith(`          description: "terser replacement"`));
-
-    expect((await libraryRow()).description).toBe("hand-written original");
+    const slot = await prisma.programExercise.findFirstOrThrow();
+    expect(slot.note).toBe("Add 2.5kg when all three sets hit 10.");
   });
 });
 
-// #45. An upload used to mint a duplicate library row instead of binding to
-// the existing one - one upload of the 26-exercise example program took a
-// freshly seeded library from 29 rows to 55. The two-name matching that caused
-// it is gone, but the property it protected still has to hold.
-describe("/api/setup library lookup by name", () => {
-  const NAME = `Setup Route Lookup Press ${Date.now()}`;
-  const createdProgramIds: number[] = [];
-  let seededId: number;
+describe("/api/setup cannot change what an exercise is", () => {
+  // The whole reason anatomy left the program format: those keys were silently
+  // authoritative, so one sloppy or hallucinated file could re-tag a lift and
+  // corrupt the volume chart.
+  it("rejects a file that carries muscles", async () => {
+    const res = await upload(`
+program:
+  name: "${PROGRAM_NAME}"
+  days:
+    - name: "Day 1"
+      exercises:
+        - exercise: ${SLUG}
+          sets: 3
+          reps: 10
+          muscles:
+            primary: [biceps_brachii]
+`);
+    expect(res.status).toBe(400);
 
-  beforeAll(async () => {
-    const row = await prisma.exercise.create({
-      data: {
-        userId: 1,
-        name: NAME,
-        musclesPrimary: ["pec_major_sternal"],
-        videoUrl: MP4,
-      },
+    const catalog = await prisma.exerciseCatalog.findUniqueOrThrow({
+      where: { slug: SLUG },
     });
-    seededId = row.id;
+    expect(catalog.musclesPrimary).not.toEqual(["biceps_brachii"]);
   });
 
-  afterEach(async () => {
-    const programs = await prisma.program.findMany({
-      where: { name: "Setup Route Test Program" },
-      select: { id: true },
+  it("leaves the catalog untouched by a successful upload", async () => {
+    const before = await prisma.exerciseCatalog.findUniqueOrThrow({
+      where: { slug: SLUG },
     });
-    createdProgramIds.push(...programs.map((p) => p.id));
+
+    await upload(yamlFor(SLUG));
+
+    const after = await prisma.exerciseCatalog.findUniqueOrThrow({
+      where: { slug: SLUG },
+    });
+    expect(after).toEqual(before);
   });
 
-  afterAll(async () => {
-    const ids = [...new Set(createdProgramIds)];
-    const days = await prisma.programDay.findMany({
-      where: { programId: { in: ids } },
-      select: { id: true },
-    });
-    await prisma.programExercise.deleteMany({
-      where: { dayId: { in: days.map((d) => d.id) } },
-    });
-    await prisma.programDay.deleteMany({ where: { programId: { in: ids } } });
-    await prisma.program.deleteMany({ where: { id: { in: ids } } });
-    await prisma.exercise.deleteMany({ where: { name: NAME } });
-    await prisma.$disconnect();
+  it("leaves the materialised row inheriting, not overridden", async () => {
+    await upload(yamlFor(SLUG));
+
+    const row = await prisma.exercise.findFirstOrThrow({ where: { userId: 1 } });
+    // A null name means the row still reads from the catalog, so a later
+    // catalog correction reaches this user.
+    expect(row.name).toBeNull();
+  });
+});
+
+describe("/api/setup fails whole on an unknown slug", () => {
+  it("rejects the upload and names near-matches", async () => {
+    const res = await upload(yamlFor("barbell_squatt"));
+    expect(res.status).toBe(400);
+
+    const body = await res.json();
+    expect(body.detail ?? body.error).toMatch(/barbell_squat/);
   });
 
-  it("binds to the existing library row instead of minting a duplicate", async () => {
-    await upload(yamlFor(NAME, `          video: "${YT}"`));
+  // Installing a partial program would leave the user with a broken plan and
+  // no previous one, since the old program is deactivated as part of the write.
+  it("leaves the previous program active", async () => {
+    await upload(yamlFor(SLUG));
+    const before = await prisma.program.findFirstOrThrow({
+      where: { userId: 1, isActive: true },
+    });
 
-    const matches = await prisma.exercise.findMany({ where: { name: NAME } });
+    const res = await upload(`
+program:
+  name: "${PROGRAM_NAME} second"
+  days:
+    - name: "Day 1"
+      exercises:
+        - exercise: ${SLUG}
+          sets: 3
+          reps: 10
+        - exercise: not_a_real_exercise
+          sets: 3
+          reps: 10
+`);
+    expect(res.status).toBe(400);
 
-    // The point of the fix: one row, not two.
-    expect(matches).toHaveLength(1);
-    expect(matches[0].id).toBe(seededId);
-    expect(matches[0].videoUrl).toBe(YT);
-  });
-
-  // The deterministic tie-break this used to need is gone with the ambiguity
-  // it protected against: `(userId, name)` is unique, so there is never more
-  // than one row to choose between.
-  it("cannot end up with two rows of the same name to choose between", async () => {
-    await expect(
-      prisma.exercise.create({
-        data: {
-          userId: 1,
-          name: NAME,
-          musclesPrimary: ["pec_major_sternal"],
-        },
-      }),
-    ).rejects.toThrow();
+    const after = await prisma.program.findFirstOrThrow({
+      where: { userId: 1, isActive: true },
+    });
+    expect(after.id).toBe(before.id);
+    expect(
+      await prisma.program.count({ where: { name: `${PROGRAM_NAME} second` } }),
+    ).toBe(0);
   });
 });

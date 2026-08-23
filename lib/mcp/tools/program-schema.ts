@@ -26,18 +26,21 @@ import {
  * Rules the YAML parser enforces that the annotated template does not state
  * outright. Written here rather than left for the model to infer, because each
  * one is a rejection it would otherwise discover by trial and error.
+ *
+ * The muscle vocabulary is still returned alongside these, even though a
+ * program file no longer names a muscle: `add_exercise` does, and it is the
+ * same closed list.
  */
 const RULES = [
   "The whole document is a single top-level `program:` object. A file whose `name:` and `days:` sit at the root is rejected - this is the most common structural mistake.",
-  "`name` is the primary key for an exercise. An exercise is matched against the library by name, so reuse the exact existing name when you mean an existing lift.",
-  "`muscles` is an object with `primary` (required, non-empty) and `secondary` (optional). The legacy flat list is rejected, not coerced.",
-  "Every entry in `primary` and `secondary` must come from the muscle vocabulary below. Unknown values are a validation error.",
-  "`primary` and `secondary` must not overlap.",
+  "An exercise is addressed by `exercise: <slug>` - lowercase letters, digits and underscores, e.g. `barbell_squat`. It is never a display name. Call list_exercises to find the slug you want.",
+  "An unknown slug fails the whole upload and the error lists near-matches. Nothing is guessed and nothing is created, so a program with one bad slug leaves the previous program active and untouched.",
+  "A program carries NO anatomy. `muscles`, `description`, `tips`, `mistakes` and `video` are not part of the format and are rejected outright - those are facts about the exercise and live in the catalog.",
   "`reps` is either a single integer applied to every set, or a list with one entry per set.",
-  "`superset_with` must be declared on BOTH partners, each naming the other.",
-  "Bilingual fields: the base field is the primary language, and an optional `*_en` variant supplies English. When `*_en` is missing it falls back to the base value.",
-  "Fields that are not in the schema are silently dropped, so an invented key fails quietly rather than loudly. Stick to the template.",
-  "Re-uploading a YAML overwrites `muscles` and any supplied `video`, but only backfills empty prose fields (description, tips, mistakes).",
+  "`superset_with` must be declared on BOTH partners, each naming the other's slug.",
+  "`note` is optional and is your reasoning for the prescription. It is not the user's note - that one is written per session on the log screen.",
+  "Any key not in the schema is a validation error, not silently dropped. An invented key fails loudly.",
+  "Uploading a program can no longer change what an exercise is. To add a movement the catalog does not carry, call add_exercise - it lands in this user's library only and returns a slug you can then reference.",
 ];
 
 export interface ProgramSchema {
