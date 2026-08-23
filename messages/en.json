@@ -125,5 +125,21 @@
     "kg": "kg",
     "cm": "cm",
     "today": "Today"
+  },
+  "proposal": {
+    "title": "Your coach proposed a new program",
+    "countAdded": "{count} new",
+    "countRemoved": "{count} dropped",
+    "countChanged": "{count} changed",
+    "renamed": "Program renamed from “{from}” to “{to}”",
+    "was": "was {name}",
+    "newDay": "new day",
+    "droppedDay": "dropped",
+    "noChanges": "This is identical to your current program.",
+    "approve": "Use this program",
+    "confirmApprove": "Tap again to switch",
+    "discard": "Discard",
+    "confirmDiscard": "Tap again to discard",
+    "footnote": "Your current program keeps running until you switch."
   }
 }
