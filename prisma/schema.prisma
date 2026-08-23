@@ -229,6 +229,19 @@ model Program {
   name        String
   startDate   DateTime     @default(now()) @db.Date
   isActive    Boolean      @default(true)
+  /// A coach proposal waiting for the user to approve it.
+  ///
+  /// A draft is never active and never appears in the program switcher: the
+  /// user's current program keeps running untouched until they choose. A
+  /// per-date suggestion expires in a day, but a bad program costs a month, so
+  /// a tool that activated directly would let a hallucinated file replace a
+  /// split mid-block with no moment where a human looked at it.
+  ///
+  /// Approving clears this flag; discarding deletes the row.
+  isDraft     Boolean      @default(false)
+  /// Why the coach proposed this. Shown on the approval screen - a diff without
+  /// a reason is not a decision aid.
+  rationale   String       @default("")
   yamlContent String
   user        User         @relation(fields: [userId], references: [id])
   days        ProgramDay[]

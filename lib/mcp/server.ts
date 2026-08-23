@@ -15,6 +15,7 @@ import {
 } from "./tools/read-tools";
 import { saveSuggestions } from "./tools/save-suggestions";
 import { addExercise } from "./tools/add-exercise";
+import { saveProgramDraft } from "./tools/save-program-draft";
 import {
   getSessionDetail,
   listSessionsSummary,
@@ -111,6 +112,11 @@ export function buildMcpServer(userId: number): McpServer {
         "than one or two. A session carries the user's own notes; read them " +
         "before judging the numbers, because they explain what the numbers " +
         "cannot. " +
+        "To change the training plan itself, write the YAML and call " +
+        "save_program_draft. It saves a proposal the user approves in the app - " +
+        "it never replaces what they are following. Use save_suggestions for " +
+        "next-session weights, which is the everyday case; a program rewrite is " +
+        "for restructuring a block. " +
         "If a movement you want to prescribe is not in the library, search " +
         "list_exercises first - the catalog has hundreds of entries and the " +
         "same movement is often already there under a different name. Only " +
@@ -472,6 +478,50 @@ export function buildMcpServer(userId: number): McpServer {
     async (args) => {
       try {
         return asText(await addExercise({ userId, ...args }));
+      } catch (err) {
+        return asError(err);
+      }
+    },
+  );
+
+  server.registerTool(
+    "save_program_draft",
+    {
+      title: "Propose a program",
+      description:
+        "Saves a proposed program as a DRAFT for the user to approve in the " +
+        "app. It never activates: their current program keeps running " +
+        "untouched until they accept it. " +
+        "Call get_program_schema first and validate_program_yaml before this, " +
+        "and show the user the program and your reasoning - what you save is " +
+        "what they will be asked to approve. " +
+        "Refused if the YAML does not parse, if any exercise slug is unknown, " +
+        "or if a proposal is already waiting for them.",
+      inputSchema: {
+        yaml: z
+          .string()
+          .min(1)
+          .describe("The complete program YAML, in the current format."),
+        rationale: z
+          .string()
+          .min(1)
+          .max(2000)
+          .describe(
+            "Why you are proposing this. The user reads it next to the " +
+              "changes when deciding.",
+          ),
+        replaceExisting: z
+          .boolean()
+          .optional()
+          .describe(
+            "Throw away a proposal the user has not answered yet. Defaults " +
+              "to false, which refuses rather than discarding it silently.",
+          ),
+      },
+    },
+    async (args) => {
+      try {
+        return asText(await saveProgramDraft({ userId, ...args }));
       } catch (err) {
         return asError(err);
       }
