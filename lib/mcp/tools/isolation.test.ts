@@ -269,15 +269,16 @@ describe("list_programs and get_program", () => {
 });
 
 describe("list_exercises", () => {
-  it("lists only the caller's library", async () => {
+  it("shows both accounts the shared catalog", async () => {
     const forAlice = await listExercises({ userId: alice });
     const forBob = await listExercises({ userId: bob });
 
-    expect(forAlice.returned).toBe(1);
-    expect(forBob.returned).toBe(1);
-    // Same name, and that is fine - they are different rows with one owner each.
-    expect(forAlice.exercises[0].name).toBe(SHARED_NAME);
-    expect(forBob.exercises[0].name).toBe(SHARED_NAME);
+    // Both libraries are built on the same catalog, so overlap is expected.
+    // The next test covers what must *not* be shared.
+    expect(forAlice.returned).toBeGreaterThan(100);
+    expect(forBob.returned).toBeGreaterThan(100);
+    expect(forAlice.exercises.some((e) => e.name === SHARED_NAME)).toBe(true);
+    expect(forBob.exercises.some((e) => e.name === SHARED_NAME)).toBe(true);
   });
 
   it("does not surface another account's exercise through search", async () => {

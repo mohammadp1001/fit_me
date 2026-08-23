@@ -164,31 +164,39 @@ model ExerciseCatalog {
   tips             String[] @default([])
   mistakes         String[] @default([])
   videoUrl         String   @default("")
+  wikiUrl          String   @default("")
+  instances        Exercise[]
 
   @@index([name])
 }
 
-/// The exercise library, owned per user.
+/// A user's own row for an exercise.
 ///
-/// An upload deliberately overwrites `muscles` and `videoUrl` (#44) - it is the
-/// only way to correct a mis-tagged exercise or a stale link. With a shared
-/// library that would let one user's upload silently rewrite the muscle tags
-/// another user's volume chart depends on, so each account gets its own copy of
-/// the ~30 seed rows instead.
+/// This is no longer a copy of the whole library. A user's library is the
+/// shared catalog *plus* their own additions *minus* what they hid, and a row
+/// here exists only for exercises they have actually engaged with - because
+/// `WorkoutLog` and `ProgramExercise` point at `Exercise.id`, and history has to
+/// hang off something durable. The row is created the first time an exercise is
+/// programmed or logged, not at signup.
+///
+/// Copying the catalog per account was considered and rejected: with 649
+/// entries it duplicates hundreds of rows per signup and goes stale the moment
+/// a catalog entry is added or corrected.
+///
+/// **One rule decides where the values come from:**
+///
+/// - `name == null` - an inherited row. Every field is read from `catalogSlug`,
+///   so a catalog correction reaches the user with no per-user action.
+/// - `name != null` - the user's own values win. Either a personal addition
+///   (`catalogSlug == null`) or a deliberate override of a catalog entry, which
+///   is frozen on purpose: they said the catalog was wrong for them.
 model Exercise {
   id               Int               @id @default(autoincrement())
   userId           Int
-  /// English only.
-  ///
-  /// Was a `nameFa`/`nameEn` pair, along with paired description, tips and
-  /// mistakes. The catalog makes the pairing redundant and expensive: every one
-  /// of its 649 entries would need both languages written and maintained by
-  /// hand, and the upstream source has only English.
-  ///
-  /// The app's *interface* stays bilingual - buttons, labels and screens still
-  /// switch to Persian from `messages/`, and Persian is still the default
-  /// locale. Only exercise content is English.
-  name             String
+  /// The catalog entry this row instantiates. Null means the user invented it.
+  catalogSlug      String?
+  /// Null means "inherit from the catalog" - see the rule above.
+  name             String?
   musclesPrimary   Muscle[]
   musclesSecondary Muscle[]
   description      String            @default("")
@@ -196,18 +204,20 @@ model Exercise {
   mistakes         String[]          @default([])
   wikiUrl          String            @default("")
   videoUrl         String            @default("")
+  /// Removes a catalog entry from this user's library only. Nobody else's
+  /// library changes, which is the guarantee the per-user copies used to buy.
+  hidden           Boolean           @default(false)
   user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  catalog          ExerciseCatalog?  @relation(fields: [catalogSlug], references: [slug])
   programExercises ProgramExercise[]
   workoutLogs      WorkoutLog[]
   suggestions      Suggestion[]
   memory           ExerciseMemory?
 
-  // Scoped per user, so two people can both own a row of the same name.
-  //
-  // `Suggestion` (@@unique([exerciseId, date])) and `ExerciseMemory`
-  // (exerciseId @unique) need no change of their own: both hang off an
-  // exercise, so once an exercise has exactly one owner their constraints are
-  // correct again.
+  // One row per catalog entry per user, so materialising twice is impossible.
+  @@unique([userId, catalogSlug])
+  // Postgres allows many NULLs in a unique index, so inherited rows (name null)
+  // never collide here - this constrains personal additions and overrides only.
   @@unique([userId, name])
   @@index([userId])
 }

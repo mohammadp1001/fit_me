@@ -167,9 +167,15 @@ export async function getExerciseHistory({
   const exercise = await resolveExerciseStrict(userId, name);
   const capped = Math.min(Math.max(1, limit), LIMITS.exerciseHistory);
 
-  const logs = await listLogsForExercise(userId, exercise.id, {
-    limit: capped,
-  });
+  // A library exercise the user has never programmed or logged has no row of
+  // its own yet, and so no history. That is an empty answer, not an error -
+  // "you have never done this" is exactly what the caller asked.
+  const logs =
+    exercise.exerciseId === null
+      ? []
+      : await listLogsForExercise(userId, exercise.exerciseId, {
+          limit: capped,
+        });
 
   return {
     exercise: {
@@ -277,7 +283,10 @@ export async function getCoachMemory({
 
   if (name) {
     const exercise = await resolveExerciseStrict(userId, name);
-    const memory = await getExerciseMemory(exercise.id);
+    const memory =
+      exercise.exerciseId === null
+        ? null
+        : await getExerciseMemory(exercise.exerciseId);
 
     return {
       global: global?.notes ?? null,

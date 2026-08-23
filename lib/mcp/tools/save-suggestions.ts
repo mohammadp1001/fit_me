@@ -1,4 +1,8 @@
-import { resolveExerciseStrict, type ExerciseRef } from "@/lib/db/exercises";
+import {
+  exerciseIdFor,
+  resolveExerciseStrict,
+  type ExerciseRef,
+} from "@/lib/db/exercises";
 import { appendNote } from "@/lib/coach-notes";
 import { findActiveSlotFor } from "@/lib/db/programs";
 import { hasLogOn } from "@/lib/db/logs";
@@ -65,8 +69,12 @@ function todayDateOnly(now: Date): Date {
  * When a program lists the same exercise twice, the lowest `displayOrder` wins
  * - deterministic, and it matches the order the day is performed in.
  */
-async function findActiveSlot(userId: number, exercise: ExerciseRef) {
-  const slot = await findActiveSlotFor(userId, exercise.id);
+async function findActiveSlot(
+  userId: number,
+  exercise: ExerciseRef,
+  exerciseId: number,
+) {
+  const slot = await findActiveSlotFor(userId, exerciseId);
 
   if (!slot) {
     throw new SuggestionRejected(
@@ -144,11 +152,14 @@ export async function saveSuggestions({
     }
 
     const exercise = await resolveExerciseStrict(userId, item.exercise);
+    // Writing, so the user's row has to exist. Proposing an exercise counts as
+    // using it; reading the library still materialises nothing.
+    const exerciseId = await exerciseIdFor(userId, exercise);
 
     // Guard 2: never overwrite a day that has already been trained. Once sets
     // are logged, the suggestion is history - replacing it would rewrite what
     // the user was told at the time.
-    const logged = await hasLogOn(userId, exercise.id, target);
+    const logged = await hasLogOn(userId, exerciseId, target);
     if (logged) {
       throw new SuggestionRejected(
         `"${exercise.name}" was already logged on ${date}. ` +
@@ -156,21 +167,21 @@ export async function saveSuggestions({
       );
     }
 
-    const slot = await findActiveSlot(userId, exercise);
-    prepared.push({ item, exercise, slot });
+    const slot = await findActiveSlot(userId, exercise, exerciseId);
+    prepared.push({ item, exercise, exerciseId, slot });
   }
 
   const noteDate = now.toISOString().slice(0, 10);
   const saved: SaveSuggestionsResult["saved"] = [];
 
-  for (const { item, exercise, slot } of prepared) {
+  for (const { item, exercise, exerciseId, slot } of prepared) {
     // Stored as `{ weight, reps }` because that is what `lib/log-prefill.ts`
     // reads to pre-fill the log form. Renaming it here would silently stop the
     // suggestion appearing at the gym.
     const sets = item.sets.map((s) => ({ weight: s.weightKg, reps: s.reps }));
 
     await upsertSuggestion(userId, {
-      exerciseId: exercise.id,
+      exerciseId,
       programExerciseId: slot.id,
       date: target,
       sets,
@@ -188,11 +199,12 @@ export async function saveSuggestions({
     if (!note.trim()) continue;
 
     const exercise = await resolveExerciseStrict(userId, name);
-    const existing = await getExerciseMemory(exercise.id);
+    const exerciseId = await exerciseIdFor(userId, exercise);
+    const existing = await getExerciseMemory(exerciseId);
 
     // Append, never replace - see lib/coach-notes.ts.
     const notes = appendNote(existing?.notes, note, noteDate);
-    await setExerciseMemory(exercise.id, notes);
+    await setExerciseMemory(exerciseId, notes);
 
     exerciseNotesUpdated.push(exercise.name);
   }

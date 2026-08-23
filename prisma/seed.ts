@@ -1,15 +1,15 @@
 import { PrismaClient } from "@prisma/client";
-import { seedExerciseLibrary } from "../lib/db/exercise-template.ts";
+import { seedCatalog } from "../lib/db/catalog.ts";
 
 const prisma = new PrismaClient();
 
 /**
- * `npm run db:seed` seeds account 1 - the only account until someone is
- * invited. The user row has to exist first, because an exercise now has an
- * owner.
+ * `npm run db:seed` sets up a fresh install: account 1, and the shared exercise
+ * catalog.
  *
- * The library itself lives in `lib/db/exercise-template.ts`, shared with the
- * signup path so a new account gets exactly the same rows.
+ * There is no per-user library to seed any more. A user's library is the
+ * catalog plus whatever they add, so a new account starts with 676 exercises
+ * and no rows of its own.
  */
 async function main() {
   const userId = 1;
@@ -26,9 +26,8 @@ async function main() {
     },
   });
 
-  console.log(`Seeding exercise library for user ${userId}...`);
-  const count = await seedExerciseLibrary(userId);
-  console.log(`Seeded ${count} exercises.`);
+  const { written } = await seedCatalog();
+  console.log(`Catalog seeded: ${written} exercises.`);
 }
 
 main()

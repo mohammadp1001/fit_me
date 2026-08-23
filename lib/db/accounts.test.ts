@@ -12,6 +12,7 @@ import {
   pruneInvites,
   redeemInvite,
 } from "./accounts";
+import { resolveLibrary } from "./library";
 import { checkPasswordStrength, checkUsername } from "@/lib/auth/password";
 
 /**
@@ -112,7 +113,7 @@ describe("invites", () => {
 });
 
 describe("signing up with an invite", () => {
-  it("creates an account with its own exercise library", async () => {
+  it("creates an account with the shared library and no rows of its own", async () => {
     const invite = await createInvite(adminId);
 
     const result = await redeemInvite(invite.token, {
@@ -124,8 +125,15 @@ describe("signing up with an invite", () => {
     expect(result).toMatchObject({ ok: true });
     if (!result.ok) throw new Error("expected ok");
 
+    // A new account starts with the whole shared catalog and no rows of its
+    // own. Signup used to copy ~30 template exercises per account; with a
+    // 676-entry catalog that would be hundreds of duplicated rows that go
+    // stale the moment a catalog entry is corrected.
     const owned = await prisma.exercise.count({ where: { userId: result.userId } });
-    expect(owned).toBeGreaterThan(20);
+    expect(owned).toBe(0);
+
+    const library = await resolveLibrary(result.userId);
+    expect(library.length).toBeGreaterThan(100);
 
     const user = await prisma.user.findUnique({ where: { id: result.userId } });
     expect(user!.username).toEqual(expect.stringContaining("friend"));
@@ -346,9 +354,10 @@ describe("bootstrapping a brand-new deployment", () => {
       const created = await prisma.user.findUnique({ where: { id: result.userId } });
       expect(created!.isAdmin).toBe(true);
 
-      // A first account is useless without a library to upload against.
-      const library = await prisma.exercise.count({ where: { userId: result.userId } });
-      expect(library).toBeGreaterThan(20);
+      // A first account is useless without a library to upload against - which
+      // it now has from the shared catalog, without owning a single row.
+      const library = await resolveLibrary(result.userId);
+      expect(library.length).toBeGreaterThan(100);
 
       // And the door closes behind it.
       expect(await claimAvailable()).toBe(false);
