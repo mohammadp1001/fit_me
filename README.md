@@ -30,6 +30,43 @@ That's the whole idea.
 It answers from your own numbers, and it can write the answer back into the
 app: the weights for your next session, or a whole new program.
 
+### What the chatbot is allowed to do
+
+Once connected, it gets 15 specific abilities and nothing more. Twelve of
+them only read. Three can write, and none of those touch what you're
+currently following.
+
+**Reading your training**
+
+| | |
+|---|---|
+| `get_progress_summary` | The usual starting point. Trends already worked out: body weight, weekly sets per muscle, and whether each lift is moving. |
+| `get_exercise_history` | Every set you've logged for one lift, newest first. |
+| `get_volume` | How many hard sets each muscle got, and whether that's low, about right, or a lot. |
+| `list_sessions` | A skim-able list of recent workouts. |
+| `get_session` | One workout in full, in the order you did it, including your notes. |
+| `get_body_weight` | Your weigh-ins, and which way they're heading. |
+| `get_coach_memory` | What it worked out about you in past conversations. |
+| `list_programs` / `get_program` | Your plans, and one plan in detail. |
+| `list_exercises` | The exercise library. |
+| `get_program_schema` | The rules a plan file has to follow. |
+| `validate_program_yaml` | Checks a draft plan for mistakes before showing it to you. Saves nothing. |
+
+**Changing things**
+
+| | |
+|---|---|
+| `save_suggestions` | The everyday one. Puts suggested weights on your log screen for next session. You're free to ignore them. |
+| `save_program_draft` | Proposes a whole new plan. It waits as a draft. **Your current plan keeps running until you approve it in the app.** |
+| `add_exercise` | Adds a movement the library doesn't have, to your library only. The shared catalog is never touched. |
+
+**What it cannot do**
+
+It can't log sets for you, switch your active plan, delete anything, or see
+another person's data. There's deliberately no "just do it" option: a bad
+suggestion costs you one session, but a bad plan costs you a month, so a
+plan always stops and waits for you.
+
 ## Everything else
 
 - **Upload a plan.** One file lists your days, your exercises, sets and reps.
