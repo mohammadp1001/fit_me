@@ -377,7 +377,9 @@ export function buildMcpServer(userId: number): McpServer {
       title: "Get program",
       description:
         "Full structure of one program: days, exercises, sets, reps and superset " +
-        "grouping. Defaults to the active program.",
+        "grouping. Defaults to the active program. Each exercise carries the " +
+        "`slug` a program file must reference, so a program read here can be " +
+        "edited and written straight back with save_program_draft.",
       inputSchema: {
         id: z.number().int().optional().describe("Program id. Omit for the active one."),
       },
@@ -397,13 +399,17 @@ export function buildMcpServer(userId: number): McpServer {
     {
       title: "List library exercises",
       description:
-        "The exercise library, with the exact names other tools expect. Use this " +
-        "to find the right name when a lookup fails.",
+        "The exercise library. Every entry carries a `slug` and a display name: " +
+        "program YAML addresses an exercise by its slug, while save_suggestions " +
+        "and get_exercise_history take the name. Look the slug up here rather " +
+        "than deriving one from a name - they do not match predictably " +
+        "(\"Dumbbell Incline Press\" is `dumbbell_incline_press`, but many are " +
+        "not that tidy), and an invented slug fails the whole upload.",
       inputSchema: {
         search: z
           .string()
           .optional()
-          .describe("Case-insensitive substring filter on either name."),
+          .describe("Case-insensitive substring filter on the display name."),
         limit: z.number().int().min(1).max(LIMITS.exercises).optional(),
       },
       annotations: READ_ONLY,

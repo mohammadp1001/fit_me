@@ -350,6 +350,9 @@ export async function getProgram({
       dayNumber: day.dayNumber,
       name: day.name,
       exercises: day.exercises.map((slot) => ({
+        // Carried so a caller can edit this program and write the file back
+        // without having to rediscover each exercise's identity by name.
+        slug: slot.exercise.slug,
         name: slot.exercise.name,
         sets: slot.setsCount,
         reps: slot.reps,

@@ -182,6 +182,10 @@ export async function listExercises(
     .filter((e) => !needle || e.name.toLowerCase().includes(needle))
     .slice(0, limit)
     .map((e) => ({
+      // The slug is the identity a program file must use. Without it a caller
+      // could only see display names and had to guess the slug from one, which
+      // silently failed the upload on every multi-word exercise.
+      slug: e.slug,
       name: e.name,
       musclesPrimary: e.musclesPrimary,
       musclesSecondary: e.musclesSecondary,

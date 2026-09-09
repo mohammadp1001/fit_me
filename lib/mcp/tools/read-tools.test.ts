@@ -19,6 +19,8 @@ import {
   ExerciseNotFoundError,
   resolveExerciseStrict,
 } from "@/lib/db/exercises";
+import { installProgram } from "@/lib/db/programs";
+import { parseWorkoutYaml } from "@/lib/yaml-parser";
 
 /**
  * The bulk of #53's coverage, against a real Postgres.
@@ -466,6 +468,45 @@ describe("listPrograms and getProgram", () => {
   it("throws a readable error for a missing program", async () => {
     await expect(getProgram({ userId: 1, id: 999_999 })).rejects.toThrow(/No program with id/);
   });
+
+  // A program is read so it can be edited and written back as YAML, and YAML
+  // addresses an exercise by slug. Returning display names alone left the
+  // caller guessing the slug from the name, which fails on almost any
+  // multi-word exercise ("Dumbbell Incline Press" is `dumbbell_incline_press`,
+  // but the guess `dumbbell_incline_bench_press` does not exist).
+  it("carries the slug for every exercise", async () => {
+    const program = await getProgram({ userId: 1 });
+
+    for (const exercise of program.days[0].exercises) {
+      expect(exercise.slug).toBeTruthy();
+    }
+  });
+
+  // Fetching by id took a different, unresolved path than fetching the active
+  // program, so an inherited row came back with a null name and no muscles.
+  it("resolves inherited exercises when fetched by id", async () => {
+    const yaml = `program:
+  name: Catalog Program ${TAG}
+  days:
+    - name: Day 1
+      exercises:
+        - exercise: barbell_squat
+          sets: 3
+          reps: 8
+`;
+    const draft = await installProgram(1, parseWorkoutYaml(yaml), yaml, {
+      draft: true,
+    });
+
+    const program = await getProgram({ userId: 1, id: draft.id });
+    const [exercise] = program.days[0].exercises;
+
+    expect(exercise.slug).toBe("barbell_squat");
+    expect(exercise.name).toBe("Barbell Squat");
+    expect(exercise.musclesPrimary.length).toBeGreaterThan(0);
+
+    await prisma.program.delete({ where: { id: draft.id } });
+  });
 });
 
 describe("listExercises", () => {
@@ -479,6 +520,38 @@ describe("listExercises", () => {
     const result = await listExercises({ userId: 1, limit: 100_000 });
 
     expect(result.returned).toBeLessThanOrEqual(LIMITS.exercises);
+  });
+
+  // This is the only tool that can tell a caller what an exercise's slug is,
+  // and a program file cannot be written without one. Omitting it made every
+  // slug in a proposed program a guess.
+  it("returns the slug, which is what a program file must reference", async () => {
+    const result = await listExercises({ userId: 1, search: "barbell squat" });
+    const squat = result.exercises.find((e) => e.name === "Barbell Squat");
+
+    expect(squat?.slug).toBe("barbell_squat");
+  });
+});
+
+describe("unknown-slug suggestions", () => {
+  // The suggestions used to be whatever contained the slug's LONGEST word, so
+  // `dumbbell_incline_bench_press` was answered with five curls: "dumbbell"
+  // outranked "incline" and "press" purely on length. Ranking by how many
+  // words a candidate shares puts the real answer in front of the caller.
+  it("ranks by shared words, not by the longest one", async () => {
+    const yaml = `program:
+  name: Bad Slug ${TAG}
+  days:
+    - name: Day 1
+      exercises:
+        - exercise: dumbbell_incline_bench_press
+          sets: 3
+          reps: 8
+`;
+
+    await expect(
+      installProgram(1, parseWorkoutYaml(yaml), yaml, { draft: true }),
+    ).rejects.toThrow(/dumbbell_incline_press/);
   });
 });
 
