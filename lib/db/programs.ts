@@ -65,10 +65,14 @@ export async function getActiveProgram(userId: number) {
 }
 
 export async function getProgramById(userId: number, id: number) {
-  return prisma.program.findFirst({
+  const program = await prisma.program.findFirst({
     where: { id, userId },
     include: FULL_PROGRAM,
   });
+  // Resolved for the same reason `getActiveProgram` is: an inherited row's
+  // `name` column is null and its muscles are empty, so returning it raw made
+  // fetching a program by id give back nameless, untagged exercises.
+  return program && withResolvedExercises(program);
 }
 
 /**
@@ -335,13 +339,28 @@ async function suggestSlugs(
     .map((e) => e.slug);
   if (contains.length > 0) return contains.slice(0, limit);
 
-  // Nothing contains the whole slug, so try its longest word - this is what
-  // turns `incline_db_press` into the incline press family.
-  const longest = slug.split("_").sort((a, b) => b.length - a.length)[0];
-  if (!longest || longest.length < 3) return [];
+  // Nothing contains the whole slug, so rank by how many of its words a
+  // candidate shares.
+  //
+  // This used to pick the single LONGEST word and return whatever contained
+  // it, which is why `dumbbell_incline_bench_press` suggested
+  // `alternate_incline_dumbbell_curl` and four other curls: "dumbbell" is the
+  // longest word, so the equipment beat the movement and the real answer,
+  // `dumbbell_incline_press`, was never shown. Counting shared words instead
+  // ranks a candidate by how much of the intent it actually matches.
+  const wanted = slug.split("_").filter((w) => w.length >= 3);
+  if (wanted.length === 0) return [];
 
   return library
-    .filter((e) => e.slug.includes(longest))
-    .map((e) => e.slug)
-    .slice(0, limit);
+    .map((e) => {
+      const words = new Set(e.slug.split("_"));
+      const shared = wanted.filter((w) => words.has(w)).length;
+      // Extra words are noise: between two candidates matching as much of the
+      // request, the shorter one is the more exact reading of it.
+      return { slug: e.slug, shared, extra: words.size - shared };
+    })
+    .filter((c) => c.shared > 0)
+    .sort((a, b) => b.shared - a.shared || a.extra - b.extra)
+    .slice(0, limit)
+    .map((c) => c.slug);
 }
