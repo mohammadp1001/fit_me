@@ -87,6 +87,48 @@ plan always stops and waits for you.
 - **Put it on your phone.** Add it to your home screen and it behaves like a
   normal app, even without signal.
 
+## Where the exercise and muscle data comes from
+
+You never type in what an exercise is. The app already knows.
+
+**The exercise bank.** 676 exercises, shared by everyone and read-only.
+Each one carries its name, the muscles it works, how to perform it, the
+usual mistakes, and a video. Most of it comes from
+[free-exercise-db](https://github.com/yuhonas/free-exercise-db) (public
+domain), with 27 entries written by hand where the source was thin.
+
+**Your own copy is thin on purpose.** The app doesn't hand you 676 rows
+when you sign up. A row appears only for exercises you've actually used,
+and it borrows everything from the bank rather than copying it. So when a
+bank entry gets corrected, the fix reaches you without you doing
+anything. You can still override an entry for yourself, hide one you'll
+never do, or add a movement the bank is missing. Anything you add is
+yours alone and never goes into the shared bank.
+
+**Muscles come from a fixed list.** 30 of them, sorted into 11 everyday
+groups (chest, back, shoulders, arms, forearms, quads, hamstrings,
+glutes, adductors, calves, core). You can't invent a muscle name and
+nothing accepts free text, which sounds fussy until you see what it
+prevents: if "delts" and "shoulders" and "side delt" were all allowed,
+your weekly numbers would be split across three spellings of the same
+thing and quietly wrong.
+
+The same reasoning is why a plan file carries no anatomy at all. It says
+which exercise, how many sets, what reps. Nothing else. A plan used to be
+able to re-label what a lift trains, which meant one careless file could
+corrupt months of volume history. Now it simply can't.
+
+**How the weekly numbers are worked out.** A set counts once toward each
+muscle group it trains: fully if the exercise is a main mover for it,
+half if it's a helper. A group is only counted once per set, at the
+higher of the two, so an exercise doesn't score twice for being tagged in
+detail. Only sets you actually completed count, so an empty set you
+logged and never did adds nothing. The window is a rolling 7 days, and
+the app flags a group as low under 10 sets and high over 20.
+
+The full muscle list, with the group each one belongs to, is in
+[`examples/MUSCLES.md`](examples/MUSCLES.md).
+
 ## Getting started
 
 1. Sign in. Accounts are invite only, so someone has to let you in.

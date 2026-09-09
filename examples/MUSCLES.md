@@ -2,9 +2,14 @@
 
 <!-- Generated from lib/muscles.ts. Do not edit by hand: run `UPDATE_DOCS=1 npx jest lib/muscles-doc`. -->
 
-Every value a program YAML may use under `muscles.primary` / `muscles.secondary`.
-Anything outside this list is rejected at upload. Display names are localised by
-the app, so YAML always uses the canonical value - never the Persian or English name.
+Every muscle the app recognises, and the group each one counts toward.
+The list is closed: nothing outside it is accepted anywhere, which is what
+keeps one muscle from being split across several spellings in the volume numbers.
+
+A **program file does not tag muscles** - it names an exercise, its sets and its
+reps, and nothing else. What an exercise trains lives in the shared exercise
+catalog, so a program cannot re-label a lift and disturb months of volume
+history. These values are the catalog's vocabulary, listed here for reference.
 
 See [`TEMPLATE.yaml`](TEMPLATE.yaml) for the full program schema.
 
