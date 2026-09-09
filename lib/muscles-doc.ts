@@ -29,13 +29,26 @@ export function renderMuscleReference(): string {
   );
   lines.push("");
   lines.push(
-    "Every value a program YAML may use under `muscles.primary` / `muscles.secondary`."
+    "Every muscle the app recognises, and the group each one counts toward."
   );
   lines.push(
-    "Anything outside this list is rejected at upload. Display names are localised by"
+    "The list is closed: nothing outside it is accepted anywhere, which is what"
   );
   lines.push(
-    "the app, so YAML always uses the canonical value - never the Persian or English name."
+    "keeps one muscle from being split across several spellings in the volume numbers."
+  );
+  lines.push("");
+  lines.push(
+    "A **program file does not tag muscles** - it names an exercise, its sets and its"
+  );
+  lines.push(
+    "reps, and nothing else. What an exercise trains lives in the shared exercise"
+  );
+  lines.push(
+    "catalog, so a program cannot re-label a lift and disturb months of volume"
+  );
+  lines.push(
+    "history. These values are the catalog's vocabulary, listed here for reference."
   );
   lines.push("");
   lines.push("See [`TEMPLATE.yaml`](TEMPLATE.yaml) for the full program schema.");
